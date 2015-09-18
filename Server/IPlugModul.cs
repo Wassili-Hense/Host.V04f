@@ -9,10 +9,10 @@ namespace X13 {
     void Start();
     void Tick();
     void Stop();
+    bool enabled { get; set; }
   }
   public interface IPlugModulData {
     int priority { get; }
     string name { get; }
-    bool enabled { get; set; }
   }
 }

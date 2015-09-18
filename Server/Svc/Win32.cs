@@ -228,5 +228,11 @@ namespace CSWindowsServiceRecoveryProperty
 
         [System.Runtime.InteropServices.DllImport("kernel32.dll")]
         public static extern bool AllocConsole();
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern int SetThreadAffinityMask(IntPtr hThread, int dwThreadAffinityMask);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern IntPtr GetCurrentThread();
     }
 }

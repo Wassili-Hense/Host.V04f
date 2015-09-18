@@ -136,15 +136,21 @@ namespace X13 {
       if(_singleInstance!=null) {
         _singleInstance.ReleaseMutex();
       }
+      Log.Finish();
     }
     private void PrThread() {
+      {
+        int cpuCnt=System.Environment.ProcessorCount;
+        if(cpuCnt>1){
+          int r = CSWindowsServiceRecoveryProperty.Win32.SetThreadAffinityMask(CSWindowsServiceRecoveryProperty.Win32.GetCurrentThread(), 1 << (cpuCnt-1));
+        }
+      }
       InitPlugins();
       StartPlugins();
       _tickTimer=new Timer(Tick, null, 30, 500);
       do {
         _tick.WaitOne();
         TickPlugins();
-        Log.Debug("Tick");
       } while(!_terminate);
       _tickTimer.Change(-1, -1);
       StopPlugins();
@@ -214,7 +220,6 @@ namespace X13 {
       }
     }
 
-
     #region Plugins
 #pragma warning disable 649
     [ImportMany(typeof(IPlugModul), RequiredCreationPolicy=CreationPolicy.Shared)]
@@ -241,7 +246,7 @@ namespace X13 {
     private void InitPlugins() {
       string pName;
       foreach(var i in _modules) {
-        if(!i.Metadata.enabled) {
+        if(!i.Value.enabled) {
           continue;
         }
         pName=i.Metadata.name??i.Value.GetType().FullName;
@@ -257,7 +262,7 @@ namespace X13 {
     private void StartPlugins() {
       string pName;
       foreach(var i in _modules) {
-        if(!i.Metadata.enabled) {
+        if(!i.Value.enabled) {
           continue;
         }
         pName=i.Metadata.name??i.Value.GetType().FullName;
@@ -272,7 +277,7 @@ namespace X13 {
     }
     private void TickPlugins() {
       foreach(var i in _modules) {
-        if(!i.Metadata.enabled) {
+        if(!i.Value.enabled) {
           continue;
         }
         try {
@@ -285,7 +290,7 @@ namespace X13 {
     }
     private void StopPlugins() {
       foreach(var i in _modules.Reverse()) {
-        if(!i.Metadata.enabled) {
+        if(!i.Value.enabled) {
           continue;
         }
         try {
