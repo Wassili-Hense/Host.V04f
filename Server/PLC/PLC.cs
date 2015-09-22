@@ -65,6 +65,11 @@ namespace X13.PLC {
       _knownTypes["PiDeclarer"]=PiDeclarer.Create;
     }
     public void Start() {
+      Topic.root.Get("/Test/very_long_path_with_$pecial_symb0ls/Gamma").value=42;
+      Topic.root.Get("/Test/very_long_path_with_$pecial_symb0ls/Apha").value="Hello World!!!";
+      Topic.root.Get("/var/now/year").value=DateTime.Now.Year;
+      Topic.root.Get("/etc/TestPlugin/enabled").value=true;
+      Topic.root.Get("/Test/sp/Delta").value=19.017;
     }
     public void Tick() {
       if(Interlocked.CompareExchange(ref _busyFlag, 2, 1) != 1) {
@@ -402,7 +407,13 @@ namespace X13.PLC {
           case TypeCode.DateTime: {
               var dt = ((DateTime)cmd.o);
               var a=new Arguments();
-              a.Add(new JSL.Number((dt.ToUniversalTime()-new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds));
+              a.Add(new JSL.Number(dt.Year));
+              a.Add(new JSL.Number(dt.Month-1));
+              a.Add(new JSL.Number(dt.Day));
+              a.Add(new JSL.Number(dt.Hour));
+              a.Add(new JSL.Number(dt.Minute));
+              a.Add(new JSL.Number(dt.Second));
+              a.Add(new JSL.Number(dt.Millisecond));
               var jdt=new JSL.Date(a);
               cmd.src._value=new JSObject(jdt);  //.getTime() .valueOf()
             }

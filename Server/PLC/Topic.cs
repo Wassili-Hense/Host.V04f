@@ -210,7 +210,7 @@ namespace X13.PLC {
       }
       return string.Compare(this._path, other._path);
     }
-
+    public JSObject valueRaw { get { return _value; } }
     public object value { get { return (_value.ValueType>=JSObjectType.Object && !(_value.Value is JSObject))?_value.Value:_value; } set { this.Set(value); } }
     public T As<T>() {
       try {

@@ -3,26 +3,69 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using X13.PLC;
+using JSC=NiL.JS.Core;
+using JSL=NiL.JS.BaseLibrary;
 
 namespace X13.WebServer {
   internal sealed class ApiV04 : SIO_Connection {
     public ApiV04()
       : base() {
-        base.Register(1, Test);
+        base.Register(8, Create);
+        base.Register(9, Dir);
+        base.Register(10, Remove);
     }
-    private void Test(EventArguments args) {
-      StringBuilder sb=new StringBuilder();
-      sb.Append("ApiV04(");
-      for(int i=0; i<args.Count; i++) {
-        if(i>0) {
-          sb.Append(", ");
+    /// <summary>Create topic</summary>
+    /// <param name="args">
+    /// REQUEST: [8, path]
+    /// RESPONSE: success=true/false
+    /// </param>
+    private void Create(EventArguments args) {
+      string path=args[1].As<string>();
+      var t=Topic.root.Get(path, true);
+      args.Response(true);
+    }
+    /// <summary>Dir topics</summary>
+    /// <param name="args">
+    /// REQUEST: [9, path, type] type: 0 - once, 1 - children, 2 - all
+    /// RESPONSE: array of items, item - [path, flags, value type], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// </param>
+    private void Dir(EventArguments args) {
+      string path=args[1].As<string>();
+      int req=args[2].As<int>();
+      Topic parent;
+      List<Topic> resp=new List<Topic>();
+      if(Topic.root.Exist(path, out parent)) {
+        if((req & 1)==1) {
+          resp.Add(parent);
         }
-        sb.AppendFormat("{0}<{1}>", args[i].ToString(), args[i].ValueType);
+        if((req & 2)==2) {
+          resp.AddRange(parent.children);
+        }
+        if((req & 4)==4) {
+          resp.AddRange(parent.all);
+        }
       }
-      sb.Append(")");
-      X13.Log.Debug("{0}", sb.ToString());
-      args.Response("Answer", 42);
-      new Timer(o => base.Emit(2, DateTime.Now), null, 1500, -1);
+      var arr=new JSL.Array();
+      foreach(var t in resp) {
+        var r=new JSL.Array(3);
+        r[0]=new JSL.String(t.path);
+        r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
+        r[2]=new JSL.String(t.vType==null?"null":t.vType.Name);
+        arr.Add(r);
+      }
+      args.Response(arr);
+    }
+    /// <summary>Remove topic</summary>
+    /// <param name="args">
+    /// REQUEST: [10, path]
+    /// </param>
+    private void Remove(EventArguments args) {
+      Topic t;
+      string path=args[1].As<string>();
+      if(Topic.root.Exist(path, out t)) {
+        t.Remove();
+      }
     }
   }
 }

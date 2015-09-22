@@ -27,9 +27,9 @@ namespace X13.WebServer {
         }
       }
       _srv.Log.Output=WsLog;
-#if DEBUG
-      _srv.Log.Level=WebSocketSharp.LogLevel.Trace;
-#endif
+//#if DEBUG
+//      _srv.Log.Level=WebSocketSharp.LogLevel.Trace;
+//#endif
       _srv.RootPath=Path.GetFullPath("../htdocs");
       _srv.OnGet+=OnGet;
     }

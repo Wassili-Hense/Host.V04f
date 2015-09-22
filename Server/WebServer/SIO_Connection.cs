@@ -36,11 +36,17 @@ namespace X13.WebServer {
         jo=new JSL.Number(Convert.ToDouble(o));
         break;
       case TypeCode.DateTime: {
-          var dt = ((DateTime)o);
+        var dt = ((DateTime)o);
           var a=new JSC.Arguments();
-          a.Add(new JSL.Number((dt.ToUniversalTime()-new DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds));
+          a.Add(new JSL.Number(dt.Year));
+          a.Add(new JSL.Number(dt.Month-1));
+          a.Add(new JSL.Number(dt.Day));
+          a.Add(new JSL.Number(dt.Hour));
+          a.Add(new JSL.Number(dt.Minute));
+          a.Add(new JSL.Number(dt.Second));
+          a.Add(new JSL.Number(dt.Millisecond));
           var jdt=new JSL.Date(a);
-          jo=new JSC.JSObject(jdt);  //.getTime() .valueOf()
+          jo=new JSC.JSObject(jdt);
         }
         break;
       case TypeCode.Empty:
