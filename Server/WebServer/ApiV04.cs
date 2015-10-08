@@ -30,7 +30,7 @@ namespace X13.WebServer {
     }
     /// <summary>Dir topics</summary>
     /// <param name="args">
-    /// REQUEST: [9, path, type] type: 0 - once, 1 - children, 2 - all
+    /// REQUEST: [9, path, type] type: 1 - once, 2 - children, 4 - all
     /// RESPONSE: array of items, item - [path, flags, icon url], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Dir(EventArguments args) {
