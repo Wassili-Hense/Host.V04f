@@ -31,7 +31,7 @@ namespace X13.WebServer {
     /// <summary>Dir topics</summary>
     /// <param name="args">
     /// REQUEST: [9, path, type] type: 1 - once, 2 - children, 4 - all
-    /// RESPONSE: array of items, item - [path, flags, icon url], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// RESPONSE: array of items, item - [path, flags, prototype], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Dir(EventArguments args) {
       string path=args[1].As<string>();
@@ -54,7 +54,8 @@ namespace X13.WebServer {
         var r=new JSL.Array(3);
         r[0]=new JSL.String(t.path);
         r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
-        r[2]=t.vType==null?JSC.JSObject.JSNull:new JSL.String(t.vType.Name);
+        var pr=t.proto;
+        r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
         arr.Add(r);
         //X13.Log.Debug("  [{0}, {1}, {2}]", t.path, r[1].As<int>(), r[2].As<string>());
       }

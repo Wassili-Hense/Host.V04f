@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="/css/jstree.min.css" />
 </head>
 <body>
-  <div id="content"></div>
   <div id="Div1"></div>
   <script src="/js/react-0.13.3.js"></script>
   <script src="/js/socket.io.js"></script>
@@ -17,11 +16,7 @@
     servConn.init();
 
     React.render(
-        React.createElement(PeTopic),
-        document.getElementById("content")
-    );
-    React.render(
-        React.createElement(PropertyGrid),
+        React.createElement(PeTest),
         document.getElementById("Div1")
     );
   </script>

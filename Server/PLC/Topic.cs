@@ -81,6 +81,29 @@ namespace X13.PLC {
         return null;
       }
     }
+    public string proto {
+      get {
+        switch(_value.ValueType) {
+        case JSObjectType.NotExists:
+        case JSObjectType.NotExistsInObject:
+        case JSObjectType.Undefined:
+          return null;
+        case JSObjectType.Bool:
+          return "boolean";
+        case JSObjectType.Int:
+        case JSObjectType.Double:
+          return "number";
+        case JSObjectType.Date:
+          return "Date";
+        case JSObjectType.String:
+          return "string";
+        case JSObjectType.Object:
+          return "object";
+          //return topic;
+        }
+        return null;
+      }
+    }
     public Bill all { get { return new Bill(this, true); } }
     public Bill children { get { return new Bill(this, false); } }
     /// <summary>save defaultValue in persistent storage</summary>
