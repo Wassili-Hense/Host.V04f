@@ -9,13 +9,13 @@ var PropertyGrid = React.createClass({
       arr.push({ id: "value", name: "value", type: ct, st: 0, level: 0 });
     } else if (ct == "object") {
       if (val == null) {
-        arr.push({ id: "value", name: "value", type: "string", level: 0, st: 2, readonly: true });
+        arr.push({ id: "value", name: "value", type: "object", level: 0, st: 2, readonly: true });
       } else {
         //Array.isArray(obj)
         this.InspectObject(val, arr, "value", 0);
       }
     } else {
-      arr.push({ id: "value", name: "value", type: "string", level: 0, st: 0, readonly: true });
+      arr.push({ id: "value", name: "value", type: "object", level: 0, st: 0, readonly: true });
     }
     return { name: this.props.name, value: val, items: arr };
   },
@@ -29,7 +29,7 @@ var PropertyGrid = React.createClass({
         arr.push({ id: idn, name: pr[i], type: ct, level: level, st: 0 });
       } else if (ct == "object") {
         if (val == null) {
-          arr.push({ id: idn, name: pr[i], type: "string", level: level, st: 0, readonly: true });
+          arr.push({ id: idn, name: pr[i], type: "object", level: level, st: 0, readonly: true });
         } else {
           arr.push({ id: idn, name: pr[i], type: ct, level: level, st: 2 });
           this.InspectObject(val, arr, idn, level + 1);
@@ -40,7 +40,39 @@ var PropertyGrid = React.createClass({
     }
   },
   valueChanged: function (id, value) {
-    console.log(id + "=>" + JSON.stringify(value));
+    var vo = this.state.value;
+    var changed = false;
+    if (id == "value") {
+      if (vo !== value) {
+        vo = value;
+        changed = true;
+      }
+    } else {
+      var lvls = id.split('.');
+      if (lvls.length > 1 && lvls[0] == "value") {
+        var val=vo;
+        for (var i = 1; i < lvls.length; i++) {
+          if (i == lvls.length - 1) {
+            if (val[lvls[i]] !== value) {
+              val[lvls[i]] = value;
+              changed = true;
+            }
+            break;
+          }
+          if (!val.hasOwnProperty(lvls[i])) {
+            val[lvls[i]] = {};
+            changed = true;
+          }
+          val = val[lvls[i]];
+        }
+      }
+    }
+    if (changed) {
+      this.setState({ value: vo });
+      console.log(id + "=>" + JSON.stringify(value) + "\n" + JSON.stringify(vo));
+    } else {
+      console.log(id + "=>" + JSON.stringify(value) + "\t not changed");
+    }
   },
   ItemClick: function (id) {
     for (var i = 0; i < this.state.items.length; i++) {
@@ -76,14 +108,16 @@ var PropertyGrid = React.createClass({
       }
       lvl = -1;
       cmpParam = { id: c.id, value: this.GetValue(c.id), onChange: this.valueChanged };
-      if (c.type == "number") {
+      if (c.type == "boolean") {
+        cmp = PeBool;
+      } else if (c.type == "number") {
         cmp = PeNumber;
       } else if (c.type == "string") {
         cmp = PeString;
       } else if (c.type == "topic") {
         cmp = PeTopic;
       } else {
-        cmp = PeString;
+        cmp = PeLabel;
       }
       var oc = function (self, id) { return function (event) { self.ItemClick(id); } };
       var bPos = c.st == 2 ? "-4px -4px" : (c.st == 3 ? "-36px -4px" : "-164px -68px");
@@ -99,10 +133,54 @@ var PropertyGrid = React.createClass({
       }
     }
     return React.DOM.table({ style: { border: "1px solid black", borderCollapse: "collapse" } },
-      React.DOM.caption({ style: {background: "#CCCCCC"} }, this.props.name),
+      React.DOM.caption({ style: { background: "#CCCCCC" } }, this.props.name),
       React.DOM.tbody(null, arr));
   },
 });
+
+var PeLabel = React.createClass({
+  displayName: 'PeLabel',
+  getInitialState: function () {
+    var v = this.props.value;
+    if (v == null) {
+      v = "null";
+    } else if (typeof (v) == "object") {
+      var d = v["declarer"];
+      if (d != null && typeof (d) == "string") {
+        v = d;
+      } else {
+        v = "";
+      }
+    }
+    return { value: v };
+  },
+  render: function () {
+    return React.DOM.label(null, this.state.value);
+  }
+});
+
+var PeBool = React.createClass({
+  displayName: 'PeBool',
+  getInitialState: function () {
+    return {
+      value: this.props.value == true
+    }
+  },
+  render: function () {
+    return React.DOM.div(null,
+      React.DOM.input({ type: "checkbox", checked: this.state.value, onChange: this._onChange, ref:"cbBool" }));
+  },
+  _onChange: function (e) {
+    this.setState({
+      value: this.refs.cbBool.getDOMNode().checked
+    }, function(){
+      if (this.props.onChange) {
+        this.props.onChange(this.props.id, this.state.value);
+      }
+    });
+  }
+});
+
 var PeNumber = React.createClass({
   displayName: 'PeNumber',
   getDefaultProps: function () {
@@ -207,7 +285,7 @@ var PeString = React.createClass({
   onChange: function (event) {
     this.setState({ value: event.target.value });
   },
-  change: function() {
+  change: function () {
     if (this.props.onChange) {
       this.props.onChange(this.props.id, this.state.value);
     }
@@ -229,7 +307,6 @@ var PeString = React.createClass({
   _onBlur: function (e) {
     this.change();
   },
-
 });
 
 var PeTopic = React.createClass({
@@ -497,6 +574,7 @@ var TreeNode = React.createClass({
     );
   }
 });
+
 var PeTest = React.createClass({
   getInitialState: function () {
     return { path: "/", value: null, show: false };

@@ -69,9 +69,7 @@ namespace X13.PLC {
       Topic.root.Get("/Test/very_long_path_with_$pecial_symb0ls/Apha").value="Hello World!!!";
       Topic.root.Get("/var/started/year").value=DateTime.Now.Year;
       Topic.root.Get("/var/started").value=DateTime.Now;
-      var script = new NiL.JS.Script("function block1(){ return { A:19, b:29.104, object_g:{ tetta:'Zetta', utta:null }, object_f:{ tetta:'Zetta', utta:null }}; }");  // 
-      var func=script.Context.GetVariable("block1").Value as NiL.JS.BaseLibrary.Function;
-      var to=func.Invoke(new NiL.JS.Core.Arguments());
+      var to=NiL.JS.BaseLibrary.JSON.parse("{ \"A\":19, \"b\":29.104, \"object_g\":{ \"tetta\":\"Zetta\", \"utta\":null }, \"object_f\":{ \"cappa\":3.1415926, \"omega\":false }}");
       Topic.root.Get("/etc/plc/block1").value=to;
       Topic.root.Get("/etc/TestPlugin/enabled").value=true;
       Topic.root.Get("/Test/sp/Delta").value=19.017;
