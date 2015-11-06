@@ -356,20 +356,15 @@ var TopicSelector = React.createClass({
       opened = { "/": 1 };
     }
     var selected = this.props.selected;
+    var sv;
     if (selected) {
-      opened[this.props.selected] = 2;
+      sv = opened[selected]
+      opened[selected] = sv==1?3:2;
     } else {
       selected = null;
     }
     return {
       selected: null,
-      root: {
-        id: "/",
-        name: "ROOT",
-        flags: null,
-        children: null,
-        dataType: null,
-      },
       opened: opened,
     };
   },
@@ -381,13 +376,19 @@ var TopicSelector = React.createClass({
     node.setState({ selected: true });
 
     var This = this;
-    servConn.GetValue(node.state.id, function (val) {
-      This.setState({ selectedValue: val });
-    });
+    if (this.state.selectedTopic != null) {
+      this.state.selectedTopic.dispose();
+    }
+    var nst = node.state.data.createReflex();
+    nst.onChange=function (s, e) {
+      This.setState({ selectedValue: s.value });
+    };
+    nst.mask = 1;
+    this.setState({ selectedValue: nst.value, selectedTopic: nst });
   },
   onClickOk: function () {
     if (this.props.callback) {
-      this.props.callback(this.state.selected == null ? null : this.state.selected.state.id);
+      this.props.callback(this.state.selected == null ? null : this.state.selected.state.data.path);
     }
   },
   onClickCancel: function () {
@@ -396,7 +397,17 @@ var TopicSelector = React.createClass({
     }
   },
   componentWillUnmount: function () {
-    localStorage["TopicSelectorOpened"] = JSON.stringify(this.state.opened);
+    if (this.state.selectedTopic != null) {
+      this.state.selectedTopic.dispose();
+    }
+    var op = this.state.opened;
+    var on = {};
+    for (var r in op) {
+      if ((op[r] & 1) == 1) {
+        on[r] = 1;
+      }
+    }
+    localStorage["TopicSelectorOpened"] = JSON.stringify(on);
   },
   render: function () {
     var top, left, maxWidth, maxHeight;
@@ -412,12 +423,11 @@ var TopicSelector = React.createClass({
     }
     maxWidth = window.innerWidth - left - 16;
     maxHeight = window.innerHeight - top - 16;
-
     return (
       React.DOM.div({ style: { position: "fixed", top: top, left: left, minWidth: "20em", maxWidth: maxWidth, maxHeight: maxHeight, border: "2px solid #E0E0E0", padding: "5px", minHeight: "12em", background: "white", } },
         React.DOM.div({ className: "jstree", },
           React.DOM.ul({ className: "jstree-container-ul jstree-children" },
-            React.createElement(TreeNode, { key: 'tn/', parent: null, onTopicSelect: this.onTopicSelect, opened: this.state.opened, data: this.state.root })
+            React.createElement(TreeNode, { key: 'tn/', parent: null, onTopicSelect: this.onTopicSelect, opened: this.state.opened })
           )
         ),
         React.DOM.div({ style: { margin: "3px -5px 2.1em", borderTop: "#E0E0E0 solid 2px", } },
@@ -435,39 +445,30 @@ var TopicSelector = React.createClass({
 var TreeNode = React.createClass({
   displayName: "TreeNode",
   getInitialState: function () {
-    var d = this.props.data;
-    var s = {
-      parent: this.props.parent,
-      id: d.id,
-      name: d.name,
-      flags: d.flags,
-      dataType: d.dataType,
-      selected: false,
-      opened: this.props.opened[d.id] == 1,
-    };
-    if ((d.flags & 16) == 16) {
-      if (d.children != null) {
-        s.children = d.children;
-      } else {
-        s.children = {};
-      }
+    var d;
+    if (this.props.parent == null) {
+      d = servConn.root;
     } else {
-      s.children = null;
+      d=this.props.parent.getChild(this.props.name);
     }
+    d.onChange = this.onDataUpdated;
+    var s = {
+      data: d,
+      selected: (this.props.opened[d.path] & 2) == 2,
+      opened: (this.props.opened[d.path] & 1) == 1,
+    };
     return s;
   },
   componentDidMount: function () {
-    if (this.props.opened[this.state.id] == 2) {
-      delete this.props.opened[this.state.id];
-      if (this.props.onTopicSelect) {
-        this.props.onTopicSelect(this);
-      }
+    if (this.state.selected && this.props.onTopicSelect) {
+      this.props.onTopicSelect(this);
     }
-    if (this.state.flags == null) {
-      servConn.dir(this.state.id, 3, this.onDataResp);
-    } else if (this.state.opened && this.state.children != null && Object.getOwnPropertyNames(this.state.children).length == 0) {
-      servConn.dir(this.state.id, 2, this.onDataResp);
+    if (this.state.opened) {
+      this.state.data.mask = 2;
     }
+  },
+  componentWillUnmount: function () {
+    this.state.data.dispose();
   },
   onTopicSelect: function (ev) {
     if (this.props.onTopicSelect) {
@@ -477,61 +478,37 @@ var TreeNode = React.createClass({
     ev.stopPropagation();
   },
   onChildDisplayToggle: function (ev) {
-    if (this.state.children) {
-      var isFilled = Object.getOwnPropertyNames(this.state.children).length > 0;
-      if (!this.state.opened && !isFilled) {
-        servConn.dir(this.state.id, 2, this.onDataResp);
+    var d = this.state.data;
+    if ((d.flags & 16) == 16){
+      if((d.mask & 2)==0){
+        d.mask=2;
       }
       if (!this.state.opened) {  // inverted
-        this.props.opened[this.state.id] = 1;
+        this.props.opened[d.path] = 1;
       } else {
-        delete this.props.opened[this.state.id];
+        delete this.props.opened[d.path];
       }
       this.setState({ opened: !this.state.opened });
     }
     ev.preventDefault();
     ev.stopPropagation();
   },
-  onDataResp: function (arr) {
+  onDataUpdated : function(s, e){
     if (!this.isMounted()) {
       return;
     }
-    var rez = this.props.data;
-    for (var i = 0; i < arr.length; i++) {
-      if (arr[i][0] == this.state.id) {
-        rez.flags = arr[i][1];
-        rez.dataType = arr[i][2];
-      } else {
-        var id = arr[i][0];  // path
-        var name = id == "/" ? "ROOT" : id.substr(id.lastIndexOf("/") + 1);
-        var item;
-        if (rez.children == null) {
-          rez.children = {};
-          item = {};
-        } else {
-          item = rez.children[name];
-          if (item == null) {
-            item = {};
-          }
-        }
-        item.id = id;
-        item.name = name;
-        item.flags = arr[i][1];
-        item.dataType = arr[i][2];
-        rez.children[name] = item;
-      }
-    }
-    this.setState(rez);
+    this.setState({ data: s });
   },
   render: function () {
     var classes = 'jstree-node ';
     var chdom;
-    if (this.state.children) {
+    var d = this.state.data;
+    var children = d.children;
+    if (children) {
       if (this.state.opened) {
         var arr = [];
-        for (var n in this.state.children) {
-          var child = this.state.children[n];
-          arr.push(React.createElement(TreeNode, { key: "tn" + child.id, parent: this.props.data, onTopicSelect: this.props.onTopicSelect, opened: this.props.opened, data: child }));
+        for (var i = 0; i < children.length; i++) {
+          arr.push(React.createElement(TreeNode, { key: "tn" + d.path+"/"+children[i], parent: d, name: children[i], onTopicSelect: this.props.onTopicSelect, opened: this.props.opened }));
         }
         chdom = React.DOM.ul({ role: "group", className: "jstree-children" }, arr);
         classes += "jstree-open";
@@ -544,19 +521,19 @@ var TreeNode = React.createClass({
       classes += "jstree-leaf";
     }
     var isLast = true;
-    if (this.state.parent != null) {
-      var ns = Object.getOwnPropertyNames(this.state.parent.children);
-      if (ns.length > 0) {
-        isLast = this.state.parent.children[ns[ns.length - 1]].id == this.state.id;
+    if (this.props.parent != null) {
+      var ns = this.props.parent.children;
+      if (ns!=null && ns.length > 0) {
+        isLast = ns[ns.length - 1] == d.name;
       }
     }
     if (isLast) {
       classes += " jstree-last";
     }
     var style;
-    if (this.state.dataType != null) {
+    if (d.dataType != null) {
       style = {
-        backgroundImage: 'url(/dt_icons/' + this.state.dataType + '.png)',
+        backgroundImage: 'url(/dt_icons/' + d.dataType + '.png)',
         backgroundSize: 'auto',
         backgroundPosition: '50% 50%'
       };
@@ -566,9 +543,9 @@ var TreeNode = React.createClass({
     return (
         React.DOM.li({ role: "treeitem", className: classes, onClick: this.onChildDisplayToggle },
           React.DOM.i({ role: "presentation", className: "jstree-icon jstree-ocl" }),
-          React.DOM.a({ className: "jstree-anchor" + (this.state.selected ? " jstree-clicked" : ""), onClick: this.onTopicSelect, 'data-id': this.state.id },
+          React.DOM.a({ className: "jstree-anchor" + (this.state.selected ? " jstree-clicked" : ""), onClick: this.onTopicSelect, 'data-id': d.path },
             React.DOM.i({ role: "presentation", className: "jstree-icon jstree-themeicon", style: style }),
-            React.DOM.span(null, this.state.name)), //{ style: { cursor: "pointer" } }
+            React.DOM.span(null, d.name)), //{ style: { cursor: "pointer" } }
           chdom
         )
     );

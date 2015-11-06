@@ -11,12 +11,47 @@ namespace X13.WebServer {
   internal sealed class ApiV04 : SIO_Connection {
     public ApiV04()
       : base() {
+      base.Register(4, Subscribe);
       base.Register(8, Create);
       base.Register(9, Dir);
       base.Register(10, Remove);
       base.Register(11, Copy);
       base.Register(12, Move);
       base.Register(13, GetValue);
+    }
+    /// <summary>Subscribe topics</summary>
+    /// <param name="args">
+    /// REQUEST: [4, path, mask] mask: 1 - data, 2 - children
+    /// RESPONSE: array of topics, topic - [path, flags, prototype[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// </param>
+    private void Subscribe(EventArguments args) {
+      string path=args[1].As<string>();
+      int req=args[2].As<int>();
+      Topic parent;
+      List<Topic> resp=new List<Topic>();
+      if(Topic.root.Exist(path, out parent)) {
+        resp.Add(parent);
+        if((req & 2)==2) {
+          resp.AddRange(parent.children);
+        }
+      }
+      var arr=new JSL.Array();
+      foreach(var t in resp) {
+        JSL.Array r;
+        if((req & 1)==1 && t==parent) {
+          r=new JSL.Array(4);
+          r[3]=t.valueRaw;
+        } else {
+          r=new JSL.Array(3);
+        }
+        r[0]=new JSL.String(t.path);
+        r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
+        var pr=t.proto;
+        r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
+        arr.Add(r);
+      }
+      args.Response(arr);
+
     }
     /// <summary>Create topic</summary>
     /// <param name="args">
