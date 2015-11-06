@@ -32,14 +32,37 @@ var servConn = {
       this._socket.emit(12, path, nparent, nname);
     }
   },
-  */
   GetValue: function (path, callback) {
     this._socket.emit(13, path, callback);
   },
-
-
-  get root() {
-    return this._root.createReflex();
+  */
+  GetTopic: function (path) {
+    var cur = this._root;
+    var next;
+    if (path != null && typeof(path)=="string") {
+      var pt = path.split("/");
+      for (var i = 0; i < pt.length; i++) {
+        if (pt[i] == "") {
+          continue;
+        }
+        if (cur.children != null && (next = cur.children[pt[i]]) != null) {
+          // do nothing
+        } else {
+          if (cur.children == null) {
+            cur.children = {};
+          }
+          next = Object.create(servConn.TopicOr, {
+            _conn: { value: servConn, writable: false, enumerable: false },
+            name: { value: pt[i] },
+            parent: { value: cur },
+          });
+          console.log("c " + next.path);
+          cur.children[pt[i]] = next;
+        }
+        cur = next;
+      }
+    }
+    return cur.createReflex();
   },
 
   TopicOr: {
@@ -62,7 +85,7 @@ var servConn = {
     dataType: null,
     value: null,
     createReflex: function () {
-      var t = Object.create(this.Topic, { Base: { value: this, writable: false, enumerable: false } });
+      var t = Object.create(this._conn.Topic, { Base: { value: this, writable: false, enumerable: false } });
       if (this.reflexes == null) {
         this.reflexes = [];
       }
@@ -101,6 +124,7 @@ var servConn = {
             this.value=null;
             mask |= 1;
           }
+          console.log("U "+this.path)
         } else {
           var path = arr[i][0];
           var name = path.substr(path.lastIndexOf("/") + 1);
@@ -114,6 +138,9 @@ var servConn = {
               name: { value: name },
               parent: { value: this },
             });
+            console.log("C " + item.path);
+          } else {
+            console.log("u " + item.path);
           }
           item.flags = arr[i][1];
           item.dataType = arr[i][2];
@@ -143,60 +170,60 @@ var servConn = {
       }
 
     },
-    Topic: {
-      Base: null,
-      _mask: 0,
-      onChange: null,
-      get mask() {
-        return this._mask;
-      },
-      set mask(m) {
-        this._mask = m;
-        var upd = this._mask & (this._mask ^ this.Base.mask);
-        if (upd != 0) {
-          this.Base.updateSubscriptions();
-        }
+  },
+  Topic: {
+    Base: null,
+    _mask: 0,
+    onChange: null,
+    get mask() {
+      return this._mask;
+    },
+    set mask(m) {
+      this._mask = m;
+      var upd = this._mask & (this._mask ^ this.Base.mask);
+      if (upd != 0) {
+        this.Base.updateSubscriptions();
+      }
 
-      },
-      get name() {
-        return this.Base.name;
-      },
-      get path() {
-        return this.Base.path;
-      },
-      get value() {
-        return this.Base.value;
-      },
-      get children() {
-        if (this.Base.children != null) {
-          return Object.getOwnPropertyNames(this.Base.children);
-        } else if ((this.Base.flags & 16) == 16) {
-          return [];
-        }
-        return null;
-      },
-      get dataType() {
-        return this.Base.dataType;
-      },
-      get flags() {
-        return this.Base.flags;
-      },
+    },
+    get name() {
+      return this.Base.name;
+    },
+    get path() {
+      return this.Base.path;
+    },
+    get value() {
+      return this.Base.value;
+    },
+    get children() {
+      if (this.Base.children != null) {
+        return Object.getOwnPropertyNames(this.Base.children);
+      } else if ((this.Base.flags & 16) == 16) {
+        return [];
+      }
+      return null;
+    },
+    get dataType() {
+      return this.Base.dataType;
+    },
+    get flags() {
+      return this.Base.flags;
+    },
 
-      getChild: function (name) {
-        var c;
-        if (this.Base.children != null && (c = this.Base.children[name]) != null) {
-          return c.createReflex();
-        }
-        return null;
-      },
-      createReflex: function () { return this.Base.createReflex(); },
-      dispose: function () {
-        var pos = this.Base.reflexes.indexOf(this);
-        if (pos >= 0) {
-          this.Base.reflexes.splice(pos, 1);
-        }
-        console.log(this.path + "-[" + this.Base.reflexes.length + "]");
-      },
+    getChild: function (name) {
+      var c;
+      if (this.Base.children != null && (c = this.Base.children[name]) != null) {
+        return c.createReflex();
+      }
+      return null;
+    },
+    createReflex: function () { return this.Base.createReflex(); },
+    dispose: function () {
+      var pos = this.Base.reflexes.indexOf(this);
+      if (pos >= 0) {
+        this.Base.reflexes.splice(pos, 1);
+      }
+      console.log(this.path + "-[" + this.Base.reflexes.length + "]");
     },
   },
 }

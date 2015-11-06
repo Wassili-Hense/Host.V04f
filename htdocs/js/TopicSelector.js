@@ -447,7 +447,7 @@ var TreeNode = React.createClass({
   getInitialState: function () {
     var d;
     if (this.props.parent == null) {
-      d = servConn.root;
+      d = servConn.GetTopic(null);
     } else {
       d=this.props.parent.getChild(this.props.name);
     }
@@ -554,27 +554,35 @@ var TreeNode = React.createClass({
 
 var PeTest = React.createClass({
   getInitialState: function () {
-    return { path: "/", value: null, show: false };
+    return { path: "/", topic: null, show: false };
   },
   valueChanged: function (id, value) {
-    var r = {};
-    r[id] = value;
-    if (id == "path") {
-      var This = this;
-      servConn.GetValue(value, function (val) {
-        This.setState({ value: val });
-      });
+    if (this.state.topic != null) {
+      this.state.topic.dispose();
     }
-    this.setState(r);
+    var nt = servConn.GetTopic(value);
+    nt.onChange = this.topicChanged;
+    nt.mask = 1;
+    this.setState({ topic: nt });
+  },
+  topicChanged: function( s, e){
+    if((e & 1)==1){
+      this.setState({topic: s});
+    }
   },
   handleClick: function (event) {
     this.setState({ show: !this.state.show });
+  },
+  componentWillUnmount: function (){
+    if (this.state.topic != null) {
+      this.state.topic.dispose();
+    }
   },
   render: function () {
     return React.DOM.div(null,
       React.createElement(PeTopic, { id: "path", value: this.state.path, onChange: this.valueChanged }),
       React.DOM.button({ onClick: this.handleClick }, "Edit"),
-      (this.state.show ? React.createElement(PropertyGrid, { name: this.state.path, value: this.state.value }) : null)
+      (this.state.show ? React.createElement(PropertyGrid, { name: this.state.topic.path, value: this.state.topic.value }) : null)
       );
   }
 });
