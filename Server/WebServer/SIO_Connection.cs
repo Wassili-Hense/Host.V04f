@@ -67,7 +67,7 @@ namespace X13.WebServer {
     }
 
     private SortedList<string, Action<EventArguments>> _events;
-    private X13.PLC.Topic _owner;
+    protected X13.PLC.Topic _owner;
     protected SIO_Connection()
       : base() {
       _events=new SortedList<string, Action<EventArguments>>();

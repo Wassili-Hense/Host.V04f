@@ -12,6 +12,7 @@ namespace X13.WebServer {
     public ApiV04()
       : base() {
       base.Register(4, Subscribe);
+      base.Register(6, SetValue);
       base.Register(8, Create);
       base.Register(9, Dir);
       base.Register(10, Remove);
@@ -52,6 +53,27 @@ namespace X13.WebServer {
       }
       args.Response(arr);
 
+    }
+    /// <summary>set topics value</summary>
+    /// <param name="args">
+    /// REQUEST: [6, path, value]
+    /// RESPONSE: [success, oldvalue]
+    /// </param>
+    private void SetValue(EventArguments args) {
+      string path=args[1].As<string>();
+      //TODO: check acl
+      /*
+       if(!acl(publish)){
+         if(acl(subscribe)){
+           args.Response(false, t.valueRaw);
+         } else {
+           args.Response(false);
+         }
+       }
+       */
+      Topic t=Topic.root.Get(path, true, _owner);
+      t.SetJson(args[2], _owner);
+      args.Response(true);
     }
     /// <summary>Create topic</summary>
     /// <param name="args">

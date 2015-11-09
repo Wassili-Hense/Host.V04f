@@ -154,13 +154,16 @@ var servConn = {
         this.children = nc;
         mask |= 2;
       }
-      this.postEvent(mask);
+      this.postEvent(mask, null, null);
     },
-    postEvent: function (mask) {
+    postEvent: function (mask, mode, tpc) {
       var i, r;
       for (i = 0; this.reflexes!=null && i < this.reflexes.length; i++) {
         r = this.reflexes[i];
         if (r != null && (r._mask & mask) != 0 && typeof (r.onChange) == "function") {
+          if (mode!=null && mode == (r == tpc)) {
+            continue;
+          }
           try {
             r.onChange.call(r, r, mask);
           } catch (err) {
@@ -168,7 +171,20 @@ var servConn = {
           }
         }
       }
-
+    },
+    setValue: function (valN, src) {
+      var Self = this;
+      this._conn._socket.emit(6, this.path, valN, function (success, valO) { Self.onValueResp(success, success ? valN : valO, src); });
+    },
+    onValueResp: function (success, val, src) {
+      if (success) {
+        this.value = val;
+        this.postEvent(1, true, src);
+      } else if(this.value==val) {  // set value failed, not changed
+        this.postEvent(1, false, src);
+      } else {                      // value changed
+        this.postEvent(1, null, null);
+      }
     },
   },
   Topic: {
@@ -194,6 +210,9 @@ var servConn = {
     },
     get value() {
       return this.Base.value;
+    },
+    set value(v){
+      this.Base.setValue(v, this);
     },
     get children() {
       if (this.Base.children != null) {

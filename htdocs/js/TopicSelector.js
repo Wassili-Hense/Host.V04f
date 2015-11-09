@@ -2,22 +2,37 @@
 var PropertyGrid = React.createClass({
   displayName: "PropertyGrid",
   getInitialState: function () {
-    var val = this.props.value;
+    var nt = servConn.GetTopic(this.props.path);
+    nt.onChange = this.topicChanged;
+    nt.mask = 1;
+    return { topic: nt, items: null };
+  },
+  componentDidMount: function () {
+    this.topicChanged(this.state.topic, 1);
+  },
+  topicChanged: function (s, e) {
+    if ((e & 1) != 1) {
+      return;
+    }
+    var val = this.state.topic.value;
     var arr = [];
     var ct = typeof (val);
     if (ct == "boolean" || ct == "number" || ct == "string") {
       arr.push({ id: "value", name: "value", type: ct, st: 0, level: 0 });
     } else if (ct == "object") {
       if (val == null) {
-        arr.push({ id: "value", name: "value", type: "object", level: 0, st: 2, readonly: true });
+        arr.push({ id: "value", name: "value", type: "object", level: 0, st: 0, readonly: true });
       } else {
-        //Array.isArray(obj)
         this.InspectObject(val, arr, "value", 0);
       }
     } else {
       arr.push({ id: "value", name: "value", type: "object", level: 0, st: 0, readonly: true });
     }
-    return { name: this.props.name, value: val, items: arr };
+    this.setState({ topic: s, items: arr });
+
+  },
+  componentWillUnmount: function () {
+    this.state.topic.dispose();
   },
   InspectObject: function (obj, arr, id, level) {
     var pr = Object.keys(obj);
@@ -40,7 +55,7 @@ var PropertyGrid = React.createClass({
     }
   },
   valueChanged: function (id, value) {
-    var vo = this.state.value;
+    var vo = this.state.topic.value;
     var changed = false;
     if (id == "value") {
       if (vo !== value) {
@@ -68,7 +83,7 @@ var PropertyGrid = React.createClass({
       }
     }
     if (changed) {
-      this.setState({ value: vo });
+      this.state.topic.value = vo;
       console.log(id + "=>" + JSON.stringify(value) + "\n" + JSON.stringify(vo));
     } else {
       console.log(id + "=>" + JSON.stringify(value) + "\t not changed");
@@ -88,8 +103,8 @@ var PropertyGrid = React.createClass({
   },
   GetValue: function (id) {
     var lvls = id.split('.');
-    var val = this.state;
-    for (var i = 0; i < lvls.length; i++) {
+    var val = this.state.topic.value;
+    for (var i = 1; i < lvls.length; i++) {
       val = val[lvls[i]];
       if (val == null) {
         break;
@@ -101,39 +116,41 @@ var PropertyGrid = React.createClass({
   render: function () {
     var c, i, cmp, cmpParam, arr = [];
     var lvl = -1;
-    for (i = 0; i < this.state.items.length; i++) {
-      c = this.state.items[i];
-      if (lvl >= 0 && lvl < c.level) {
-        continue;
-      }
-      lvl = -1;
-      cmpParam = { id: c.id, value: this.GetValue(c.id), onChange: this.valueChanged };
-      if (c.type == "boolean") {
-        cmp = PeBool;
-      } else if (c.type == "number") {
-        cmp = PeNumber;
-      } else if (c.type == "string") {
-        cmp = PeString;
-      } else if (c.type == "topic") {
-        cmp = PeTopic;
-      } else {
-        cmp = PeLabel;
-      }
-      var oc = function (self, id) { return function (event) { self.ItemClick(id); } };
-      var bPos = c.st == 2 ? "-4px -4px" : (c.st == 3 ? "-36px -4px" : "-164px -68px");
-      arr.push(React.DOM.tr({ key: "pG" + c.id, style: { border: "1px dotted black" } },
-         React.DOM.td({ style: { paddingLeft: 10 + c.level * 5, paddingRight: 10 } },
-           React.DOM.div(null,
-             React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/css/jstree-32px.png)', display: "inline-block", verticalAlign: "top", backgroundPosition: bPos, borderRight: "1px dotted black" }, onClick: oc(this, c.id) }),
-             React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/dt_icons/' + c.type + '.png)', display: "inline-block", verticalAlign: "top", backgroundSize: 'auto', backgroundPosition: '50% 50%', backgroundRepeat: "no-repeat" } }),
-             React.DOM.span(null, c.name)),
-         React.DOM.td(null, React.createElement(cmp, cmpParam)))));
-      if (c.st == 2) {
-        lvl = c.level;
+    if (this.state.items != null) {
+      for (i = 0; i < this.state.items.length; i++) {
+        c = this.state.items[i];
+        if (lvl >= 0 && lvl < c.level) {
+          continue;
+        }
+        lvl = -1;
+        cmpParam = { id: c.id, value: this.GetValue(c.id), onChange: this.valueChanged };
+        if (c.type == "boolean") {
+          cmp = PeBool;
+        } else if (c.type == "number") {
+          cmp = PeNumber;
+        } else if (c.type == "string") {
+          cmp = PeString;
+        } else if (c.type == "topic") {
+          cmp = PeTopic;
+        } else {
+          cmp = PeLabel;
+        }
+        var oc = function (self, id) { return function (event) { self.ItemClick(id); } };
+        var bPos = c.st == 2 ? "-4px -4px" : (c.st == 3 ? "-36px -4px" : "-164px -68px");
+        arr.push(React.DOM.tr({ key: "pG" + c.id, style: { border: "1px dotted black" } },
+           React.DOM.td({ style: { paddingLeft: 10 + c.level * 5, paddingRight: 10 } },
+             React.DOM.div(null,
+               React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/css/jstree-32px.png)', display: "inline-block", verticalAlign: "top", backgroundPosition: bPos, borderRight: "1px dotted black" }, onClick: oc(this, c.id) }),
+               React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/dt_icons/' + c.type + '.png)', display: "inline-block", verticalAlign: "top", backgroundSize: 'auto', backgroundPosition: '50% 50%', backgroundRepeat: "no-repeat" } }),
+               React.DOM.span(null, c.name)),
+           React.DOM.td(null, React.createElement(cmp, cmpParam)))));
+        if (c.st == 2) {
+          lvl = c.level;
+        }
       }
     }
     return React.DOM.table({ style: { border: "1px solid black", borderCollapse: "collapse" } },
-      React.DOM.caption({ style: { background: "#CCCCCC" } }, this.props.name),
+      React.DOM.caption({ style: { background: "#CCCCCC" } }, this.props.path),
       React.DOM.tbody(null, arr));
   },
 });
@@ -554,35 +571,21 @@ var TreeNode = React.createClass({
 
 var PeTest = React.createClass({
   getInitialState: function () {
-    return { path: "/", topic: null, show: false };
+    return { path: "/", show: false };
   },
   valueChanged: function (id, value) {
-    if (this.state.topic != null) {
-      this.state.topic.dispose();
-    }
-    var nt = servConn.GetTopic(value);
-    nt.onChange = this.topicChanged;
-    nt.mask = 1;
-    this.setState({ topic: nt });
-  },
-  topicChanged: function( s, e){
-    if((e & 1)==1){
-      this.setState({topic: s});
+    if (id=="path" && value != null) {
+      this.setState({ path: value });
     }
   },
   handleClick: function (event) {
     this.setState({ show: !this.state.show });
   },
-  componentWillUnmount: function (){
-    if (this.state.topic != null) {
-      this.state.topic.dispose();
-    }
-  },
   render: function () {
     return React.DOM.div(null,
       React.createElement(PeTopic, { id: "path", value: this.state.path, onChange: this.valueChanged }),
       React.DOM.button({ onClick: this.handleClick }, "Edit"),
-      (this.state.show ? React.createElement(PropertyGrid, { name: this.state.topic.path, value: this.state.topic.value }) : null)
+      (this.state.show ? React.createElement(PropertyGrid, { path: this.state.path }) : null)
       );
   }
 });
