@@ -1,5 +1,7 @@
 ﻿"use strict";
-var PropertyGrid = React.createClass({
+var X13 = {};
+X13.UI = {};
+X13.UI.PropertyGrid = React.createClass({
   displayName: "PropertyGrid",
   getInitialState: function () {
     var nt = servConn.GetTopic(this.props.path);
@@ -124,16 +126,10 @@ var PropertyGrid = React.createClass({
         }
         lvl = -1;
         cmpParam = { id: c.id, value: this.GetValue(c.id), onChange: this.valueChanged };
-        if (c.type == "boolean") {
-          cmp = PeBool;
-        } else if (c.type == "number") {
-          cmp = PeNumber;
-        } else if (c.type == "string") {
-          cmp = PeString;
-        } else if (c.type == "topic") {
-          cmp = PeTopic;
+        if (X13.PGE.hasOwnProperty(c.type)) {
+          cmp = X13.PGE[c.type];
         } else {
-          cmp = PeLabel;
+          cmp = X13.PGE.label;
         }
         var oc = function (self, id) { return function (event) { self.ItemClick(id); } };
         var bPos = c.st == 2 ? "-4px -4px" : (c.st == 3 ? "-36px -4px" : "-164px -68px");
@@ -154,9 +150,9 @@ var PropertyGrid = React.createClass({
       React.DOM.tbody(null, arr));
   },
 });
-
-var PeLabel = React.createClass({
-  displayName: 'PeLabel',
+X13.PGE = {};
+X13.PGE.label = React.createClass({
+  displayName: 'PGE.Label',
   getInitialState: function () {
     var v = this.props.value;
     if (v == null) {
@@ -176,8 +172,8 @@ var PeLabel = React.createClass({
   }
 });
 
-var PeBool = React.createClass({
-  displayName: 'PeBool',
+X13.PGE.boolean = React.createClass({
+  displayName: 'PGE.boolean',
   getInitialState: function () {
     return {
       value: this.props.value == true
@@ -198,8 +194,8 @@ var PeBool = React.createClass({
   }
 });
 
-var PeNumber = React.createClass({
-  displayName: 'PeNumber',
+X13.PGE.number = React.createClass({
+  displayName: 'PGE.number',
   getDefaultProps: function () {
     return {
       step: 1
@@ -294,8 +290,8 @@ var PeNumber = React.createClass({
   }
 });
 
-var PeString = React.createClass({
-  displayName: "PeString",
+X13.PGE.string = React.createClass({
+  displayName: "PGE.string",
   getInitialState: function () {
     return { value: this.props.value };
   },
@@ -326,46 +322,8 @@ var PeString = React.createClass({
   },
 });
 
-var PeTopic = React.createClass({
-  displayName: "PeTopic",
-  getInitialState: function () {
-    return { value: this.props.value, showTree: false, left: 16, top: 16 };
-  },
-  onClickTree: function (event) {
-    event = event || window.event
-    var t = event.target || event.srcElement
-    this.setState({ showTree: !this.state.showTree, left: t.offsetLeft, top: t.offsetTop });
-  },
-  onSelect: function (id) {
-    var r = { showTree: false };
-    if (id) {
-      r.value = id;
-    }
-    this.setState(r);
-    if (this.props.onChange) {
-      this.props.onChange(this.props.id, id);
-    }
-  },
-  onChange: function (event) {
-    this.setState({ value: event.target.value });
-    if (this.props.onChange) {
-      this.props.onChange(this.props.id, event.target.value);
-    }
-  },
-  _onBlur: function (e) {
-    this.change(this.state.value);
-  },
-  render: function () {
-    return React.DOM.div(null,
-        React.DOM.input({ type: "text", value: this.state.value, onChange: this.onChange }),
-        React.DOM.button({ onClick: this.onClickTree }, "..."),
-        this.state.showTree ? React.createElement(TopicSelector, { left: this.state.left, top: this.state.top, callback: this.onSelect, selected: this.state.value }) : null
-      );
-  },
-});
-
-var TopicSelector = React.createClass({
-  displayName: "TopicSelector",
+X13.PGE.Topic = React.createClass({
+  displayName: "PGE.topic",
   getInitialState: function () {
     var tmp = localStorage["TopicSelectorOpened"];
     var opened = tmp == null ? null : JSON.parse(tmp);
@@ -376,14 +334,42 @@ var TopicSelector = React.createClass({
     var sv;
     if (selected) {
       sv = opened[selected]
-      opened[selected] = sv==1?3:2;
+      opened[selected] = sv == 1 ? 3 : 2;
     } else {
       selected = null;
     }
     return {
+      value: this.props.value,
+      showTree: false,
+      left: 16,
+      top: 16,
       selected: null,
       opened: opened,
     };
+  },
+  onClickTree: function (event) {
+    event = event || window.event
+    var t = event.target || event.srcElement
+    this.setState({ showTree: !this.state.showTree, left: t.offsetLeft, top: t.offsetTop });
+  },
+  onChange: function (event) {
+    this.setState({ value: event.target.value });
+    if (this.props.onChange) {
+      this.props.onChange(this.props.id, event.target.value);
+    }
+  },
+  _onBlur: function (e) {
+    this.change(this.state.value);
+  },
+  onSelect: function (id) {
+    var r = { showTree: false };
+    if (id) {
+      r.value = id;
+    }
+    this.setState(r);
+    if (this.props.onChange) {
+      this.props.onChange(this.props.id, id);
+    }
   },
   onTopicSelect: function (node) {
     if (this.state.selected && this.state.selected.isMounted()) {
@@ -396,27 +382,14 @@ var TopicSelector = React.createClass({
     if (this.state.selectedTopic != null) {
       this.state.selectedTopic.dispose();
     }
-    var nst = node.state.data.createReflex();
-    nst.onChange=function (s, e) {
-      This.setState({ selectedValue: s.value });
-    };
-    nst.mask = 1;
-    this.setState({ selectedValue: nst.value, selectedTopic: nst });
   },
   onClickOk: function () {
-    if (this.props.callback) {
-      this.props.callback(this.state.selected == null ? null : this.state.selected.state.data.path);
-    }
+    this.onSelect(this.state.selected == null ? null : this.state.selected.state.data.path);
   },
   onClickCancel: function () {
-    if (this.props.callback) {
-      this.props.callback(null);
-    }
+    this.onSelect(null);
   },
   componentWillUnmount: function () {
-    if (this.state.selectedTopic != null) {
-      this.state.selectedTopic.dispose();
-    }
     var op = this.state.opened;
     var on = {};
     for (var r in op) {
@@ -427,39 +400,43 @@ var TopicSelector = React.createClass({
     localStorage["TopicSelectorOpened"] = JSON.stringify(on);
   },
   render: function () {
-    var top, left, maxWidth, maxHeight;
-    if (typeof (this.props.left) == "number") {
-      left = this.props.left;
-    } else {
-      left = window.innerWidth / 2;
-    }
-    if (typeof (this.props.top) == "number") {
-      top = this.props.top;
-    } else {
-      top = 16;
-    }
-    maxWidth = window.innerWidth - left - 16;
-    maxHeight = window.innerHeight - top - 16;
-    return (
-      React.DOM.div({ style: { position: "fixed", top: top, left: left, minWidth: "20em", maxWidth: maxWidth, maxHeight: maxHeight, border: "2px solid #E0E0E0", padding: "5px", minHeight: "12em", background: "white", } },
-        React.DOM.div({ className: "jstree", },
-          React.DOM.ul({ className: "jstree-container-ul jstree-children" },
-            React.createElement(TreeNode, { key: 'tn/', parent: null, onTopicSelect: this.onTopicSelect, opened: this.state.opened })
+    var ts;
+    if (this.state.showTree) {
+      var maxWidth, maxHeight;
+      maxWidth = window.innerWidth - this.state.left - 16;
+      maxHeight = window.innerHeight - this.state.top - 16;
+      ts=(
+        React.DOM.div({
+          style: {
+            position: "fixed", top: this.state.top, left: this.state.left,
+            minWidth: "20em", maxWidth: maxWidth, minHeight: "12em", maxHeight: maxHeight,
+            border: "2px solid #E0E0E0", padding: "5px", background: "white",
+          }
+        },
+          React.DOM.div({ className: "jstree", style: { margin: "0 0 2.1em",} },
+            React.DOM.ul({ className: "jstree-container-ul jstree-children" },
+              React.createElement(X13.UI.TreeNode, { key: 'tn/', parent: null, onTopicSelect: this.onTopicSelect, opened: this.state.opened })
+            )
+          ),
+          React.DOM.div({ style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.3em 0", borderTop: "#E0E0E0 solid 2px", } },
+            React.DOM.button({ style: { margin: "0 7%", width: "36%", heihgt: "1em", }, onClick: this.onClickOk }, "Ok"),
+            React.DOM.button({ style: { margin: "0 7%", width: "36%", heihgt: "1em", }, onClick: this.onClickCancel }, "Cancel")
           )
-        ),
-        React.DOM.div({ style: { margin: "3px -5px 2.1em", borderTop: "#E0E0E0 solid 2px", } },
-          React.DOM.pre({ style: { margin: "5px", } }, this.state.selectedValue == null ? null : JSON.stringify(this.state.selectedValue, null, 2))
-        ),
-        React.DOM.div({ style: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.3em 0", borderTop: "#E0E0E0 solid 2px", } },
-          React.DOM.button({ style: { margin: "0 7%", width: "36%", heihgt: "1em", }, onClick: this.onClickOk }, "Ok"),
-          React.DOM.button({ style: { margin: "0 7%", width: "36%", heihgt: "1em", }, onClick: this.onClickCancel }, "Cancel")
         )
-      )
-    );
-  }
+      );
+
+    } else {
+      ts = null;
+    }
+    return React.DOM.div(null,
+        React.DOM.input({ type: "text", value: this.state.value, onChange: this.onChange }),
+        React.DOM.button({ onClick: this.onClickTree }, "..."),
+        ts
+      );
+  },
 });
 
-var TreeNode = React.createClass({
+X13.UI.TreeNode = React.createClass({
   displayName: "TreeNode",
   getInitialState: function () {
     var d;
@@ -525,7 +502,7 @@ var TreeNode = React.createClass({
       if (this.state.opened) {
         var arr = [];
         for (var i = 0; i < children.length; i++) {
-          arr.push(React.createElement(TreeNode, { key: "tn" + d.path+"/"+children[i], parent: d, name: children[i], onTopicSelect: this.props.onTopicSelect, opened: this.props.opened }));
+          arr.push(React.createElement(X13.UI.TreeNode, { key: "tn" + d.path+"/"+children[i], parent: d, name: children[i], onTopicSelect: this.props.onTopicSelect, opened: this.props.opened }));
         }
         chdom = React.DOM.ul({ role: "group", className: "jstree-children" }, arr);
         classes += "jstree-open";
@@ -583,9 +560,9 @@ var PeTest = React.createClass({
   },
   render: function () {
     return React.DOM.div(null,
-      React.createElement(PeTopic, { id: "path", value: this.state.path, onChange: this.valueChanged }),
+      React.createElement(X13.PGE.Topic, { id: "path", value: this.state.path, onChange: this.valueChanged }),
       React.DOM.button({ onClick: this.handleClick }, "Edit"),
-      (this.state.show ? React.createElement(PropertyGrid, { path: this.state.path }) : null)
+      (this.state.show ? React.createElement(X13.UI.PropertyGrid, { path: this.state.path }) : null)
       );
   }
 });

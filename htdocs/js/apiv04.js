@@ -62,11 +62,11 @@ var servConn = {
         cur = next;
       }
     }
-    return cur.createReflex();
+    return cur.createProjection();
   },
 
   TopicOr: {
-    reflexes: null,
+    projections: null,
     _conn: null,
     parent: null,
     name: "",
@@ -84,20 +84,20 @@ var servConn = {
     children: null,
     dataType: null,
     value: null,
-    createReflex: function () {
+    createProjection: function () {
       var t = Object.create(this._conn.Topic, { Base: { value: this, writable: false, enumerable: false } });
-      if (this.reflexes == null) {
-        this.reflexes = [];
+      if (this.projections == null) {
+        this.projections = [];
       }
-      this.reflexes.push(t);
-      console.log(t.path + "+[" + this.reflexes.length + "]");
+      this.projections.push(t);
+      console.log(t.path + "+[" + this.projections.length + "]");
       return t;
     },
     updateSubscriptions: function () {
       var nm = 0;
       var i, r;
-      for (i = 0; this.reflexes!=null && i < this.reflexes.length; i++) {
-        r = this.reflexes[i];
+      for (i = 0; this.projections!=null && i < this.projections.length; i++) {
+        r = this.projections[i];
         if (r != null) {
           nm |= r._mask;
         }
@@ -158,8 +158,8 @@ var servConn = {
     },
     postEvent: function (mask, mode, tpc) {
       var i, r;
-      for (i = 0; this.reflexes!=null && i < this.reflexes.length; i++) {
-        r = this.reflexes[i];
+      for (i = 0; this.projections!=null && i < this.projections.length; i++) {
+        r = this.projections[i];
         if (r != null && (r._mask & mask) != 0 && typeof (r.onChange) == "function") {
           if (mode!=null && mode == (r == tpc)) {
             continue;
@@ -232,17 +232,17 @@ var servConn = {
     getChild: function (name) {
       var c;
       if (this.Base.children != null && (c = this.Base.children[name]) != null) {
-        return c.createReflex();
+        return c.createProjection();
       }
       return null;
     },
-    createReflex: function () { return this.Base.createReflex(); },
+    createProjection: function () { return this.Base.createProjection(); },
     dispose: function () {
-      var pos = this.Base.reflexes.indexOf(this);
+      var pos = this.Base.projections.indexOf(this);
       if (pos >= 0) {
-        this.Base.reflexes.splice(pos, 1);
+        this.Base.projections.splice(pos, 1);
       }
-      console.log(this.path + "-[" + this.Base.reflexes.length + "]");
+      console.log(this.path + "-[" + this.Base.projections.length + "]");
     },
   },
 }
