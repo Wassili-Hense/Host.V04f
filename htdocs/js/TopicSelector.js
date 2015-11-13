@@ -1,10 +1,18 @@
 ﻿"use strict";
-var X13 = {};
-X13.UI = {};
+if (typeof (X13) !== "object") {
+  var X13 = {};
+}
+if (typeof (X13.UI) !== "object") {
+  X13.UI = {};
+}
+if (typeof (X13.PGE) !== "object") {
+  X13.PGE = {};
+}
+
 X13.UI.PropertyGrid = React.createClass({
   displayName: "PropertyGrid",
   getInitialState: function () {
-    var nt = servConn.GetTopic(this.props.path);
+    var nt = X13.conn.GetTopic(this.props.path);
     nt.onChange = this.topicChanged;
     nt.mask = 1;
     return { topic: nt, items: null };
@@ -16,22 +24,42 @@ X13.UI.PropertyGrid = React.createClass({
     if ((e & 1) != 1) {
       return;
     }
+    var r = {};
     var val = this.state.topic.value;
-    var arr = [];
-    var ct = typeof (val);
-    if (ct == "boolean" || ct == "number" || ct == "string") {
-      arr.push({ id: "value", name: "value", type: ct, st: 0, level: 0 });
-    } else if (ct == "object") {
-      if (val == null) {
-        arr.push({ id: "value", name: "value", type: "object", level: 0, st: 0, readonly: true });
-      } else {
-        this.InspectObject(val, arr, "value", 0);
+    r.items = [];
+    var ct = this.state.topic.draft;
+    var draft = this.state.draft;
+    if (draft != null) {
+      if (draft.name.length > ct.length || ct.substr(ct.length - draft.name) != draft.name) {
+        draft.dispose();
+        draft = null;
       }
-    } else {
-      arr.push({ id: "value", name: "value", type: "object", level: 0, st: 0, readonly: true });
     }
-    this.setState({ topic: s, items: arr });
+    if (draft == null) {
+      draft = X13.conn.GetDraft(ct);
+      if (draft != null) {
+        draft.onChange = this.draftChanged;
+        draft.mask = 1;
+        r.draft = draft;
+      }
+    }
+    //if (draft.value == null) {
+    if (ct == "object" && val != null) {
+      this.InspectObject(val, r.items, "value", 0);
+    } else {
+      r.items.push({ id: "value", name: "", type: ct, st: 0, level: 0 });
+    }
+    //} else {
 
+    //}
+    this.setState(r);
+
+  },
+  draftChanged: function (s, e) {
+    if (e != 1) {
+      return;
+    }
+    this.topicChanged(this.state.topic, 1);  // refill state.arr
   },
   componentWillUnmount: function () {
     this.state.topic.dispose();
@@ -39,6 +67,9 @@ X13.UI.PropertyGrid = React.createClass({
   InspectObject: function (obj, arr, id, level) {
     var pr = Object.keys(obj);
     for (var i = 0; i < pr.length; i++) {
+      if (level == 0 && pr[i] == "$draft") {
+        continue;
+      }
       var val = obj[pr[i]];
       var ct = typeof (val);
       var idn = id + "." + pr[i];
@@ -67,7 +98,7 @@ X13.UI.PropertyGrid = React.createClass({
     } else {
       var lvls = id.split('.');
       if (lvls.length > 1 && lvls[0] == "value") {
-        var val=vo;
+        var val = vo;
         for (var i = 1; i < lvls.length; i++) {
           if (i == lvls.length - 1) {
             if (val[lvls[i]] !== value) {
@@ -146,11 +177,12 @@ X13.UI.PropertyGrid = React.createClass({
       }
     }
     return React.DOM.table({ style: { border: "1px solid black", borderCollapse: "collapse" } },
-      React.DOM.caption({ style: { background: "#CCCCCC" } }, this.props.path),
+      React.DOM.caption({ style: { background: "#DDDDDD", textAlign: "left" } }, 
+        React.DOM.i({ style: { backgroundImage: 'url(/dt_icons/' + this.state.topic.draft + '.png)', width: 16, height: 16, display: "inline-block", backgroundPosition: '50% 50%' } }),
+        this.props.path),
       React.DOM.tbody(null, arr));
   },
 });
-X13.PGE = {};
 X13.PGE.label = React.createClass({
   displayName: 'PGE.Label',
   getInitialState: function () {
@@ -181,12 +213,12 @@ X13.PGE.boolean = React.createClass({
   },
   render: function () {
     return React.DOM.div(null,
-      React.DOM.input({ type: "checkbox", checked: this.state.value, onChange: this._onChange, ref:"cbBool" }));
+      React.DOM.input({ type: "checkbox", checked: this.state.value, onChange: this._onChange, ref: "cbBool" }));
   },
   _onChange: function (e) {
     this.setState({
       value: this.refs.cbBool.getDOMNode().checked
-    }, function(){
+    }, function () {
       if (this.props.onChange) {
         this.props.onChange(this.props.id, this.state.value);
       }
@@ -405,7 +437,7 @@ X13.PGE.Topic = React.createClass({
       var maxWidth, maxHeight;
       maxWidth = window.innerWidth - this.state.left - 16;
       maxHeight = window.innerHeight - this.state.top - 16;
-      ts=(
+      ts = (
         React.DOM.div({
           style: {
             position: "fixed", top: this.state.top, left: this.state.left,
@@ -413,7 +445,7 @@ X13.PGE.Topic = React.createClass({
             border: "2px solid #E0E0E0", padding: "5px", background: "white",
           }
         },
-          React.DOM.div({ className: "jstree", style: { margin: "0 0 2.1em",} },
+          React.DOM.div({ className: "jstree", style: { margin: "0 0 2.1em", } },
             React.DOM.ul({ className: "jstree-container-ul jstree-children" },
               React.createElement(X13.UI.TreeNode, { key: 'tn/', parent: null, onTopicSelect: this.onTopicSelect, opened: this.state.opened })
             )
@@ -441,9 +473,9 @@ X13.UI.TreeNode = React.createClass({
   getInitialState: function () {
     var d;
     if (this.props.parent == null) {
-      d = servConn.GetTopic(null);
+      d = X13.conn.GetTopic(null);
     } else {
-      d=this.props.parent.getChild(this.props.name);
+      d = this.props.parent.getChild(this.props.name);
     }
     d.onChange = this.onDataUpdated;
     var s = {
@@ -473,9 +505,9 @@ X13.UI.TreeNode = React.createClass({
   },
   onChildDisplayToggle: function (ev) {
     var d = this.state.data;
-    if ((d.flags & 16) == 16){
-      if((d.mask & 2)==0){
-        d.mask=2;
+    if ((d.flags & 16) == 16) {
+      if ((d.mask & 2) == 0) {
+        d.mask = 2;
       }
       if (!this.state.opened) {  // inverted
         this.props.opened[d.path] = 1;
@@ -487,7 +519,7 @@ X13.UI.TreeNode = React.createClass({
     ev.preventDefault();
     ev.stopPropagation();
   },
-  onDataUpdated : function(s, e){
+  onDataUpdated: function (s, e) {
     if (!this.isMounted()) {
       return;
     }
@@ -502,7 +534,7 @@ X13.UI.TreeNode = React.createClass({
       if (this.state.opened) {
         var arr = [];
         for (var i = 0; i < children.length; i++) {
-          arr.push(React.createElement(X13.UI.TreeNode, { key: "tn" + d.path+"/"+children[i], parent: d, name: children[i], onTopicSelect: this.props.onTopicSelect, opened: this.props.opened }));
+          arr.push(React.createElement(X13.UI.TreeNode, { key: "tn" + d.path + "/" + children[i], parent: d, name: children[i], onTopicSelect: this.props.onTopicSelect, opened: this.props.opened }));
         }
         chdom = React.DOM.ul({ role: "group", className: "jstree-children" }, arr);
         classes += "jstree-open";
@@ -517,7 +549,7 @@ X13.UI.TreeNode = React.createClass({
     var isLast = true;
     if (this.props.parent != null) {
       var ns = this.props.parent.children;
-      if (ns!=null && ns.length > 0) {
+      if (ns != null && ns.length > 0) {
         isLast = ns[ns.length - 1] == d.name;
       }
     }
@@ -525,9 +557,9 @@ X13.UI.TreeNode = React.createClass({
       classes += " jstree-last";
     }
     var style;
-    if (d.dataType != null) {
+    if (d.draft != null) {
       style = {
-        backgroundImage: 'url(/dt_icons/' + d.dataType + '.png)',
+        backgroundImage: 'url(/dt_icons/' + d.draft + '.png)',
         backgroundSize: 'auto',
         backgroundPosition: '50% 50%'
       };
@@ -551,7 +583,7 @@ var PeTest = React.createClass({
     return { path: "/", show: false };
   },
   valueChanged: function (id, value) {
-    if (id=="path" && value != null) {
+    if (id == "path" && value != null) {
       this.setState({ path: value });
     }
   },

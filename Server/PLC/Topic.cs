@@ -81,8 +81,12 @@ namespace X13.PLC {
         return null;
       }
     }
-    public string proto {
+    public string draft {
       get {
+        Topic dr;
+        if(this.Exist("$draft", out dr)) {
+          return dr.As<string>();
+        }
         switch(_value.ValueType) {
         case JSObjectType.NotExists:
         case JSObjectType.NotExistsInObject:
@@ -98,8 +102,14 @@ namespace X13.PLC {
         case JSObjectType.String:
           return "string";
         case JSObjectType.Object:
-          return "object";
-          //return topic;
+          if(_value==null) {
+            return null;
+          }
+          JSObject drf=_value.GetMember("$draft", false);
+          if(drf==null || !drf.IsExist) {
+            return "object";
+          }
+          return drf.As<string>();
         }
         return null;
       }

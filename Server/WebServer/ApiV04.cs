@@ -14,16 +14,14 @@ namespace X13.WebServer {
       base.Register(4, Subscribe);
       base.Register(6, SetValue);
       base.Register(8, Create);
-      base.Register(9, Dir);
       base.Register(10, Remove);
       base.Register(11, Copy);
       base.Register(12, Move);
-      base.Register(13, GetValue);
     }
     /// <summary>Subscribe topics</summary>
     /// <param name="args">
     /// REQUEST: [4, path, mask] mask: 1 - data, 2 - children
-    /// RESPONSE: array of topics, topic - [path, flags, prototype[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// RESPONSE: array of topics, topic - [path, flags, draft[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Subscribe(EventArguments args) {
       string path=args[1].As<string>();
@@ -47,7 +45,7 @@ namespace X13.WebServer {
         }
         r[0]=new JSL.String(t.path);
         r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
-        var pr=t.proto;
+        var pr=t.draft;
         r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
         arr.Add(r);
       }
@@ -84,39 +82,6 @@ namespace X13.WebServer {
       string path=args[1].As<string>();
       var t=Topic.root.Get(path, true);
       args.Response(true);
-    }
-    /// <summary>Dir topics</summary>
-    /// <param name="args">
-    /// REQUEST: [9, path, type] type: 1 - once, 2 - children, 4 - all
-    /// RESPONSE: array of items, item - [path, flags, prototype], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
-    /// </param>
-    private void Dir(EventArguments args) {
-      string path=args[1].As<string>();
-      int req=args[2].As<int>();
-      Topic parent;
-      List<Topic> resp=new List<Topic>();
-      if(Topic.root.Exist(path, out parent)) {
-        if((req & 1)==1) {
-          resp.Add(parent);
-        }
-        if((req & 2)==2) {
-          resp.AddRange(parent.children);
-        }
-        if((req & 4)==4) {
-          resp.AddRange(parent.all);
-        }
-      }
-      var arr=new JSL.Array();
-      foreach(var t in resp) {
-        var r=new JSL.Array(3);
-        r[0]=new JSL.String(t.path);
-        r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
-        var pr=t.proto;
-        r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
-        arr.Add(r);
-        //X13.Log.Debug("  [{0}, {1}, {2}]", t.path, r[1].As<int>(), r[2].As<string>());
-      }
-      args.Response(arr);
     }
     /// <summary>Remove topic</summary>
     /// <param name="args">
@@ -165,21 +130,6 @@ namespace X13.WebServer {
         }
         t.Move(p, nname);
       }
-    }
-    /// <summary>Get value</summary>
-    /// <param name="args">
-    /// REQUEST: [13, path]
-    /// RESPONSE: value
-    /// </param>
-    private void GetValue(EventArguments args) {
-      string path=args[1].As<string>();
-      Topic t;
-      if(Topic.root.Exist(path, out t)) {
-        args.Response(t.valueRaw);
-      } else {
-        args.Error("NOT EXIST", path);
-      }
-
     }
   }
 }

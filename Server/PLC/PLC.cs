@@ -73,6 +73,11 @@ namespace X13.PLC {
       Topic.root.Get("/etc/plc/block1").value=to;
       Topic.root.Get("/etc/TestPlugin/enabled").value=true;
       Topic.root.Get("/Test/sp/Delta").value=19.017;
+      string json;
+      json="{ \"id\": \"https://x13home.org/draft/type/draft\",\"$draft\": \"draft\", \"type\": \"object\", \"properties\": { \"type\": { \"type\": \"string\", \"enum\": [\"string\", \"number\", \"object\", \"array\", \"boolean\", \"null\"] } } }";
+      Topic.root.Get("/etc/draft/type/draft").value=NiL.JS.BaseLibrary.JSON.parse(json);
+
+
     }
     public void Tick() {
       if(Interlocked.CompareExchange(ref _busyFlag, 2, 1) != 1) {
