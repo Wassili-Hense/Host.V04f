@@ -5,8 +5,8 @@ if (typeof (X13) !== "object") {
 X13.conn={
   _socket: null,
   _root: null,
-  _draftRoot: null,
-  _draftGroups: null,
+  _schemaRoot: null,
+  _schemaGroups: null,
   init: function () {
     this._socket = io((window.location.protocol == "https:" ? "wss://" : "ws://") + window.location.host
       , { "path": "/api/v04", "transports": ['websocket'] });
@@ -18,15 +18,15 @@ X13.conn={
   },
   handleConnect: function(){
     document.title = window.location.host;
-    X13.conn._draftGroups = [];
-    var dr = X13.conn.GetTopic("/etc/draft");
-    dr.onChange = X13.conn.handleDraftRoot;
+    X13.conn._schemaGroups = [];
+    var dr = X13.conn.GetTopic("/etc/schema");
+    dr.onChange = X13.conn.handleSchemaRoot;
     dr.mask=2;
-    X13.conn._draftRoot = dr;
+    X13.conn._schemaRoot = dr;
   },
-  handleDraftRoot: function (s, e) {
+  handleSchemaRoot: function (s, e) {
     var i, j, exist, ch;
-    var gr = [], gro = X13.conn._draftGroups;
+    var gr = [], gro = X13.conn._schemaGroups;
     var cn = s.children;
     for (i = 0; i < cn.length; i++) {
       exist = false;
@@ -45,7 +45,7 @@ X13.conn={
       gr.push(ch);
       ch.mask = 2;
     }
-    X13.conn._draftGroups = gr;
+    X13.conn._schemaGroups = gr;
     for (i = gro.length - 1; i >= 0 ; i--) {
       gro[i].dispose();
     }
@@ -96,7 +96,7 @@ X13.conn={
     }
     return cur.createProjection();
   },
-  GetDraft: function (name) {
+  GetSchema: function (name) {
     var rez = null;
     var i;
     if (typeof (name) != "string" || name.length == 0) {
@@ -105,9 +105,9 @@ X13.conn={
     if ((i = name.indexOf("/")) >= 0) {
       var n1 = name.substr(0, i - 1);
       var n2=name.substr(i);
-      for (i = this._draftGroups.length - 1; i >= 0; i--) {
-        if (this._draftGroups[i].name == n1) {
-          rez = this._draftGroups[i].getChild(n2);
+      for (i = this._schemaGroups.length - 1; i >= 0; i--) {
+        if (this._schemaGroups[i].name == n1) {
+          rez = this._schemaGroups[i].getChild(n2);
           if (rez != null) {
             return rez;
           }
@@ -115,8 +115,8 @@ X13.conn={
         }
       }
     } else {
-      for (i = this._draftGroups.length - 1; i >= 0; i--) {
-        rez = this._draftGroups[i].getChild(name);
+      for (i = this._schemaGroups.length - 1; i >= 0; i--) {
+        rez = this._schemaGroups[i].getChild(name);
         if (rez != null) {
           return rez;
         }
@@ -142,7 +142,7 @@ X13.conn={
     mask: 0,  // 1-value, 2-children
     flags: 0,
     children: null,
-    draft: null,
+    schema: null,
     value: null,
     createProjection: function () {
       var t = Object.create(this._conn.Topic, { Base: { value: this, writable: false, enumerable: false } });
@@ -174,13 +174,13 @@ X13.conn={
       for (var i = 0; i < arr.length; i++) {
         if (arr[i][0] == this.path) {
           this.flags = arr[i][1];
-          this.draft = arr[i][2];
+          this.schema = arr[i][2];
           if (arr[i].length == 4) {
             if (this.value != arr[i][3]) {
               this.value = arr[i][3];
               mask |= 1;
             }
-          } else if (this.draft == null && this.value != null) {
+          } else if (this.schema == null && this.value != null) {
             this.value=null;
             mask |= 1;
           }
@@ -203,7 +203,7 @@ X13.conn={
             console.log("u " + item.path);
           }
           item.flags = arr[i][1];
-          item.draft = arr[i][2];
+          item.schema = arr[i][2];
           nc[name] = item;
         }
       }
@@ -282,8 +282,8 @@ X13.conn={
       }
       return null;
     },
-    get draft() {
-      return this.Base.draft;
+    get schema() {
+      return this.Base.schema;
     },
     get flags() {
       return this.Base.flags;

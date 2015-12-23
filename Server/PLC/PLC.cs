@@ -65,19 +65,9 @@ namespace X13.PLC {
       _knownTypes["PiDeclarer"]=PiDeclarer.Create;
     }
     public void Start() {
-      Topic.root.Get("/Test/very_long_path_with_$pecial_symb0ls/Gamma").value=42;
-      Topic.root.Get("/Test/very_long_path_with_$pecial_symb0ls/Apha").value="Hello World!!!";
-      Topic.root.Get("/var/started/year").value=DateTime.Now.Year;
+      Import(@"..\data\base.xst");
+      Topic.root.Get("/var/started/year").value = DateTime.Now.Year;
       Topic.root.Get("/var/started").value=DateTime.Now;
-      var to=NiL.JS.BaseLibrary.JSON.parse("{ \"A\":19, \"b\":29.104, \"object_g\":{ \"tetta\":\"Zetta\", \"utta\":null }, \"object_f\":{ \"cappa\":3.1415926, \"omega\":false }}");
-      Topic.root.Get("/etc/plc/block1").value=to;
-      Topic.root.Get("/etc/TestPlugin/enabled").value=true;
-      Topic.root.Get("/Test/sp/Delta").value=19.017;
-      string json;
-      json="{ \"id\": \"https://x13home.org/draft/type/draft\",\"$draft\": \"draft\", \"type\": \"object\", \"properties\": { \"type\": { \"type\": \"string\", \"enum\": [\"string\", \"number\", \"object\", \"array\", \"boolean\", \"null\"] } } }";
-      Topic.root.Get("/etc/draft/type/draft").value=NiL.JS.BaseLibrary.JSON.parse(json);
-
-
     }
     public void Tick() {
       if(Interlocked.CompareExchange(ref _busyFlag, 2, 1) != 1) {

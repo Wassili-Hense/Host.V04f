@@ -27,35 +27,38 @@ X13.UI.PropertyGrid = React.createClass({
     var r = {};
     var val = this.state.topic.value;
     r.items = [];
-    var ct = this.state.topic.draft;
-    var draft = this.state.draft;
-    if (draft != null) {
-      if (draft.name.length > ct.length || ct.substr(ct.length - draft.name) != draft.name) {
-        draft.dispose();
-        draft = null;
+    var ct = this.state.topic.schema;
+    var schema = this.state.schema;
+    if (schema != null) {
+      if (schema.name.length > ct.length || ct.substr(ct.length - schema.name) != schema.name) {
+        schema.dispose();
+        schema = null;
       }
     }
-    if (draft == null) {
-      draft = X13.conn.GetDraft(ct);
-      if (draft != null) {
-        draft.onChange = this.draftChanged;
-        draft.mask = 1;
-        r.draft = draft;
+    if (schema == null) {
+      schema = X13.conn.GetSchema(ct);
+      if (schema != null) {
+        schema.onChange = this.schemaChanged;
+        schema.mask = 1;
+        r.schema = schema;
       }
     }
-    //if (draft.value == null) {
+    if (schema != null && schema.value != null) {
+      if (schema.value.enum != null && Array.isArray(schema.value.enum)) {
+        ct = "enum";
+      } else {
+        ct = schema.value.view || schema.value.type || this.state.topic.schema;
+      }
+    }
     if (ct == "object" && val != null) {
-      this.InspectObject(val, r.items, "value", 0);
+      this.InspectObject(val, r.items, "value", 0, schema != null ? schema.value : null);
     } else {
-      r.items.push({ id: "value", name: "", type: ct, st: 0, level: 0 });
+      r.items.push({ id: "value", name: "", type: (schema != null || schema.value != null) ? schema.value : ct, st: 0, level: 0 });
     }
-    //} else {
-
-    //}
     this.setState(r);
 
   },
-  draftChanged: function (s, e) {
+  schemaChanged: function (s, e) {
     if (e != 1) {
       return;
     }
@@ -64,10 +67,10 @@ X13.UI.PropertyGrid = React.createClass({
   componentWillUnmount: function () {
     this.state.topic.dispose();
   },
-  InspectObject: function (obj, arr, id, level) {
+  InspectObject: function (obj, arr, id, level, lSchema) {
     var pr = Object.keys(obj);
     for (var i = 0; i < pr.length; i++) {
-      if (level == 0 && pr[i] == "$draft") {
+      if (level == 0 && pr[i] == "$schema") {
         continue;
       }
       var val = obj[pr[i]];
@@ -147,7 +150,7 @@ X13.UI.PropertyGrid = React.createClass({
 
   },
   render: function () {
-    var c, i, cmp, cmpParam, arr = [];
+    var c, ct, i, cmp, cmpParam, arr = [];
     var lvl = -1;
     if (this.state.items != null) {
       for (i = 0; i < this.state.items.length; i++) {
@@ -157,8 +160,19 @@ X13.UI.PropertyGrid = React.createClass({
         }
         lvl = -1;
         cmpParam = { id: c.id, value: this.GetValue(c.id), onChange: this.valueChanged };
-        if (X13.PGE.hasOwnProperty(c.type)) {
-          cmp = X13.PGE[c.type];
+
+        if (c.type != null && typeof (c.type) == "object") {
+          if (c.type.enum != null && Array.isArray(c.type.enum)) {
+            ct = "enum";
+          } else {
+            ct = c.type.view || c.type.type;
+          }
+          cmpParam.schema = c.type;
+        } else {
+          ct = c.type;
+        }
+        if (X13.PGE.hasOwnProperty(ct)) {
+          cmp = X13.PGE[ct];
         } else {
           cmp = X13.PGE.label;
         }
@@ -168,7 +182,7 @@ X13.UI.PropertyGrid = React.createClass({
            React.DOM.td({ style: { paddingLeft: 10 + c.level * 5, paddingRight: 10 } },
              React.DOM.div(null,
                React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/css/jstree-32px.png)', display: "inline-block", verticalAlign: "top", backgroundPosition: bPos, borderRight: "1px dotted black" }, onClick: oc(this, c.id) }),
-               React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/dt_icons/' + c.type + '.png)', display: "inline-block", verticalAlign: "top", backgroundSize: 'auto', backgroundPosition: '50% 50%', backgroundRepeat: "no-repeat" } }),
+               React.DOM.i({ style: { width: 24, height: 24, backgroundImage: 'url(/dt_icons/' + ct + '.png)', display: "inline-block", verticalAlign: "top", backgroundSize: 'auto', backgroundPosition: '50% 50%', backgroundRepeat: "no-repeat" } }),
                React.DOM.span(null, c.name)),
            React.DOM.td(null, React.createElement(cmp, cmpParam)))));
         if (c.st == 2) {
@@ -177,8 +191,8 @@ X13.UI.PropertyGrid = React.createClass({
       }
     }
     return React.DOM.table({ style: { border: "1px solid black", borderCollapse: "collapse" } },
-      React.DOM.caption({ style: { background: "#DDDDDD", textAlign: "left" } }, 
-        React.DOM.i({ style: { backgroundImage: 'url(/dt_icons/' + this.state.topic.draft + '.png)', width: 16, height: 16, display: "inline-block", backgroundPosition: '50% 50%' } }),
+      React.DOM.caption({ style: { background: "#DDDDDD", textAlign: "left" } },
+        React.DOM.i({ style: { backgroundImage: 'url(/dt_icons/' + this.state.topic.schema + '.png)', width: 16, height: 16, display: "inline-block", backgroundPosition: '50% 50%' } }),
         this.props.path),
       React.DOM.tbody(null, arr));
   },
@@ -230,43 +244,65 @@ X13.PGE.number = React.createClass({
   displayName: 'PGE.number',
   getDefaultProps: function () {
     return {
-      step: 1
+      schema: {
+        multipleOf: 1
+      }
     };
   },
   parse: function (value) {
-    if (value === '') return '';
+    if (value === '') {
+      if (this.props.schema != null && typeof this.props.schema.default === 'number') {
+        value = this.props.schema.default;
+      } else {
+        return '';
+      }
+    }
     if (value) {
       value = parseFloat(value);
       if (isNaN(value)) return '';
+      if (this.props.schema != null) {
+        if (typeof this.props.schema.maximum === 'number' && value > this.props.schema.maximum)
+          return this.props.schema.maximum;
+        if (typeof this.props.schema.minimum === 'number' && value < this.props.schema.minimum)
+          return this.props.schema.minimum;
+        if (typeof (this.props.schema.multipleOf) === "number" && this.props.schema.multipleOf > 0) {
+          value = this.props.schema.multipleOf * Math.round(value / this.props.schema.multipleOf);
+        }
+      }
     }
-
-    if (typeof this.props.max === 'number' && value > this.props.max) return this.props.max;
-    if (typeof this.props.min === 'number' && value < this.props.min) return this.props.min;
-
-    if (this.props.step) {
-      var p = (this.props.step.toString().split('.')[1] || []).length;
-      if (p) return parseFloat(value.toFixed(p));
-    }
-
     return value;
   },
   getInitialState: function () {
-    return {
-      value: this.parse(this.props.value)
+    var r = {
+      value: this.parse(this.props.value),
+    };
+    if (this.props.schema != null) {
+      var s = this.props.schema;
+      if (s.multipleOf != null && typeof (s.multipleOf) == "number") {
+
+      }
     }
+    return r;
   },
   render: function () {
-    return React.createElement("input", {
+    var pr={
       className: this.props.className,
       type: "number",
-      step: this.props.step,
+      step: this.props.schema.multipleOf,
       value: this.state.value,
       onKeyUp: this._onKeyUp,
       onKeyDown: this._onKeyDown,
       onChange: this._onChange,
       onBlur: this._onBlur,
       onWheel: this._onWheel,
-    });
+    };
+    if (typeof(this.props.schema.maximum)==='number'){
+      pr.max=this.props.schema.maximum;
+    }
+    if (typeof(this.props.schema.minimum) == 'number') {
+      pr.min = this.props.schema.minimum;
+    }
+    return React.createElement("input", pr);
   },
   componentWillReceiveProps: function (nextProps) {
     this.setState({
@@ -279,12 +315,16 @@ X13.PGE.number = React.createClass({
     }
   },
   up: function () {
-    var v = this.parse(this.state.value) + this.props.step;
-    this.setState({ value: v });
+    var v = this.parse(this.state.value) + this.props.schema.multipleOf;
+    if (typeof(this.props.schema.maximum)!='number' || v <= this.props.schema.maximum) {
+      this.setState({ value: v });
+    }
   },
   down: function () {
-    var v = this.parse(this.state.value) - this.props.step;
-    this.setState({ value: v });
+    var v = this.parse(this.state.value) - this.props.schema.multipleOf;
+    if (typeof(this.props.schema.minimum)!= 'number' || v >= this.props.schema.minimum) {
+      this.setState({ value: v });
+    }
   },
   _onKeyDown: function (e) {
     switch (e.keyCode) {
@@ -557,9 +597,9 @@ X13.UI.TreeNode = React.createClass({
       classes += " jstree-last";
     }
     var style;
-    if (d.draft != null) {
+    if (d.schema != null) {
       style = {
-        backgroundImage: 'url(/dt_icons/' + d.draft + '.png)',
+        backgroundImage: 'url(/dt_icons/' + d.schema + '.png)',
         backgroundSize: 'auto',
         backgroundPosition: '50% 50%'
       };

@@ -81,11 +81,12 @@ namespace X13.PLC {
         return null;
       }
     }
-    public string draft {
+    public string schema {
       get {
         Topic dr;
-        if(this.Exist("$draft", out dr)) {
-          return dr.As<string>();
+        string sh;
+        if(this.Exist("$schema", out dr) && !string.IsNullOrWhiteSpace(sh=dr.As<string>()) ) {
+          return sh;
         }
         switch(_value.ValueType) {
         case JSObjectType.NotExists:
@@ -95,6 +96,7 @@ namespace X13.PLC {
         case JSObjectType.Bool:
           return "boolean";
         case JSObjectType.Int:
+          return "integer";
         case JSObjectType.Double:
           return "number";
         case JSObjectType.Date:
@@ -105,8 +107,8 @@ namespace X13.PLC {
           if(_value==null) {
             return null;
           }
-          JSObject drf=_value.GetMember("$draft", false);
-          if(drf==null || !drf.IsExist) {
+          JSObject drf=_value.GetMember("$schema", false);
+          if (drf == null || !drf.IsExist || string.IsNullOrWhiteSpace(sh = drf.As<string>())){
             return "object";
           }
           return drf.As<string>();
