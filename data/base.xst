@@ -2,14 +2,22 @@
   <item name='etc' saved='True'>
     <item name='schema' saved='True'>
       <item name='type' saved='True'>
-        <item name='schema' value='{"id":"https://x13home.org/schema/type/schema","$schema":"schema","type":"object","properties":{"type":{"type":"string","enum": ["null","boolean","integer","number","string","object","array"]}}}' saved='True' />
-        <item name='zifra' value='{"id":"https://x13home.org/schema/type/zifra","$schema":"schema","type":"number","multipleOf":1,"minimum":0,"maximum":9}' saved='True'></item>
+        <item name='schema' value='{"$schema":"schema","type":"object","properties":{"type":{"type":"string","enum": ["null","boolean","integer","number","string","object","array"]}}}' saved='True' />
+        <item name='zifra' value='{"$schema":"schema","type":"number","multipleOf":1,"minimum":0,"maximum":9}' saved='True'></item>
+        <item name='str1' value='{"$schema":"schema","type":"string","minLength":3}' saved='True'></item>
+        <item name='str2' value='{"$schema":"schema","type":"string","maxLength":10}' saved='True'></item>
       </item>
     </item>
   </item>
   <item name='Test' saved='True'>
-    <item name='Gamma' value='42' saved='True'>
+    <item name='Alpha' value='42' saved='True'>
       <item name='$schema' value='"zifra"' saved='True' />
+    </item>
+    <item name='Betta' value='"abcd"' saved='True'>
+      <item name='$schema' value='"str1"' saved='True' />
+    </item>
+    <item name='Gamma' value='"ABCDEFGHI"' saved='True'>
+      <item name='$schema' value='"str2"' saved='True' />
     </item>
   </item>
 </root>

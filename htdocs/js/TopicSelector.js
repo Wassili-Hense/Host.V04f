@@ -53,7 +53,7 @@ X13.UI.PropertyGrid = React.createClass({
     if (ct == "object" && val != null) {
       this.InspectObject(val, r.items, "value", 0, schema != null ? schema.value : null);
     } else {
-      r.items.push({ id: "value", name: "", type: (schema != null || schema.value != null) ? schema.value : ct, st: 0, level: 0 });
+      r.items.push({ id: "value", name: "", type: (schema != null && schema.value != null) ? schema.value : ct, st: 0, level: 0 });
     }
     this.setState(r);
 
@@ -241,6 +241,7 @@ X13.PGE.boolean = React.createClass({
 });
 
 X13.PGE.number = React.createClass({
+  // props.schema properties: minimum, maximum, multipleOf
   displayName: 'PGE.number',
   getDefaultProps: function () {
     return {
@@ -251,21 +252,17 @@ X13.PGE.number = React.createClass({
   },
   parse: function (value) {
     if (value === '') {
-      if (this.props.schema != null && typeof this.props.schema.default === 'number') {
-        value = this.props.schema.default;
-      } else {
-        return '';
-      }
+      return '';
     }
     if (value) {
       value = parseFloat(value);
       if (isNaN(value)) return '';
       if (this.props.schema != null) {
-        if (typeof this.props.schema.maximum === 'number' && value > this.props.schema.maximum)
+        if (typeof(this.props.schema.maximum) === "number" && value > this.props.schema.maximum)
           return this.props.schema.maximum;
-        if (typeof this.props.schema.minimum === 'number' && value < this.props.schema.minimum)
+        if (typeof(this.props.schema.minimum) === "number" && value < this.props.schema.minimum)
           return this.props.schema.minimum;
-        if (typeof (this.props.schema.multipleOf) === "number" && this.props.schema.multipleOf > 0) {
+        if (typeof(this.props.schema.multipleOf) === "number" && this.props.schema.multipleOf > 0) {
           value = this.props.schema.multipleOf * Math.round(value / this.props.schema.multipleOf);
         }
       }
@@ -363,34 +360,69 @@ X13.PGE.number = React.createClass({
 });
 
 X13.PGE.string = React.createClass({
+  // props.schema properties: maxLength, minLength, pattern
   displayName: "PGE.string",
   getInitialState: function () {
-    return { value: this.props.value };
+    var r={ value: this.props.value };
+    if (this.props.schema != null && typeof(this.props.schema.pattern) == "string") {
+      try{
+        r.pattern=new RegExp(this.props.schema.pattern);
+      }catch(e){
+        Console.log("PGE.string."+this.props.id+".pattern("+this.props.schema.pattern+") ERR:"+e);
+      }
+    }
+    return r;
   },
   onChange: function (event) {
     this.setState({ value: event.target.value });
   },
   change: function () {
-    if (this.props.onChange) {
-      this.props.onChange(this.props.id, this.state.value);
+    var v = this.state.value;
+    if (this.props.onChange && this._check(v)) {
+      this.props.onChange(this.props.id, v);
     }
   },
   render: function () {
-    return React.DOM.input({
+    var pr = {
       type: "text",
       value: this.state.value,
       onChange: this.onChange,
       onKeyUp: this._onKeyUp,
       onBlur: this._onBlur
-    });
+    };
+    if (this.props.schema != null) {
+      if (this.state.pattern != null) {
+        pr.pattern = this.state.pattern.toString();
+      }
+      if (typeof (this.props.schema.maxLength) == "number" && this.props.schema.maxLength > 0) {
+        pr.maxLength = this.props.schema.maxLength;
+      }
+    }
+    return React.DOM.input(pr);
   },
   _onKeyUp: function (e) {
     if (e.keyCode === 13) {   // KEY_ENTER
       this.change();
+    } else if (e.keyCode == 27) {  // ESC
+      this.setState({ value: this.props.value });
     }
   },
   _onBlur: function (e) {
     this.change();
+  },
+  _check: function (v) {
+    if (this.props.schema != null) {
+      if (typeof (this.props.schema.maxLength) == "number" && typeof(v) == "string" && v.length > this.props.schema.maxLength) {
+        return false;
+      }
+      if (typeof (this.props.schema.minLength) == "number" && ((typeof(v) != "string" && this.props.schema.minLength>0) || v.length < this.props.schema.minLength)) {
+        return false;
+      }
+      if (this.state.pattern != null && !this.state.pattern.test(v)) {
+        return false;
+      }
+    }
+    return true;
   },
 });
 
