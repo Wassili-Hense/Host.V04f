@@ -44,7 +44,7 @@ namespace X13.WebServer {
           r=new JSL.Array(3);
         }
         r[0]=new JSL.String(t.path);
-        r[1]=new JSL.Number((t.children.Any()?16:0)  | 15);
+        r[1]=new JSL.Number((t.children.Where(z=>z.name!="$schema").Any()?16:0)  | 15);
         var pr=t.schema;
         r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
         arr.Add(r);

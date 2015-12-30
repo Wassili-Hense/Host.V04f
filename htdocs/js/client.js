@@ -1,7 +1,5 @@
 ﻿"use strict";
-if (typeof (X13) !== "object") {
-  var X13 = {};
-}
+var X13 = {};
 X13.conn = {
   _socket: null,
   _root: null,
@@ -12,40 +10,33 @@ X13.conn = {
   _connectCnt: 0,
   init: function (cb) {
     this._connectedCB = cb;
+    this._root = Object.create(this.TopicOr, { _conn: { value: this, writable: false, enumerable: false }, name: { value: window.location.host } });
     this._socket = io((window.location.protocol == "https:" ? "wss://" : "ws://") + window.location.host
       , { "path": "/api/v04", "transports": ['websocket'] });
-    this._socket.on('connect', X13.conn.handleConnect);
+    this._socket.on('connect', this.handleConnect.bind(this));
     this._socket.on('disconnect', function () { document.title = "OFFLINE" });
-    this._root = Object.create(this.TopicOr, { _conn: { value: this, writable: false, enumerable: false }, name: { value: window.location.host } });
-    var Self = this._root;
-    this._socket.emit(4, "/", 0, function (arr) { Self.onDataResp(arr); });
   },
   handleConnect: function () {
     document.title = window.location.host;
-    X13.conn._schemaGroups = [];
-    X13.conn._viewGroups = [];
-    X13.conn._connectCnt = 2;
-    var dr = X13.conn.GetTopic("/etc/schema");
-    dr.onChange = X13.conn.handleSchemaViewChild;
-    dr.mask = 2;
-    X13.conn._schemaRoot = dr;
-    var dr2 = X13.conn.GetTopic("/etc/UI");
-    dr2.onChange = X13.conn.handleSchemaViewChild;
-    dr2.mask = 2;
-    X13.conn._viewRoot = dr2;
+    this._schemaGroups = [];
+    this._viewGroups = [];
+    this._connectCnt = 2;
+    this._socket.emit(4, "/", 0, this._root.onDataResp.bind(this._root));
+    var tmp=X13.conn.GetTopic("/etc/schema", 2, this.handleSchemaViewChild.bind(this));
+    tmp = X13.conn.GetTopic("/etc/UI", 2, this.handleSchemaViewChild.bind(this));
   },
   handleSchemaViewChild: function (s, e) {
     var i, cn = s.children, ch;
     for (i = 0; i < cn.length; i++) {
       ch = s.getChild(cn[i]);
       if (ch.schema == "schema" && ch.path.slice(0, 12) == "/etc/schema/") {
-        X13.conn._schemas[ch.path.substr(12)] = ch;
+        this._schemas[ch.path.substr(12)] = ch;
       } else if (ch.schema == "view" && ch.path.slice(0, 8) == "/etc/UI/") {
-        X13.conn._views[ch.path.substr(8)] = ch;
+        this._views[ch.path.substr(8)] = ch;
       }
       if ((ch.flags & 16) != 0 && (ch.mask & 2)==0) {
-        X13.conn._connectCnt++;
-        ch.onChange = X13.conn.handleSchemaViewChild;
+        this._connectCnt++;
+        ch.onChange = X13.conn.handleSchemaViewChild.bind(this);
         ch.mask |= 2;
       }
     }
@@ -56,7 +47,7 @@ X13.conn = {
       cb();
     }
   },
-  GetTopic: function (path) {
+  GetTopic: function (path, mask, cb) {
     var cur = this._root;
     var next;
     if (path != null && typeof (path) == "string") {
@@ -82,7 +73,14 @@ X13.conn = {
         cur = next;
       }
     }
-    return cur.createProjection();
+    var r = cur.createProjection();
+    if (cb != null && typeof (cb) == "function") {
+      r.onChange = cb;
+    }
+    if (typeof (mask) == "number" && mask != 0) {
+      r.mask = mask;
+    }
+    return r;
   },
   GetSchema: function (name) {
     var rez = null;
@@ -106,6 +104,7 @@ X13.conn = {
       if ((rez.mask & 1) == 0) {
         rez.mask |= 1;
       }
+      rez = rez.createProjection();
       rez.GetView = X13.conn._getViewFunk;
       return rez;
     }
@@ -176,8 +175,7 @@ X13.conn = {
       }
       if (this.mask != nm) {
         this.mask = nm;
-        var Self = this;
-        this._conn._socket.emit(4, this.path, this.mask, function (arr) { Self.onDataResp(arr); });
+        this._conn._socket.emit(4, this.path, this.mask, this.onDataResp.bind(this));
       }
     },
     onDataResp: function (arr) {
@@ -326,3 +324,5 @@ X13.conn = {
     },
   },
 }
+
+
