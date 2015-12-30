@@ -8,17 +8,28 @@
 </head>
 <body>
   <div id="Div1">Loading...</div>
+  <img id="Img1" width="16" height="16" />
   <script src="/js/react-0.13.3.js"></script>
   <script src="/js/socket.io.js"></script>
-  <script src="/js/apiv04.js"></script>
-  <script src="/js/TopicSelector.js"></script>
+  <script src="/js/client.js"></script>
   <script>
-    X13.conn.init();
-
-    React.render(
-        React.createElement(PeTest),
-        document.getElementById("Div1")
-    );
+    function Connected() {
+      var nt = X13.conn.GetView("test");
+      nt.onChange = TopicChanged;
+    }
+    function TopicChanged (s, e) {
+      var v=s.GetView();
+      if (v != null) {
+        React.render(
+            React.createElement(v),
+            document.getElementById("Div1")
+        );
+        if (typeof (s.value.icon) == "string") {
+          document.getElementById("Img1").setAttribute("src", s.value.icon);
+        }
+      }
+    }
+    X13.conn.init(Connected);
   </script>
 
 </body>
