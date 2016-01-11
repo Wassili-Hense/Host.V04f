@@ -172,27 +172,6 @@
   font-weight: 700;
 }
 
-.jstree .jstree-no-checkboxes .jstree-checkbox {
-  display: none!important;
-}
-
-.jstree.jstree-checkbox-no-clicked .jstree-clicked {
-  background: 0 0;
-  box-shadow: none;
-}
-
-  .jstree.jstree-checkbox-no-clicked .jstree-clicked.jstree-hovered {
-    background: #e7f4f9;
-  }
-
-.jstree.jstree-checkbox-no-clicked > .jstree-wholerow-ul .jstree-wholerow-clicked {
-  background: 0 0;
-}
-
-  .jstree.jstree-checkbox-no-clicked > .jstree-wholerow-ul .jstree-wholerow-clicked.jstree-wholerow-hovered {
-    background: #e7f4f9;
-  }
-
 .jstree > .jstree-striped {
   min-width: 100%;
   display: inline-block;
