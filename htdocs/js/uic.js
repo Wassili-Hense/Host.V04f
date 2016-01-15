@@ -3,37 +3,45 @@ X13.UI = {};
 
 X13.UI.App = React.createClass({
   getInitialState: function () {
-    return { path: "/", vt: null};
+    return {};
   },
   componentDidMount: function () {
-    var nt = X13.GetView("PropertyGrid/Topic");
-    nt.onChange = this.vtChanged;
-    nt.mask = 1;
-    if (nt.value != null) {
-      this.vtChanged(nt, 1);
+    var p;
+    if (window.location.hash.length > 1) {
+      p = decodeURIComponent(window.location.hash.substring(1));
+    } else {
+      p = "/";
     }
+    var cur = X13.GetTopic(p, 2, this.CurChanged);
+    this.CurChanged(cur, 2);
   },
-  vtChanged: function (s, e) {
-    if ((e & 1) != 1) {
-      return;
-    }
-    this.setState({ "vt": s });
-  },
-  valueChanged: function (id, value) {
-    if (id == "path" && value != null) {
-      this.setState({ path: value });
-    }
+  CurChanged: function (s, e) {
+    this.setState({ cur: s });
   },
   render: function () {
-    /*
-    return React.DOM.div(null,
-      React.createElement(X13.PGE.Topic, { id: "path", value: this.state.path, onChange: this.valueChanged }),
-      React.DOM.button({ onClick: this.handleClick }, "Edit"),
-      (this.state.show ? React.createElement(X13.UI.PropertyGrid, { path: this.state.path }) : null)
-      );*/
-    var tc = this.state.vt!=null?this.state.vt.GetView():null;
-    return React.DOM.div(null,
-        tc!=null?React.createElement(tc, { id: "path", value: this.state.path, onChange: this.valueChanged }):null
+    var cur = this.state.cur;
+    var i, arr=[], childPath, curPath="";
+    if (cur != null) {
+      curPath = cur.path;
+      var children = cur.children;
+      if (children != null) {
+        for (i = 0; i < children.length; i++) {
+          childPath = curPath == "/" ? "/" + children[i] : cur.path + "/" + children[i];
+          arr.push(React.createElement(X13.UI.T1V, { key: "t1" + childPath, url: window.location.protocol + "//" + window.location.host + "#" + childPath, parent: cur, name: children[i] }));
+        }
+      }
+    }
+    return React.DOM.div({ style : {height: "100%"}},
+      React.DOM.div(null, React.DOM.span(null, window.location.host + curPath)),
+      React.DOM.div({ style: { display: "flex", flexDirection: "column", alignItems: "flex-start", alignContent: "stretch", flexWrap: "wrap" } }, arr)
+      );
+  }
+});
+X13.UI.T1V = React.createClass({
+  displayName: "TopicView1",
+  render: function () {
+    return React.DOM.div({ style: { margin: 10, border: "1px black solid" } },
+      React.DOM.a({ href: this.props.url }, this.props.name)
       );
   }
 });

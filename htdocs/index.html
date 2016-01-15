@@ -4,7 +4,16 @@
   <meta charset="utf-8">
   <meta name="description" content="http://x13home.github.io/" />
   <title>react</title>
-  <link rel="stylesheet" href="/css/jstree.min.css" />
+  <style>
+    html, body{
+      height: 100%;
+    }
+    .item {
+      display: flex;
+      align-content: stretch;
+    }
+  </style>
+  <!--<link rel="stylesheet" href="/css/jstree.min.css" />-->
 </head>
 <body>
   <div id="Div1">Loading...</div>
@@ -16,27 +25,10 @@
   <script>
     function Connected() {
       React.render(
-          React.createElement(X13.UI.App),
+          React.createElement(X13.UI.App, { location: window.location}),
           document.getElementById("Div1")
       );
     }
-      /*
-      var nt = X13.conn.GetView("test");
-      nt.onChange = TopicChanged;
-    }
-    
-    function TopicChanged (s, e) {
-      var v=s.GetView();
-      if (v != null) {
-        React.render(
-            React.createElement(v),
-            document.getElementById("Div1")
-        );
-        if (typeof (s.value.icon) == "string") {
-          document.getElementById("Img1").setAttribute("src", s.value.icon);
-        }
-      }
-    }*/
     X13.conn.init(Connected);
   </script>
 

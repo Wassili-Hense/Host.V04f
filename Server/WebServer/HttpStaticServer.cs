@@ -52,7 +52,7 @@ namespace X13.WebServer {
           remoteEndPoint=new System.Net.IPEndPoint(remIP, remoteEndPoint.Port);
         }
       }
-      string path=req.RawUrl=="/"?"/index.html":req.RawUrl;
+      string path = req.Url.LocalPath == "/" ? "/index.html" : req.Url.LocalPath;
       string client;
       client=remoteEndPoint.Address.ToString();
 
