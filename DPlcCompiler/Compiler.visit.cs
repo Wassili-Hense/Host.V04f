@@ -34,8 +34,16 @@ namespace X13 {
       node.SecondOperand.Visit(this);
       var a = node.FirstOperand as GetVariable;
       if(a != null) {
-        var m = _memory.First(z => z.vd.Name == a.Name);
-        cur.code.AppendFormat("\tST\t{0}\n", m.vd.Name);
+        string name;
+        var m = GetMerker(a.Descriptor);
+        if(m.type == VM_DType.PARAMETER) {
+          name = "P" + m.Addr.ToString();
+        } else if(m.type == VM_DType.LOCAL) {
+          name = "L" + m.Addr.ToString();
+        } else {
+          name = m.vd.Name;
+        }
+        cur.code.AppendFormat("\tST  \t{0}\t\t;{1}\n", name, m.vd.Name);
         _sp--;
       } else {
         throw new NotImplementedException();
@@ -43,26 +51,51 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(Call node) {
-      if(node.Arguments.Length == 0) {
-        cur.code.AppendFormat("\tLD\t0\t\t;for return\n");
-      }else{
-        for(int i = node.Arguments.Length - 1; i >= 0; i--) {
-          node.Arguments[i].Visit(this);
-        }
-      }
+      
 
       GetVariable f = node.FirstOperand as GetVariable;
       if(f != null) {
-        var m = _memory.First(z => z.vd.Name == f.Name);
-        cur.code.AppendFormat("\tCALL\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr);
+        var m = GetMerker(f.Descriptor);
+        if(m.scope != null) {
+          var al = m.scope.memory.Where(z => z.type == VM_DType.PARAMETER).OrderBy(z => z.Addr).ToArray();
+          if(al.Length==0){
+          cur.code.AppendFormat("\tLD\t0\t\t;for return\n");
+          } else{
+            for(int i=al.Length-1; i>=0; i--){
+              if(i < node.Arguments.Length) {
+                node.Arguments[i].Visit(this);
+              } else if(al[i].init!=null){  //TODO: check function(a, b=7)
+                al[i].init.Visit(this);
+              } else {
+                cur.code.AppendFormat("\tLD\t0\t\t;P{0}\n", i);
+              }
+            }
+          }
+          cur.code.AppendFormat("\tCALL\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr);
+          for(int i = al.Length - 1; i > 0; i--) {
+            cur.code.AppendFormat("\tDROP\t\t\t;P{0}\n", i);
+            _sp--;
+          }
+        } else {
+          throw new ApplicationException(m.vd.Name+".scope null pointer exception");
+        }
       } else {
+        if(node.Arguments.Length == 0) {
+          cur.code.AppendFormat("\tLD\t0\t\t;for return\n");
+        } else {
+          for(int i = node.Arguments.Length - 1; i >= 0; i--) {
+            node.Arguments[i].Visit(this);
+          }
+        }
+
         node.FirstOperand.Visit(this);
         cur.code.AppendFormat("\tCALLA\n");
         _sp--;
-      }
-      for(int i = node.Arguments.Length - 1; i > 0; i--) {
-        cur.code.AppendFormat("\tDROP\t\t\t;P{0}\n", i);
-        _sp--;
+
+        for(int i = node.Arguments.Length - 1; i > 0; i--) {
+          cur.code.AppendFormat("\tDROP\t\t\t;P{0}\n", i);
+          _sp--;
+        }
       }
       return this;
     }
@@ -93,14 +126,16 @@ namespace X13 {
       return Visit(node as CodeNode);
     }
     protected override Compiler Visit(FunctionDefinition node) {
-      ScopePush("Function "+node.Name);
+      ScopePush("Function " + node.Name);
       for(int i = 0; i < node.Parameters.Count; i++) {
-         var m = new Merker() { Addr = (uint)i, type = VM_DType.PARAMETER, vd = node.Parameters[i] };
-         cur.memory.Add(m);
-         cur.code.AppendFormat("\tDEF_L\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr);
+        var m = new Merker() { Addr = (uint)i, type = VM_DType.PARAMETER, vd = node.Parameters[i], init=node.Parameters[i].Initializer };
+        cur.memory.Add(m);
+        cur.code.AppendFormat("\tDEF_L\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr);
       }
       node.Body.Visit(this);
       cur.code.AppendFormat("\tRET\n");
+      var fm = GetMerker(node.Reference.Descriptor);
+      fm.scope = cur;
       ScopePop();
       return this;
     }
@@ -110,10 +145,7 @@ namespace X13 {
     protected override Compiler Visit(GetVariable node) {
       Merker m;
       string name;
-      m = cur.memory.FirstOrDefault(z => z.vd.Name == node.Name);
-      if(m == null) {
-        m = _memory.First(z => z.vd.Name == node.Name);
-      }
+      m = GetMerker(node.Descriptor);
       if(m.type == VM_DType.PARAMETER) {
         name = "P" + m.Addr.ToString();
       } else if(m.type == VM_DType.LOCAL) {
@@ -121,7 +153,7 @@ namespace X13 {
       } else {
         name = m.vd.Name;
       }
-      cur.code.AppendFormat("\tLD\t{0}\n", name);
+      cur.code.AppendFormat("\tLD  \t{0}\t\t;{1}\n", name, m.vd.Name);
       _sp++;
       return this;
     }
@@ -142,8 +174,16 @@ namespace X13 {
           cur.code.Append("\tDUP\n");
           cur.code.Append("\tINC\n");
         }
-        var m = _memory.First(z => z.vd.Name == a.Name);
-        cur.code.AppendFormat("\tST\t{0}\n", m.vd.Name);
+        string name;
+        var m = GetMerker(a.Descriptor);
+        if(m.type == VM_DType.PARAMETER) {
+          name = "P" + m.Addr.ToString();
+        } else if(m.type == VM_DType.LOCAL) {
+          name = "L" + m.Addr.ToString();
+        } else {
+          name = m.vd.Name;
+        }
+        cur.code.AppendFormat("\tST  \t{0}\t\t;{1}\n", name, m.vd.Name);
       } else {
         throw new NotImplementedException();
       }
@@ -205,7 +245,7 @@ namespace X13 {
       var c2 = node.SecondOperand as Constant;
       if(c1 != null && c2 != null) {
         cur.code.AppendFormat("\tLD\t{0}\n", (int)(c1.Value.Value) + (int)(c2.Value.Value));
-      }else if(c1!=null && (int)(c1.Value.Value)==1){
+      } else if(c1 != null && (int)(c1.Value.Value) == 1) {
         node.SecondOperand.Visit(this);
         cur.code.Append("\tINC\n");
       } else if(c2 != null && (int)(c2.Value.Value) == 1) {
@@ -296,26 +336,51 @@ namespace X13 {
       return Visit(node as CodeNode);
     }
     protected override Compiler Visit(CodeBlock node) {
-        for(var i = 0; i < node.Variables.Length; i++) {
-          var v = node.Variables[i];
-          Merker m = null;
-          if(v.Initializer != null && v.Initializer is FunctionDefinition) {
-            m = new Merker() { Addr = 0, type = VM_DType.FUNCTION, vd = v };
-          } else if(v.Name[0] == 'M') {
-            if(v.Name[1] == 'd') {
-              m = new Merker() { Addr = UInt32.Parse(v.Name.Substring(2)), type = VM_DType.SINT32, vd = v };
-            }
-          }
-          if(m == null) {
-            m = new Merker() { Addr = 0, type = VM_DType.SINT32, vd = v };
-          }
-          _memory.Add(m);
+      Merker m;
+      uint addr;
+      VM_DType type;
 
-          cur.code.AppendFormat("\tDEF_G\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr);
-          if(node.Variables[i].Initializer != null) {
-            node.Variables[i].Initializer.Visit(this);
-          } 
+      foreach(var v in node.Variables.OrderByDescending(z => z.ReferenceCount)) {
+        m = null;
+        type = VM_DType.NONE;
+        addr = uint.MaxValue;
+        if(v.Initializer != null && v.Initializer is FunctionDefinition) {
+          type = VM_DType.FUNCTION;
+        } else if(v.Name[0] == 'M') {
+          if(v.Name[1] == 'd') {
+            addr = UInt32.Parse(v.Name.Substring(2));
+            type = VM_DType.SINT32;
+          }
         }
+        if(type==VM_DType.NONE){
+          addr=(uint)cur.memory.Where(z=>z.type==VM_DType.LOCAL).Count();
+          if(addr<16){
+            type=VM_DType.LOCAL;
+          }else{
+            type=VM_DType.SINT32;
+            addr=uint.MaxValue;
+          }
+        }
+        if(type==VM_DType.LOCAL){
+          m=cur.memory.FirstOrDefault(z=>z.vd.Name==v.Name && z.type==type);
+          if(m==null){
+            m=new Merker() { Addr = addr, type = type, vd = v };
+            cur.memory.Add(m);
+          }
+        } else {
+          m=_memory.FirstOrDefault(z=>z.vd.Name==v.Name && z.type==type);
+          if(m==null){
+            m=new Merker() { Addr = addr, type = type, vd = v };
+            _memory.Add(m);
+          }
+        }
+        cur.code.AppendFormat("\tDEF_{3}\t{0}\t\t;{1}@{2}\n", m.vd.Name, m.type.ToString(), m.Addr, m.type==VM_DType.LOCAL?"L":"G");
+        if(v.Initializer != null) {
+          v.Initializer.Visit(this);
+        } else if(type == VM_DType.LOCAL) {
+          cur.code.AppendFormat("\tST  \t0\t\t;L{0} - {1}\n", m.Addr, m.vd.Name);
+        }
+      }
       int sp = _sp;
       for(var i = 0; i < node.Body.Length; i++) {
         node.Body[i].Visit(this);
@@ -344,7 +409,7 @@ namespace X13 {
     protected override Compiler Visit(ForOf node) {
       return Visit(node as CodeNode);
     }
-    protected override Compiler Visit(For node){
+    protected override Compiler Visit(For node) {
       cur.code.Append("for(");
       if(node.Initializator != null) {
         node.Initializator.Visit(this);

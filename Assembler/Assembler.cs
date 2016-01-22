@@ -261,6 +261,18 @@ namespace X13 {
           case OpName.SHR:
             rCmd = new byte[] { (byte)OP.SHR };
             break;
+          case OpName.SRS:
+            rCmd = new byte[] { (byte)OP.SRS };
+            break;
+          case OpName.SHIFT: {
+            byte sa;
+            if(byte.TryParse(args, out sa)) {
+              rCmd = new byte[] { (byte)OP.SHIFT, sa };
+            } else {
+              Log.Error("{0} bad argument" + this.ToString());
+            }
+            }
+            break;
           case OpName.CGT:
             rCmd = new byte[] { (byte)OP.CGT };
             break;
@@ -388,6 +400,8 @@ namespace X13 {
       XOR,
       SHL,
       SHR,
+      SRS,
+      SHIFT,
       CGT,
       CGE,
       CLT,
@@ -429,27 +443,30 @@ namespace X13 {
       XOR,
       SHL,
       SHR,
-      INC,
-      DEC,
-      NEG,
-      ADD,
+      SRS,
+      SHIFT,
+      ADD = 0x10,
       SUB,
       MUL,
       DIV,
       MOD,
-      CEQ,
+      INC,
+      DEC,
+      NEG,
+
+      CEQ = 0x20,
       CNE,
-      NOT_L,
-      AND_L,
-      OR_L,
-      XOR_L,
       CGT,
       CGE,
       CLT,
       CLE,
 
+      NOT_L=0x28,
+      AND_L,
+      OR_L,
+      XOR_L,
 
-      LD_P0 = 0x20,
+      LD_P0 = 0x40,
       LD_P1,
       LD_P2,
       LD_P3,
@@ -466,7 +483,7 @@ namespace X13 {
       LD_PE,
       LD_PF,
 
-      LD_L0 = 0x30,
+      LD_L0 = 0x50,
       LD_L1,
       LD_L2,
       LD_L3,
@@ -483,7 +500,7 @@ namespace X13 {
       LD_LE,
       LD_LF,
 
-      ST_P0 = 0x40,
+      ST_P0 = 0x60,
       ST_P1,
       ST_P2,
       ST_P3,
@@ -500,7 +517,7 @@ namespace X13 {
       ST_PE,
       ST_PF,
 
-      ST_L0 = 0x50,
+      ST_L0 = 0x70,
       ST_L1,
       ST_L2,
       ST_L3,
@@ -517,7 +534,7 @@ namespace X13 {
       ST_LE,
       ST_LF,
 
-      LDI_ZERO = 0x60,
+      LDI_ZERO = 0x80,
       LDM_B1_S,
       LDM_S1_S,
       LDM_U1_S,
@@ -553,28 +570,28 @@ namespace X13 {
       LDM_S4_C16,
       LDI_MINUS1,
 
-      STM_B1_S = 0x81,
+      STM_B1_S = 0xA1,
       STM_S1_S,
       STM_U1_S,
       STM_S2_S,
       STM_U2_S,
       STM_S4_S,
 
-      STM_B1_CS8 = 0x89,
+      STM_B1_CS8 = 0xA9,
       STM_S1_CS8,
       STM_U1_CS8,
       STM_S2_CS8,
       STM_U2_CS8,
       STM_S4_CS8,
 
-      STM_B1_CS16 = 0x91,
+      STM_B1_CS16 = 0xB1,
       STM_S1_CS16,
       STM_U1_CS16,
       STM_S2_CS16,
       STM_U2_CS16,
       STM_S4_CS16,
 
-      STM_B1_C16 = 0x99,
+      STM_B1_C16 = 0xB9,
       STM_S1_C16,
       STM_U1_C16,
       STM_S2_C16,

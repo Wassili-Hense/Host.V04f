@@ -34,15 +34,26 @@ namespace X13 {
 
       var module = new Module(code);
       module.Root.Visit(this);
-      for(int i = 0; i < _programm.Count; i++) {
-        Log.Info("{0}\n{1}", _programm[i].name, _programm[i].code.ToString());
+      foreach(var p in _programm) {
+        Log.Info("{0}\n{1}", p.name, p.code.ToString());
       }
+    }
+
+    private Merker GetMerker(VariableDescriptor v) {
+      Merker m=null;
+      m = cur.memory.FirstOrDefault(z => z.vd.Name == v.Name);
+      if(m == null) {
+        m = _memory.FirstOrDefault(z => z.vd.Name == v.Name);
+      }
+      return m;
     }
   }
   internal class Merker {
     public uint Addr;
     public VM_DType type;
     public VariableDescriptor vd;
+    public Expression init;
+    public Scope scope;
   }
   internal class Scope {
     public Scope(string name) {
@@ -55,6 +66,7 @@ namespace X13 {
     public List<Merker> memory;
   }
   internal enum VM_DType {
+    NONE,
     BOOL,
     UINT8,
     SINT8,
