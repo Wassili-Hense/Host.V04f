@@ -135,93 +135,95 @@ namespace X13 {
         byte[] rCmd = cmd;
         bool save = true;
         if(rCmd == null) {
-          int a;
+          int tmp_d;
           byte tmp_z;
+          ushort tmp_W;
+
           switch(op) {
           case OpName.LD:
-            if(Int32.TryParse(args, out a)) {
-              if(a == 0) {
+            if(Int32.TryParse(args, out tmp_d)) {
+              if(tmp_d == 0) {
                 rCmd = new byte[] { (byte)OP.LDI_ZERO };
-              } else if(a == 1) {
+              } else if(tmp_d == 1) {
                 rCmd = new byte[] { (byte)OP.LDI_TRUE };
-              } else if(a == -1) {
+              } else if(tmp_d == -1) {
                 rCmd = new byte[] { (byte)OP.LDI_MINUS1 };
-              } else if(a > -128 && a < 256) {
-                rCmd = new byte[] { a > 0 ? (byte)OP.LDI_U1 : (byte)OP.LDI_S1, (byte)a };
-              } else if(a > -32768 && a < 65536) {
-                rCmd = new byte[] { a > 0 ? (byte)OP.LDI_U2 : (byte)OP.LDI_S2, (byte)a, (byte)(a >> 8) };
+              } else if(tmp_d > -128 && tmp_d < 256) {
+                rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U1 : (byte)OP.LDI_S1, (byte)tmp_d };
+              } else if(tmp_d > -32768 && tmp_d < 65536) {
+                rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U2 : (byte)OP.LDI_S2, (byte)tmp_d, (byte)(tmp_d >> 8) };
               } else {
-                rCmd = new byte[] { (byte)OP.LDI_S4, (byte)a, (byte)(a >> 8), (byte)(a >> 16), (byte)(a >> 24) };
+                rCmd = new byte[] { (byte)OP.LDI_S4, (byte)tmp_d, (byte)(tmp_d >> 8), (byte)(tmp_d >> 16), (byte)(tmp_d >> 24) };
               }
-            } else if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out a)) {
+            } else if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out tmp_d)) {
               switch(args[0]) {
               case 'L':
               case 'l':
-                rCmd = new byte[] { (byte)((int)OP.LD_L0 + (a & 0x0F)) };
+                rCmd = new byte[] { (byte)((int)OP.LD_L0 + (tmp_d & 0x0F)) };
                 break;
               case 'P':
               case 'p':
-                rCmd = new byte[] { (byte)((int)OP.LD_P0 - (a & 0x0F)) };
+                rCmd = new byte[] { (byte)((int)OP.LD_P0 - (tmp_d & 0x0F)) };
                 break;
               case 'z':
-                rCmd = new byte[] { (byte)OP.LDM_B1_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_B1_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'B':
-                rCmd = new byte[] { (byte)OP.LDM_U1_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_U1_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'b':
-                rCmd = new byte[] { (byte)OP.LDM_S1_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_S1_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'W':
-                rCmd = new byte[] { (byte)OP.LDM_U2_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_U2_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'w':
-                rCmd = new byte[] { (byte)OP.LDM_S2_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_S2_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'd':
-                rCmd = new byte[] { (byte)OP.LDM_S4_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.LDM_S4_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               }
-            } else if(args.Length > 1 && args[0]=='A'){
+            } else if(args.Length > 1 && args[0] == 'A') {
               Inst l;
               if(_own._labels.TryGetValue(args, out l) && l.pos != -1) {
-                a = l.pos;
+                tmp_d = l.pos;
               } else {
-                a = -1;
+                tmp_d = -1;
                 save = false;
                 if(final) {
                   Log.Error("unknown label " + this.ToString());
                 }
               }
-              rCmd = new byte[] { (byte)OP.LDI_U2, (byte)a, (byte)(a >> 8) };
+              rCmd = new byte[] { (byte)OP.LDI_U2, (byte)tmp_d, (byte)(tmp_d >> 8) };
             } else if(final) {
               Log.Error("unknown argument " + this.ToString());
             }
             break;
           case OpName.ST:
-            if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out a)) {
+            if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out tmp_d)) {
               switch(args[0]) {
               case 'L':
               case 'l':
-                rCmd = new byte[] { (byte)((int)OP.ST_L0 + (a & 0x0F)) };
+                rCmd = new byte[] { (byte)((int)OP.ST_L0 + (tmp_d & 0x0F)) };
                 break;
               case 'P':
               case 'p':
-                rCmd = new byte[] { (byte)((int)OP.ST_P0 - (a & 0x0F)) };
+                rCmd = new byte[] { (byte)((int)OP.ST_P0 - (tmp_d & 0x0F)) };
                 break;
               case 'z':
-                rCmd = new byte[] { (byte)OP.STM_B1_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.STM_B1_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'B':
               case 'b':
-                rCmd = new byte[] { (byte)OP.STM_S1_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.STM_S1_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'W':
               case 'w':
-                rCmd = new byte[] { (byte)OP.STM_S2_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.STM_S2_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               case 'd':
-                rCmd = new byte[] { (byte)OP.STM_S4_C16, (byte)a, (byte)(a >> 8) };
+                rCmd = new byte[] { (byte)OP.STM_S4_C16, (byte)tmp_d, (byte)(tmp_d >> 8) };
                 break;
               }
             } else if(final) {
@@ -272,14 +274,15 @@ namespace X13 {
               }
             }
             break;
-          case OpName.LSR:{
+          case OpName.LSR: {
               if(byte.TryParse(args, out tmp_z)) {
                 rCmd = new byte[] { (byte)OP.LSR, tmp_z };
               } else {
                 Log.Error("{0} bad argument" + this.ToString());
               }
-            }            break;
-          case OpName.ASR:{
+            }
+            break;
+          case OpName.ASR: {
               if(byte.TryParse(args, out tmp_z)) {
                 rCmd = new byte[] { (byte)OP.ASR, tmp_z };
               } else {
@@ -335,22 +338,27 @@ namespace X13 {
           case OpName.OVER:
             rCmd = new byte[] { (byte)OP.OVER };
             break;
-
+          case OpName.IN:
+          case OpName.OUT:
+            if(args != null && args.Length > 2 && UInt16.TryParse(args.Substring(2), out tmp_W)) {
+              rCmd = new byte[] { (byte)(op == OpName.OUT ? OP.OUT : OP.IN), (byte)tmp_W, (byte)(tmp_W >> 8), (byte)args[1], (byte)args[0] };
+            }
+            break;
           case OpName.JMP:
           case OpName.CALL:
           case OpName.JZ:
           case OpName.JNZ: {
               Inst l;
               if(_own._labels.TryGetValue(args, out l) && l.pos != -1) {
-                a = l.pos;
+                tmp_d = l.pos;
               } else {
-                a = -1;
+                tmp_d = -1;
                 save = false;
                 if(final) {
                   Log.Error("unknown label " + this.ToString());
                 }
               }
-              rCmd = new byte[] { 0xFF, (byte)a, (byte)(a >> 8) };
+              rCmd = new byte[] { 0xFF, (byte)tmp_d, (byte)(tmp_d >> 8) };
               switch(op) {
               case OpName.JMP:
                 rCmd[0] = (byte)OP.JMP;
@@ -379,8 +387,8 @@ namespace X13 {
 
 
           case OpName.TEST_EQ:
-            if(Int32.TryParse(args, out a)) {
-              rCmd = new byte[] { (byte)OP.TEST_EQ, (byte)a, (byte)(a >> 8), (byte)(a >> 16), (byte)(a >> 24) };
+            if(Int32.TryParse(args, out tmp_d)) {
+              rCmd = new byte[] { (byte)OP.TEST_EQ, (byte)tmp_d, (byte)(tmp_d >> 8), (byte)(tmp_d >> 16), (byte)(tmp_d >> 24) };
             }
             break;
           case OpName.NOP:
@@ -438,6 +446,8 @@ namespace X13 {
       OVER,
       ROT,
 
+      IN,
+      OUT,
       JMP,
       CALL,
       SJMP,
@@ -482,7 +492,7 @@ namespace X13 {
       CLT,
       CLE,
 
-      NOT_L=0x28,
+      NOT_L = 0x28,
       AND_L,
       OR_L,
       XOR_L,
@@ -565,28 +575,28 @@ namespace X13 {
       ST_LE,
       ST_LF,
 
-      LDM_B1_S=0x80,
+      LDM_B1_S = 0x80,
       LDM_S1_S,
       LDM_S2_S,
       LDM_S4_S,
       LDM_U1_S,
       LDM_U2_S,
 
-      LDM_B1_CS8=0x88,
+      LDM_B1_CS8 = 0x88,
       LDM_S1_CS8,
       LDM_S2_CS8,
       LDM_S4_CS8,
       LDM_U1_CS8,
       LDM_U2_CS8,
 
-      LDM_B1_CS16=0x90,
+      LDM_B1_CS16 = 0x90,
       LDM_S1_CS16,
       LDM_S2_CS16,
       LDM_S4_CS16,
       LDM_U1_CS16,
       LDM_U2_CS16,
 
-      LDM_B1_C16=0x98,
+      LDM_B1_C16 = 0x98,
       LDM_S1_C16,
       LDM_S2_C16,
       LDM_S4_C16,
@@ -613,12 +623,14 @@ namespace X13 {
       STM_S2_C16,
       STM_S4_C16,
 
+      IN = 0xC0,
+      OUT = 0xC1,
 
-      SJMP=0xF0,
+      SJMP = 0xF0,
       JZ = 0xF1,
       JNZ = 0xF2,
       JMP = 0xF3,
-      SCALL=0xF4,
+      SCALL = 0xF4,
       CALL = 0xF7,
 
       TEST_EQ = 0xFE,
