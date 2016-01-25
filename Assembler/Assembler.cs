@@ -136,6 +136,7 @@ namespace X13 {
         bool save = true;
         if(rCmd == null) {
           int a;
+          byte tmp_z;
           switch(op) {
           case OpName.LD:
             if(Int32.TryParse(args, out a)) {
@@ -152,7 +153,7 @@ namespace X13 {
               } else {
                 rCmd = new byte[] { (byte)OP.LDI_S4, (byte)a, (byte)(a >> 8), (byte)(a >> 16), (byte)(a >> 24) };
               }
-            } else if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out a)) {
+            } else if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out a)) {
               switch(args[0]) {
               case 'L':
               case 'l':
@@ -181,12 +182,24 @@ namespace X13 {
                 rCmd = new byte[] { (byte)OP.LDM_S4_C16, (byte)a, (byte)(a >> 8) };
                 break;
               }
+            } else if(args.Length > 1 && args[0]=='A'){
+              Inst l;
+              if(_own._labels.TryGetValue(args, out l) && l.pos != -1) {
+                a = l.pos;
+              } else {
+                a = -1;
+                save = false;
+                if(final) {
+                  Log.Error("unknown label " + this.ToString());
+                }
+              }
+              rCmd = new byte[] { (byte)OP.LDI_U2, (byte)a, (byte)(a >> 8) };
             } else if(final) {
               Log.Error("unknown argument " + this.ToString());
             }
             break;
           case OpName.ST:
-            if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out a)) {
+            if(args.Length > 1 && "LlPpzBbWwd".Contains(args[0]) && Int32.TryParse(args.Substring(1), System.Globalization.NumberStyles.Integer, CultureInfo.InvariantCulture, out a)) {
               switch(args[0]) {
               case 'L':
               case 'l':
@@ -200,14 +213,10 @@ namespace X13 {
                 rCmd = new byte[] { (byte)OP.STM_B1_C16, (byte)a, (byte)(a >> 8) };
                 break;
               case 'B':
-                rCmd = new byte[] { (byte)OP.STM_U1_C16, (byte)a, (byte)(a >> 8) };
-                break;
               case 'b':
                 rCmd = new byte[] { (byte)OP.STM_S1_C16, (byte)a, (byte)(a >> 8) };
                 break;
               case 'W':
-                rCmd = new byte[] { (byte)OP.STM_U2_C16, (byte)a, (byte)(a >> 8) };
-                break;
               case 'w':
                 rCmd = new byte[] { (byte)OP.STM_S2_C16, (byte)a, (byte)(a >> 8) };
                 break;
@@ -255,22 +264,27 @@ namespace X13 {
           case OpName.XOR:
             rCmd = new byte[] { (byte)OP.XOR };
             break;
-          case OpName.SHL:
-            rCmd = new byte[] { (byte)OP.SHL };
-            break;
-          case OpName.SHR:
-            rCmd = new byte[] { (byte)OP.SHR };
-            break;
-          case OpName.SRS:
-            rCmd = new byte[] { (byte)OP.SRS };
-            break;
-          case OpName.SHIFT: {
-            byte sa;
-            if(byte.TryParse(args, out sa)) {
-              rCmd = new byte[] { (byte)OP.SHIFT, sa };
-            } else {
-              Log.Error("{0} bad argument" + this.ToString());
+          case OpName.LSL: {
+              if(byte.TryParse(args, out tmp_z)) {
+                rCmd = new byte[] { (byte)OP.LSL, tmp_z };
+              } else {
+                Log.Error("{0} bad argument" + this.ToString());
+              }
             }
+            break;
+          case OpName.LSR:{
+              if(byte.TryParse(args, out tmp_z)) {
+                rCmd = new byte[] { (byte)OP.LSR, tmp_z };
+              } else {
+                Log.Error("{0} bad argument" + this.ToString());
+              }
+            }            break;
+          case OpName.ASR:{
+              if(byte.TryParse(args, out tmp_z)) {
+                rCmd = new byte[] { (byte)OP.ASR, tmp_z };
+              } else {
+                Log.Error("{0} bad argument" + this.ToString());
+              }
             }
             break;
           case OpName.CGT:
@@ -353,6 +367,12 @@ namespace X13 {
               }
             }
             break;
+          case OpName.SJMP:
+            rCmd = new byte[] { (byte)OP.SJMP };
+            break;
+          case OpName.SCALL:
+            rCmd = new byte[] { (byte)OP.SCALL };
+            break;
           case OpName.RET:
             rCmd = new byte[] { (byte)OP.RET };
             break;
@@ -398,10 +418,9 @@ namespace X13 {
       AND,
       OR,
       XOR,
-      SHL,
-      SHR,
-      SRS,
-      SHIFT,
+      LSL,
+      LSR,
+      ASR,
       CGT,
       CGE,
       CLT,
@@ -421,6 +440,8 @@ namespace X13 {
 
       JMP,
       CALL,
+      SJMP,
+      SCALL,
       RET,
       JZ,
       JNZ,
@@ -441,10 +462,10 @@ namespace X13 {
       AND,
       OR,
       XOR,
-      SHL,
-      SHR,
-      SRS,
-      SHIFT,
+      LSL,
+      LSR,
+      ASR,
+
       ADD = 0x10,
       SUB,
       MUL,
@@ -465,6 +486,16 @@ namespace X13 {
       AND_L,
       OR_L,
       XOR_L,
+
+      LDI_ZERO = 0x38,
+      LDI_S1,
+      LDI_S2,
+      LDI_S4,
+      LDI_U1,
+      LDI_U2,
+      LDI_TRUE,
+      LDI_MINUS1,
+
 
       LD_P0 = 0x40,
       LD_P1,
@@ -534,74 +565,60 @@ namespace X13 {
       ST_LE,
       ST_LF,
 
-      LDI_ZERO = 0x80,
-      LDM_B1_S,
+      LDM_B1_S=0x80,
       LDM_S1_S,
-      LDM_U1_S,
       LDM_S2_S,
-      LDM_U2_S,
       LDM_S4_S,
-      LDI_TRUE,
+      LDM_U1_S,
+      LDM_U2_S,
 
-      LDI_S1,
-      LDM_B1_CS8,
+      LDM_B1_CS8=0x88,
       LDM_S1_CS8,
-      LDM_U1_CS8,
       LDM_S2_CS8,
-      LDM_U2_CS8,
       LDM_S4_CS8,
-      LDI_U1,
+      LDM_U1_CS8,
+      LDM_U2_CS8,
 
-      LDI_S2,
-      LDM_B1_CS16,
+      LDM_B1_CS16=0x90,
       LDM_S1_CS16,
-      LDM_U1_CS16,
       LDM_S2_CS16,
-      LDM_U2_CS16,
       LDM_S4_CS16,
-      LDI_U2,
+      LDM_U1_CS16,
+      LDM_U2_CS16,
 
-      LDI_S4,
-      LDM_B1_C16,
+      LDM_B1_C16=0x98,
       LDM_S1_C16,
-      LDM_U1_C16,
       LDM_S2_C16,
-      LDM_U2_C16,
       LDM_S4_C16,
-      LDI_MINUS1,
+      LDM_U1_C16,
+      LDM_U2_C16,
 
-      STM_B1_S = 0xA1,
+      STM_B1_S = 0xA0,
       STM_S1_S,
-      STM_U1_S,
       STM_S2_S,
-      STM_U2_S,
       STM_S4_S,
 
-      STM_B1_CS8 = 0xA9,
+      STM_B1_CS8 = 0xA8,
       STM_S1_CS8,
-      STM_U1_CS8,
       STM_S2_CS8,
-      STM_U2_CS8,
       STM_S4_CS8,
 
-      STM_B1_CS16 = 0xB1,
+      STM_B1_CS16 = 0xB0,
       STM_S1_CS16,
-      STM_U1_CS16,
       STM_S2_CS16,
-      STM_U2_CS16,
       STM_S4_CS16,
 
-      STM_B1_C16 = 0xB9,
+      STM_B1_C16 = 0xB8,
       STM_S1_C16,
-      STM_U1_C16,
       STM_S2_C16,
-      STM_U2_C16,
       STM_S4_C16,
 
 
+      SJMP=0xF0,
       JZ = 0xF1,
+      JNZ = 0xF2,
       JMP = 0xF3,
-      JNZ = 0xF5,
+      SCALL=0xF4,
       CALL = 0xF7,
 
       TEST_EQ = 0xFE,
