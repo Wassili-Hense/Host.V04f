@@ -15,7 +15,7 @@ namespace X13 {
         try {
           string code = File.ReadAllText(args[0]);
           var v = new Compiler();
-          v.Compile(code);
+          v.Parse(code);
           err = 0;
         }
         catch(JSException ex) {
