@@ -19,10 +19,7 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(BitwiseConjunction node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.AND));
-      _sp--;
+      Arg2Op(node, InstCode.AND);
       return this;
     }
     protected override Compiler Visit(ArrayDefinition node) {
@@ -35,12 +32,15 @@ namespace X13 {
     }
     protected override Compiler Visit(Call node) {
       GetVariable f = node.FirstOperand as GetVariable;
+      Inst d;
       if(f != null) {
         var m = GetMerker(f.Descriptor);
         if(m.scope != null) {
           var al = m.scope.memory.Where(z => z.type == VM_DType.PARAMETER).OrderBy(z => z.Addr).ToArray();
           if(al.Length == 0) {
-            cur.code.Add(new Inst(InstCode.LDI_0));
+            d = new Inst(InstCode.LDI_0) { canOptimized = true };
+            cur.code.Add(d);
+            _sp.Push(d);
           } else {
             for(int i = al.Length - 1; i >= 0; i--) {
               if(i < node.Arguments.Length) {
@@ -48,21 +48,25 @@ namespace X13 {
               } else if(al[i].init != null) {  //TODO: check function(a, b=7)
                 al[i].init.Visit(this);
               } else {
-                cur.code.Add(new Inst(InstCode.LDI_0));
+                d = new Inst(InstCode.LDI_0);
+                cur.code.Add(d);
+                _sp.Push(d);
               }
             }
           }
           cur.code.Add(new Inst(InstCode.CALL, m));
           for(int i = al.Length - 1; i > 0; i--) {
             cur.code.Add(new Inst(InstCode.DROP));
-            _sp--;
+            _sp.Pop();
           }
         } else {
           throw new ApplicationException(m.vd.Name + ".scope null pointer exception");
         }
       } else {
         if(node.Arguments.Length == 0) {
-          cur.code.Add(new Inst(InstCode.LDI_0));
+          d = new Inst(InstCode.LDI_0) { canOptimized = true };
+          cur.code.Add(d);
+          _sp.Push(d);
         } else {
           for(int i = node.Arguments.Length - 1; i >= 0; i--) {
             node.Arguments[i].Visit(this);
@@ -71,11 +75,11 @@ namespace X13 {
 
         node.FirstOperand.Visit(this);
         cur.code.Add(new Inst(InstCode.SCALL));
-        _sp--;
+        _sp.Pop();
 
         for(int i = node.Arguments.Length - 1; i > 0; i--) {
           cur.code.Add(new Inst(InstCode.DROP));
-          _sp--;
+          _sp.Pop();
         }
       }
       return this;
@@ -84,22 +88,23 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Constant node) {
-      int v = (int)node.Value;
+      int v = node.Value==null?0:(int)node.Value;
       LoadConstant(node, v);
       return this;
     }
     protected override Compiler Visit(Decrement node) {
       var a = node.FirstOperand as GetVariable;
+      Inst d;
       if(a != null) {
         a.Visit(this);
         if(node.Type == DecrimentType.Predecriment) {
           cur.code.Add(new Inst(InstCode.DEC));
-          cur.code.Add(new Inst(InstCode.DUP));
+          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
         } else {
-          cur.code.Add(new Inst(InstCode.DUP));
+          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
           cur.code.Add(new Inst(InstCode.DEC));
         }
-        _sp++;
+        _sp.Push(d);
         Store(node, a);
       } else {
         throw new NotImplementedException();
@@ -113,13 +118,11 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Division node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.DIV);
+      return this;
     }
     protected override Compiler Visit(Equal node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CEQ));
-      _sp--;
+      Arg2Op(node, InstCode.CEQ);
       return this;
     }
     protected override Compiler Visit(Expression node) {
@@ -127,6 +130,9 @@ namespace X13 {
     }
     protected override Compiler Visit(FunctionDefinition node) {
       ScopePush("Function " + node.Name);
+      var fm = GetMerker(node.Reference.Descriptor);
+      fm.scope = cur;
+      fm.scope.entryPoint = fm;
       for(int i = 0; i < node.Parameters.Count; i++) {
         var m = new Merker() { Addr = (uint)i, type = VM_DType.PARAMETER, vd = node.Parameters[i], init = node.Parameters[i].Initializer };
         cur.memory.Add(m);
@@ -135,9 +141,6 @@ namespace X13 {
       if(cur.code.Count == 0 || cur.code[cur.code.Count - 1]._code.Length != 1 || cur.code[cur.code.Count - 1]._code[0] != (byte)InstCode.RET) {
         cur.code.Add(new Inst(InstCode.RET));
       }
-      var fm = GetMerker(node.Reference.Descriptor);
-      fm.scope = cur;
-      fm.scope.entryPoint = fm;
       ScopePop();
       return this;
     }
@@ -146,35 +149,41 @@ namespace X13 {
     }
     protected override Compiler Visit(GetVariable node) {
       Merker m = GetMerker(node.Descriptor);
+      Inst d;
       switch(m.type) {
       case VM_DType.BOOL:
-        cur.code.Add(new Inst(InstCode.LDM_B1_C16, m, node));
+        d = new Inst(InstCode.LDM_B1_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.UINT8:
-        cur.code.Add(new Inst(InstCode.LDM_U1_C16, m, node));
+        d = new Inst(InstCode.LDM_U1_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.SINT8:
-        cur.code.Add(new Inst(InstCode.LDM_S1_C16, m, node));
+        d = new Inst(InstCode.LDM_S1_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.UINT16:
-        cur.code.Add(new Inst(InstCode.LDM_U2_C16, m, node));
+        d = new Inst(InstCode.LDM_U2_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.SINT16:
-        cur.code.Add(new Inst(InstCode.LDM_S2_C16, m, node));
+        d = new Inst(InstCode.LDM_S2_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.SINT32:
-        cur.code.Add(new Inst(InstCode.LDM_S4_C16, m, node));
+        d = new Inst(InstCode.LDM_S4_C16, m, node) { canOptimized = true };
         break;
       case VM_DType.PARAMETER:
-        cur.code.Add(new Inst((InstCode)(InstCode.LD_P0 + (byte)m.Addr), null, node));
+        d = new Inst((InstCode)(InstCode.LD_P0 + (byte)m.Addr), null, node) { canOptimized = true };
+        break;
+      case VM_DType.INPUT:
+      case VM_DType.OUTPUT:
+        d = new Inst(InstCode.IN, m, node) { canOptimized = true };
         break;
       case VM_DType.LOCAL:
-        cur.code.Add(new Inst((InstCode)(InstCode.LD_L0 + (byte)m.Addr), null, node));
+        d = new Inst((InstCode)(InstCode.LD_L0 + (byte)m.Addr), null, node) { canOptimized = true };
         break;
       default:
         throw new NotImplementedException(node.ToString());
       }
-      _sp++;
+      cur.code.Add(d);
+      _sp.Push(d);
       return this;
     }
     protected override Compiler Visit(VariableReference node) {
@@ -185,16 +194,17 @@ namespace X13 {
     }
     protected override Compiler Visit(Increment node) {
       var a = node.FirstOperand as GetVariable;
+      Inst d;
       if(a != null) {
         a.Visit(this);
         if(node.Type == IncrimentType.Preincriment) {
           cur.code.Add(new Inst(InstCode.INC));
-          cur.code.Add(new Inst(InstCode.DUP));
+          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
         } else {
-          cur.code.Add(new Inst(InstCode.DUP));
+          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
           cur.code.Add(new Inst(InstCode.INC));
         }
-        _sp++;
+        _sp.Push(d);
         Store(node, a);
       } else {
         throw new NotImplementedException();
@@ -208,50 +218,85 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Less node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CLE));
-      _sp--;
+      Arg2Op(node, InstCode.CLT);
       return this;
     }
     protected override Compiler Visit(LessOrEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CLE));
-      _sp--;
+      Arg2Op(node, InstCode.CLE);
       return this;
     }
     protected override Compiler Visit(LogicalConjunction node) {
-      return Visit(node as Expression);
+      Inst d, j1, j2;
+      node.FirstOperand.Visit(this);
+      d = new Inst(InstCode.DUP);
+      cur.code.Add(d);
+      _sp.Push(d);
+      j1 = new Inst(InstCode.JZ);
+      cur.code.Add(j1);
+      node.SecondOperand.Visit(this);
+      _sp.Pop();
+      _sp.Pop();
+      d = new Inst(InstCode.AND_L);
+      cur.code.Add(d);
+      _sp.Push(d);
+      j2 = new Inst(InstCode.LABEL);
+      j1._ref = j2;
+      cur.code.Add(j2);
+      return this;
     }
     protected override Compiler Visit(LogicalNegation node) {
-      return Visit(node as Expression);
+      node.FirstOperand.Visit(this);
+      _sp.Pop();
+      var d = new Inst(InstCode.NOT_L);
+      cur.code.Add(d);
+      _sp.Push(d);
+      return this;
+
     }
     protected override Compiler Visit(LogicalDisjunction node) {
-      return Visit(node as Expression);
+      Inst d, j1, j2;
+      node.FirstOperand.Visit(this);
+      d = new Inst(InstCode.DUP);
+      cur.code.Add(d);
+      _sp.Push(d);
+      j1 = new Inst(InstCode.JNZ);
+      _sp.Pop();
+      cur.code.Add(j1);
+      node.SecondOperand.Visit(this);
+      _sp.Pop();
+      _sp.Pop();
+      d = new Inst(InstCode.OR_L);
+      cur.code.Add(d);
+      _sp.Push(d);
+      j2 = new Inst(InstCode.LABEL);
+      j1._ref = j2;
+      cur.code.Add(j2);
+      return this;
     }
     protected override Compiler Visit(Modulo node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.MOD);
+      return this;
     }
     protected override Compiler Visit(More node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CGT));
-      _sp--;
+      Arg2Op(node, InstCode.CGT);
       return this;
     }
     protected override Compiler Visit(MoreOrEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CGE));
-      _sp--;
+      Arg2Op(node, InstCode.CGE);
       return this;
     }
     protected override Compiler Visit(Multiplication node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.MUL);
+      return this;
     }
     protected override Compiler Visit(Negation node) {
-      return Visit(node as Expression);
+      Inst d;
+      node.FirstOperand.Visit(this);
+      _sp.Pop();
+      d = new Inst(InstCode.NEG);
+      cur.code.Add(d);
+      _sp.Push(d);
+      return this;
     }
     protected override Compiler Visit(New node) {
       return Visit(node as Expression);
@@ -260,15 +305,16 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(BitwiseNegation node) {
+      Inst d;
       node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.NOT, null, node));
+      _sp.Pop();
+      d = new Inst(InstCode.NOT);
+      cur.code.Add(d);
+      _sp.Push(d);
       return this;
     }
     protected override Compiler Visit(NotEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CNE));
-      _sp--;
+      Arg2Op(node, InstCode.CNE);
       return this;
     }
     protected override Compiler Visit(NumberAddition node) {
@@ -276,38 +322,23 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(NumberLess node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CLT));
-      _sp--;
+      Arg2Op(node, InstCode.CLT);
       return this;
     }
     protected override Compiler Visit(NumberLessOrEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CLE));
-      _sp--;
+      Arg2Op(node, InstCode.CLE);
       return this;
     }
     protected override Compiler Visit(NumberMore node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CGT));
-      _sp--;
+      Arg2Op(node, InstCode.CGT);
       return this;
     }
     protected override Compiler Visit(NumberMoreOrEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CGE));
-      _sp--;
+      Arg2Op(node, InstCode.CGE);
       return this;
     }
     protected override Compiler Visit(BitwiseDisjunction node) {
-      node.FirstOperand.Visit(this);
-      node.SecondOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.OR, null, node));
-      _sp--;
+      Arg2Op(node, InstCode.OR);
       return this;
     }
     protected override Compiler Visit(RegExpExpression node) {
@@ -317,30 +348,27 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(SignedShiftLeft node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.LSL);
+      return this;
     }
     protected override Compiler Visit(SignedShiftRight node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.ASR);
+      return this;
     }
     protected override Compiler Visit(StrictEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CEQ));
-      _sp--;
+      Arg2Op(node, InstCode.CEQ);
       return this;
     }
     protected override Compiler Visit(StrictNotEqual node) {
-      node.SecondOperand.Visit(this);
-      node.FirstOperand.Visit(this);
-      cur.code.Add(new Inst(InstCode.CNE));
-      _sp--;
+      Arg2Op(node, InstCode.CNE);
       return this;
     }
     protected override Compiler Visit(StringConcatenation node) {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Substract node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.SUB);
+      return this;
     }
     protected override Compiler Visit(Conditional node) {
       return Visit(node as Expression);
@@ -364,10 +392,12 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(UnsignedShiftRight node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.LSR);
+      return this;
     }
     protected override Compiler Visit(BitwiseExclusiveDisjunction node) {
-      return Visit(node as Expression);
+      Arg2Op(node, InstCode.XOR);
+      return this;
     }
     protected override Compiler Visit(Yield node) {
       return Visit(node as Expression);
@@ -390,7 +420,7 @@ namespace X13 {
           if(type == VM_DType.INPUT || type == VM_DType.OUTPUT) {
             addr = (uint)((uint)(((byte)v.Name[0]) << 24) | (uint)(((byte)v.Name[1]) << 16) | addr);
           }
-        } else {
+        } else if(v.LexicalScope) {
           addr = (uint)cur.memory.Where(z => z.type == VM_DType.LOCAL).Count();
           if(addr < 16) {
             type = VM_DType.LOCAL;
@@ -398,6 +428,9 @@ namespace X13 {
             type = VM_DType.SINT32;
             addr = uint.MaxValue;
           }
+        } else {
+          type = VM_DType.SINT32;
+          addr = uint.MaxValue;
         }
         if(type == VM_DType.LOCAL) {
           m = cur.memory.FirstOrDefault(z => z.vd.Name == v.Name && z.type == type);
@@ -416,15 +449,19 @@ namespace X13 {
         if(v.Initializer != null) {
           v.Initializer.Visit(this);
         } else if(type == VM_DType.LOCAL) {
-          cur.code.Add(new Inst(InstCode.LDI_0));
+          var d = new Inst(InstCode.LDI_0);
+          cur.code.Add(d);
+          _sp.Push(d);
         }
       }
-      int sp = _sp;
+      int sp = _sp.Count;
       for(var i = 0; i < node.Body.Length; i++) {
         node.Body[i].Visit(this);
-        while(_sp > sp) {
-          cur.code.Add(new Inst(InstCode.DROP));
-          _sp--;
+        while(_sp.Count > sp) {
+          var d = _sp.Pop();
+          if(!d.canOptimized || !cur.code.Remove(d) ) {
+            cur.code.Add(new Inst(InstCode.DROP));
+          }
         }
       }
       return this;
@@ -476,7 +513,7 @@ namespace X13 {
       
       j1 = new Inst(InstCode.JZ, null, node.Condition);
       cur.code.Add(j1);
-      _sp--;
+      _sp.Pop();
       node.Then.Visit(this);
       if(node.Else != null) {
         j2 = new Inst(InstCode.JMP);
@@ -505,7 +542,7 @@ namespace X13 {
       if(node.Value != null) {
         node.Value.Visit(this);
         cur.code.Add(new Inst(InstCode.ST_P0, null, node));
-        _sp--;
+        _sp.Pop();
       }
       cur.code.Add(new Inst(InstCode.RET, null, null));
       return this;

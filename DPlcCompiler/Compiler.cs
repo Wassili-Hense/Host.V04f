@@ -8,7 +8,7 @@ using System.Text;
 
 namespace X13 {
   internal partial class Compiler : Visitor<Compiler> {
-    private int _sp;
+    private Stack<Inst> _sp;
     private List<Merker> _memory;
     private List<Scope> _programm;
     private Stack<Scope> _scope;
@@ -16,14 +16,8 @@ namespace X13 {
     private SortedList<string, VM_DType> _predefs;
 
     public Compiler() {
-      _predefs=new SortedList<string,VM_DType>();
-      _predefs["Mz"]=VM_DType.BOOL;
-      _predefs["Mb"]=VM_DType.SINT8;
-      _predefs["MB"]=VM_DType.UINT8;
-      _predefs["Mw"]=VM_DType.SINT16;
-      _predefs["MW"]=VM_DType.UINT16;
-      _predefs["Md"]=VM_DType.SINT32;
-      _predefs["Op"]=VM_DType.OUTPUT;
+      _predefs = new SortedList<string, VM_DType>();
+      _predefs["Op"] = VM_DType.OUTPUT;
     }
     private void ScopePush(string name) {
       cur = new Scope(name);
@@ -67,8 +61,9 @@ namespace X13 {
           }
         }
       }
-      cur.code.Add(new Inst(c, null, node));
-      _sp++;
+      var d = new Inst(c, null, node) { canOptimized = true };
+      cur.code.Add(d);
+      _sp.Push(d);
     }
     private void Store(CodeNode node, GetVariable a) {
       if(a != null) {
@@ -100,7 +95,7 @@ namespace X13 {
         default:
           throw new NotImplementedException(node.ToString());
         }
-        _sp--;
+        _sp.Pop();
       } else {
         throw new NotImplementedException(node.ToString());
       }
@@ -108,33 +103,51 @@ namespace X13 {
     private void AddCommon(CodeNode node, Expression a, Expression b) {
       var c1 = a as Constant;
       var c2 = b as Constant;
+      Inst d = null;
       if(c1 != null && c2 != null) {
         LoadConstant(node, (int)(c1.Value.Value) + (int)(c2.Value.Value));
       } else if(c1 != null && (int)(c1.Value.Value) == 1) {
         b.Visit(this);
-        cur.code.Add(new Inst(InstCode.INC));
+        _sp.Pop();
+        d = new Inst(InstCode.INC);
       } else if(c1 != null && (int)(c1.Value.Value) == -1) {
         b.Visit(this);
-        cur.code.Add(new Inst(InstCode.DEC));
+        _sp.Pop();
+        d = new Inst(InstCode.DEC);
       } else if(c2 != null && (int)(c2.Value.Value) == 1) {
         a.Visit(this);
         cur.code.Add(new Inst(InstCode.INC));
       } else if(c2 != null && (int)(c2.Value.Value) == -1) {
         a.Visit(this);
-        cur.code.Add(new Inst(InstCode.DEC, null, node));
+        _sp.Pop();
+        d = new Inst(InstCode.DEC, null, node);
       } else {
         b.Visit(this);
         a.Visit(this);
-        cur.code.Add(new Inst(InstCode.ADD));
-        _sp--;
+        _sp.Pop();
+        _sp.Pop();
+        d = new Inst(InstCode.ADD);
+      }
+      if(d != null) {
+        cur.code.Add(d);
+        _sp.Push(d);
       }
     }
-
+    private void Arg2Op(Expression node, InstCode c) {
+      Inst d;
+      node.SecondOperand.Visit(this);
+      node.FirstOperand.Visit(this);
+      _sp.Pop();
+      _sp.Pop();
+      d = new Inst(c);
+      cur.code.Add(d);
+      _sp.Push(d);
+    }
     public void Parse(string code) {
       _memory = new List<Merker>();
       _scope = new Stack<Scope>();
       _programm = new List<Scope>();
-      _sp = 0;
+      _sp = new Stack<Inst>();
       ScopePush("");
 
       var module = new Module(code);
@@ -391,7 +404,7 @@ namespace X13 {
     SCALL = 0xF4,
     CALL = 0xF7,
 
-    LABEL=0xF8,
+    LABEL = 0xF8,
 
     TEST_EQ = 0xFE,
     RET = 0xFF,
@@ -410,7 +423,7 @@ namespace X13 {
       Prepare(cmd);
     }
     public bool Link() {
-      if(_code.Length <= 1 || (_param == null && _ref==null)) {
+      if(_code.Length <= 1 || (_param == null && _ref == null)) {
         return true;
       }
       Prepare((InstCode)_code[0]);
@@ -626,6 +639,7 @@ namespace X13 {
         return null;
       }
     }
+    public bool canOptimized;
   }
   internal enum VM_DType {
     NONE,
@@ -641,5 +655,4 @@ namespace X13 {
     INPUT,
     OUTPUT,
   }
-
 }
