@@ -35,6 +35,7 @@ namespace X13 {
         Log.Info("USE: DPlcCompiler <sourcer file>.js");
       }
       Log.Finish();
+      Console.ReadKey();
     }
   }
 }

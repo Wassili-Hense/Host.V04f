@@ -10,9 +10,7 @@ using NiL.JS.Statements;
 namespace X13 {
   internal partial class Compiler : Visitor<Compiler> {
     protected override Compiler Visit(CodeNode node) {
-      cur.code.Add(new Inst(InstCode.NOP, null, node));
-      Log.Warning("//{0}//", node.GetType().Name);
-      return this;
+      throw new NotSupportedException("Visit(" + node.GetType().Name + " " + node.ToString() + ")");
     }
     protected override Compiler Visit(Addition node) {
       AddCommon(node, node.FirstOperand, node.SecondOperand);
@@ -27,7 +25,7 @@ namespace X13 {
     }
     protected override Compiler Visit(Assignment node) {
       node.SecondOperand.Visit(this);
-      Store(node, node.FirstOperand as GetVariable);
+      Store(node, node.FirstOperand);
       return this;
     }
     protected override Compiler Visit(Call node) {
@@ -38,7 +36,7 @@ namespace X13 {
         if(m.scope != null) {
           var al = m.scope.memory.Where(z => z.type == VM_DType.PARAMETER).OrderBy(z => z.Addr).ToArray();
           if(al.Length == 0) {
-            d = new Inst(InstCode.LDI_0) { canOptimized = true };
+            d = new Inst(InstCode.LDI_0);
             cur.code.Add(d);
             _sp.Push(d);
           } else {
@@ -56,15 +54,17 @@ namespace X13 {
           }
           cur.code.Add(new Inst(InstCode.CALL, m));
           for(int i = al.Length - 1; i > 0; i--) {
-            cur.code.Add(new Inst(InstCode.DROP));
+            cur.code.Add(new Inst(InstCode.NIP));
+            d = _sp.Pop();
             _sp.Pop();
+            _sp.Push(d);
           }
         } else {
           throw new ApplicationException(m.vd.Name + ".scope null pointer exception");
         }
       } else {
         if(node.Arguments.Length == 0) {
-          d = new Inst(InstCode.LDI_0) { canOptimized = true };
+          d = new Inst(InstCode.LDI_0);
           cur.code.Add(d);
           _sp.Push(d);
         } else {
@@ -78,8 +78,10 @@ namespace X13 {
         _sp.Pop();
 
         for(int i = node.Arguments.Length - 1; i > 0; i--) {
-          cur.code.Add(new Inst(InstCode.DROP));
+          cur.code.Add(new Inst(InstCode.NIP ));
+          d=_sp.Pop();
           _sp.Pop();
+          _sp.Push(d);
         }
       }
       return this;
@@ -94,17 +96,22 @@ namespace X13 {
     }
     protected override Compiler Visit(Decrement node) {
       var a = node.FirstOperand as GetVariable;
-      Inst d;
+      Inst d1, d2;
       if(a != null) {
         a.Visit(this);
+        _sp.Pop();
         if(node.Type == DecrimentType.Predecriment) {
-          cur.code.Add(new Inst(InstCode.DEC));
-          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
+          d2 = new Inst(InstCode.DUP) { canOptimized = true };
+          _sp.Push(d2);
+          cur.code.Add(d1=new Inst(InstCode.DEC));
+          _sp.Push(d1);
+          cur.code.Add(d2);
         } else {
-          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
-          cur.code.Add(new Inst(InstCode.DEC));
+          cur.code.Add(d1 = new Inst(InstCode.DUP) { canOptimized = true });
+          _sp.Push(d1);
+          cur.code.Add(d1=new Inst(InstCode.DEC));
+          _sp.Push(d1);
         }
-        _sp.Push(d);
         Store(node, a);
       } else {
         throw new NotImplementedException();
@@ -126,6 +133,10 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(Expression node) {
+      var v = node as AssignmentOperatorCache;
+      if(v != null) {
+        return v.Source.Visit(this);
+      }
       return Visit(node as CodeNode);
     }
     protected override Compiler Visit(FunctionDefinition node) {
@@ -152,32 +163,32 @@ namespace X13 {
       Inst d;
       switch(m.type) {
       case VM_DType.BOOL:
-        d = new Inst(InstCode.LDM_B1_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_B1_C16, m, node);
         break;
       case VM_DType.UINT8:
-        d = new Inst(InstCode.LDM_U1_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_U1_C16, m, node);
         break;
       case VM_DType.SINT8:
-        d = new Inst(InstCode.LDM_S1_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_S1_C16, m, node);
         break;
       case VM_DType.UINT16:
-        d = new Inst(InstCode.LDM_U2_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_U2_C16, m, node);
         break;
       case VM_DType.SINT16:
-        d = new Inst(InstCode.LDM_S2_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_S2_C16, m, node);
         break;
       case VM_DType.SINT32:
-        d = new Inst(InstCode.LDM_S4_C16, m, node) { canOptimized = true };
+        d = new Inst(InstCode.LDM_S4_C16, m, node);
         break;
       case VM_DType.PARAMETER:
-        d = new Inst((InstCode)(InstCode.LD_P0 + (byte)m.Addr), null, node) { canOptimized = true };
+        d = new Inst((InstCode)(InstCode.LD_P0 + (byte)m.Addr));
         break;
       case VM_DType.INPUT:
       case VM_DType.OUTPUT:
-        d = new Inst(InstCode.IN, m, node) { canOptimized = true };
+        d = new Inst(InstCode.IN, m, node);
         break;
       case VM_DType.LOCAL:
-        d = new Inst((InstCode)(InstCode.LD_L0 + (byte)m.Addr), null, node) { canOptimized = true };
+        d = new Inst((InstCode)(InstCode.LD_L0 + (byte)m.Addr));
         break;
       default:
         throw new NotImplementedException(node.ToString());
@@ -194,17 +205,22 @@ namespace X13 {
     }
     protected override Compiler Visit(Increment node) {
       var a = node.FirstOperand as GetVariable;
-      Inst d;
+      Inst d1, d2;
       if(a != null) {
         a.Visit(this);
+        _sp.Pop();
         if(node.Type == IncrimentType.Preincriment) {
-          cur.code.Add(new Inst(InstCode.INC));
-          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
+          d2 = new Inst(InstCode.DUP) { canOptimized = true };
+          _sp.Push(d2);
+          cur.code.Add(d1 = new Inst(InstCode.INC));
+          _sp.Push(d1);
+          cur.code.Add(d2);
         } else {
-          cur.code.Add(d = new Inst(InstCode.DUP) { canOptimized = true });
-          cur.code.Add(new Inst(InstCode.INC));
+          cur.code.Add(d1 = new Inst(InstCode.DUP) { canOptimized = true });
+          _sp.Push(d1);
+          cur.code.Add(d2=new Inst(InstCode.INC));
+          _sp.Push(d2);
         }
-        _sp.Push(d);
         Store(node, a);
       } else {
         throw new NotImplementedException();
@@ -403,14 +419,36 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Break node) {
-      return Visit(node as CodeNode);
+      DPC_Loop cl;
+      if(node.Label != null) {
+        var l = node.Label.ToString();
+        cl = cur.loops.FirstOrDefault(z => z.labels.Any(y => y == l));
+        if(cl == null) {
+          cl = cur.loops.Peek();
+        }
+      } else {
+        cl = cur.loops.Peek();
+      }
+      int tmp = _sp.Count;
+      while(tmp > cl.sp1) {
+        tmp--;
+        cur.code.Add(new Inst(InstCode.DROP));
+      }
+      cur.code.Add(new Inst(InstCode.JMP) { _ref = cl.L3 });
+      return this;
     }
     protected override Compiler Visit(CodeBlock node) {
       Merker m;
       uint addr;
       VM_DType type;
+      int sp2 = _sp.Count;
 
-      foreach(var v in node.Variables.OrderByDescending(z => z.ReferenceCount)) {
+      List<Assignment> inList=new List<Assignment>();
+      foreach(var vd in node.Body.Select(z => z as VariableDefinition).Where(z => z != null)){
+        inList.AddRange(vd.Initializers.Select(z => z as Assignment).Where(z => z != null));
+      }
+
+      foreach(var v in node.Variables) {
         m = null;
         addr = uint.MaxValue;
         if(v.Initializer != null && v.Initializer is FunctionDefinition) {
@@ -425,8 +463,7 @@ namespace X13 {
           if(addr < 16) {
             type = VM_DType.LOCAL;
           } else {
-            type = VM_DType.SINT32;
-            addr = uint.MaxValue;
+            throw new ArgumentOutOfRangeException("Too many local variables: " + v.Name + "in \n" + v.Owner.ToString());
           }
         } else {
           type = VM_DType.SINT32;
@@ -449,9 +486,15 @@ namespace X13 {
         if(v.Initializer != null) {
           v.Initializer.Visit(this);
         } else if(type == VM_DType.LOCAL) {
-          var d = new Inst(InstCode.LDI_0);
-          cur.code.Add(d);
-          _sp.Push(d);
+          var a2 = inList.FirstOrDefault(z => (z.FirstOperand as GetVariable) != null && (z.FirstOperand as GetVariable).Descriptor == m.vd);
+          if(a2 != null) {
+            a2.SecondOperand.Visit(this);
+            m.initialized = true;
+          } else {
+            var d = new Inst(InstCode.LDI_0);
+            cur.code.Add(d);
+            _sp.Push(d);
+          }
         }
       }
       int sp = _sp.Count;
@@ -464,16 +507,62 @@ namespace X13 {
           }
         }
       }
+      while(_sp.Count > sp2) {
+        var d = _sp.Pop();
+        cur.code.Add(new Inst(InstCode.DROP));
+        uint idx = (uint)cur.memory.Where(z => z.type == VM_DType.LOCAL).Count();
+        if(idx == 0 || cur.memory.RemoveAll(z => z.type == VM_DType.LOCAL && z.Addr == idx - 1) != 1) {
+          throw new ApplicationException("Stack error in " + node.ToString());
+        }
+      }
+
       return this;
     }
     protected override Compiler Visit(Continue node) {
-      return Visit(node as CodeNode);
+      DPC_Loop cl;
+      if(node.Label!=null) {
+        var l = node.Label.ToString();
+        cl = cur.loops.FirstOrDefault(z => z.labels.Any(y => y == l));
+        if(cl == null) {
+          cl = cur.loops.Peek();
+        }
+      } else {
+        cl = cur.loops.Peek();
+      }
+      int tmp=_sp.Count;
+      while(tmp > cl.sp2) {
+        tmp--;
+        cur.code.Add(new Inst(InstCode.DROP));
+      }
+      cur.code.Add(new Inst(InstCode.JMP) { _ref = cl.L2 });
+      return this;
     }
     protected override Compiler Visit(Debugger node) {
       return Visit(node as CodeNode);
     }
     protected override Compiler Visit(DoWhile node) {
-      return Visit(node as CodeNode);
+      var cl = new DPC_Loop(_sp.Count, node.Labels);
+      cur.loops.Push(cl);
+
+      cur.code.Add(cl.L1);
+
+      cl.sp2 = _sp.Count();
+
+      node.Body.Visit(this);
+
+      while(_sp.Count > cl.sp2) {
+        _sp.Pop();
+         cur.code.Add(new Inst(InstCode.DROP));
+      }
+
+      cur.code.Add(cl.L2);
+      node.Condition.Visit(this);
+      cur.code.Add(new Inst(InstCode.JNZ, null, node.Condition){ _ref=cl.L1});
+      cur.code.Add(cl.L3);
+      _sp.Pop();
+      cur.loops.Pop();
+
+      return this;
     }
     protected override Compiler Visit(Empty node) {
       return Visit(node as CodeNode);
@@ -485,27 +574,33 @@ namespace X13 {
       return Visit(node as CodeNode);
     }
     protected override Compiler Visit(For node) {
-      //cur.code.Append("for(");
-      //if(node.Initializator != null) {
-      //  node.Initializator.Visit(this);
-      //}
-      //cur.code.Append(";");
-      //if(node.Condition != null) {
-      //  node.Condition.Visit(this);
-      //}
-      //cur.code.Append(";");
-      //if(node.Post != null) {
-      //  node.Post.Visit(this);
-      //}
-      //if(node.Body != null) {
-      //  cur.code.Append("){\n");
-      //  node.Body.Visit(this);
-      //  cur.code.Append("}\n");
-      //} else {
-      //  cur.code.Append(");");
-      //}
-      //return this;
-      return Visit(node as CodeNode);
+      var cl = new DPC_Loop(_sp.Count, node.Labels.ToArray());
+      cur.loops.Push(cl);
+
+      if(node.Initializator != null) {
+        node.Initializator.Visit(this);
+      }
+      cur.code.Add(cl.L1);
+      node.Condition.Visit(this);
+      cur.code.Add(new Inst(InstCode.JZ, null, node.Condition) { _ref = cl.L3 });
+      _sp.Pop();
+      cl.sp2 = _sp.Count;
+
+      node.Body.Visit(this);
+
+      while(_sp.Count > cl.sp2) {
+        _sp.Pop();
+        cur.code.Add(new Inst(InstCode.DROP));
+      }
+      cur.code.Add(cl.L2);
+      if(node.Post != null) {
+        node.Post.Visit(this);
+      }
+      cur.code.Add(new Inst(InstCode.JMP) { _ref = cl.L1 });
+      cur.code.Add(cl.L3);
+
+      cur.loops.Pop();
+      return this;
     }
     protected override Compiler Visit(IfElse node) {
       Inst j1, j2, j3;
@@ -548,7 +643,47 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(Switch node) {
-      return Visit(node as CodeNode);
+      int i, j;
+      var labels = new Inst[node.Cases.Length+1];
+      labels[labels.Length - 1] = new Inst(InstCode.LABEL);
+      var cvs=node.Cases.Where(z=>z.Statement!=null).ToArray();
+      node.Image.Visit(this);
+      for(i = 0; i < cvs.Length; i++) {
+        if(i < cvs.Length - 1) {
+          cur.code.Add(new Inst(InstCode.DUP));
+        }
+        labels[i] = new Inst(InstCode.LABEL);
+        cvs[i].Statement.Visit(this);
+        cur.code.Add(new Inst(InstCode.CEQ));
+        cur.code.Add(new Inst(InstCode.JNZ, null, cvs[i].Statement) { _ref = labels[i] });
+        _sp.Pop();
+      }
+      _sp.Pop();
+      if(cvs.Length == node.Cases.Length) {
+        cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length-1] });
+      } else {
+        labels[labels.Length - 2] = new Inst(InstCode.LABEL);
+        cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length - 2] });
+        var tmp = new SwitchCase[node.Cases.Length];
+        Array.Copy(cvs, tmp, cvs.Length);
+        tmp[tmp.Length - 1] = node.Cases.First(z => z.Statement == null);
+        cvs=tmp;
+      }
+      for(i = 0; i < node.Body.Length; i++) {
+        for(j = 0; j < cvs.Length; j++) {
+          if(cvs[j].Index == i) {
+            cur.code.Add(labels[j]);
+            break;
+          }
+        }
+        if(node.Body[i] is Break) {
+          cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length - 1] });
+        } else {
+          node.Body[i].Visit(this);
+        }
+        cur.code.Add(labels[labels.Length-1]);
+      }
+      return this;
     }
     protected override Compiler Visit(Throw node) {
       return Visit(node as CodeNode);
@@ -558,13 +693,42 @@ namespace X13 {
     }
     protected override Compiler Visit(VariableDefinition node) {
       int i;
+      Assignment a1;
       for(i = 0; i < node.Initializers.Length; i++) {
+        if(node.Initializers[i] is GetVariable) {
+          continue;
+        } else if((a1 = node.Initializers[i] as Assignment) != null) {
+          var m = GetMerker((a1.FirstOperand as GetVariable).Descriptor);
+          if(m != null && m.initialized) {
+            continue;
+          }
+        }
         node.Initializers[i].Visit(this);
       }
       return this;
     }
     protected override Compiler Visit(While node) {
-      return Visit(node as CodeNode);
+      var cl = new DPC_Loop(_sp.Count, node.Labels);
+      cur.loops.Push(cl);
+
+      cur.code.Add(cl.L1);
+      cur.code.Add(cl.L2);
+      node.Condition.Visit(this);
+      cur.code.Add(new Inst(InstCode.JZ, null, node.Condition) { _ref = cl.L3 });
+      _sp.Pop();
+      cl.sp2 = _sp.Count;
+
+      node.Body.Visit(this);
+
+      while(_sp.Count > cl.sp2) {
+        _sp.Pop();
+        cur.code.Add(new Inst(InstCode.DROP));
+      }
+
+      cur.code.Add(new Inst(InstCode.JMP) { _ref = cl.L1 });
+      cur.code.Add(cl.L3);
+      cur.loops.Pop();
+      return this;
     }
     protected override Compiler Visit(With node) {
       return Visit(node as CodeNode);

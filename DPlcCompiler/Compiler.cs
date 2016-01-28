@@ -65,7 +65,14 @@ namespace X13 {
       cur.code.Add(d);
       _sp.Push(d);
     }
-    private void Store(CodeNode node, GetVariable a) {
+    private void Store(CodeNode node, Expression e) {
+      GetVariable a = e as GetVariable;
+      if(a == null) {
+        AssignmentOperatorCache a2 = e as AssignmentOperatorCache;
+        if(a2 != null) {
+          a = a2.Source as GetVariable;
+        }
+      }
       if(a != null) {
         var m = GetMerker(a.Descriptor);
         switch(m.type) {
@@ -150,7 +157,7 @@ namespace X13 {
       _sp = new Stack<Inst>();
       ScopePush("");
 
-      var module = new Module(code);
+      var module = new Module(code, null, Options.SuppressConstantPropogation);
       module.Root.Visit(this);
       cur = _programm[0];
       if(cur.code.Count == 0 || cur.code[cur.code.Count - 1]._code.Length != 1 || cur.code[cur.code.Count - 1]._code[0] != (byte)InstCode.RET) {
@@ -190,20 +197,24 @@ namespace X13 {
     public VariableDescriptor vd;
     public Expression init;
     public Scope scope;
+    public bool initialized;
   }
   internal class Scope {
     public Scope(string name) {
       this.name = name;
       code = new List<Inst>();
       memory = new List<Merker>();
+      loops = new Stack<DPC_Loop>();
     }
     public string name;
     public List<Inst> code;
     public List<Merker> memory;
     public Merker entryPoint;
+    public Stack<DPC_Loop> loops;
 
     public override string ToString() {
       var sb = new StringBuilder();
+      int ls = 0;
       sb.Append(this.name).Append("\n");
       byte[] hex;
       int j;
@@ -220,202 +231,39 @@ namespace X13 {
             sb.Append("   ");
           }
         }
-        sb.Append("\t| ").Append(c.ToString());
+        sb.Append("| ").Append(c.ToString());
         if(c._cn != null) {
-          sb.Append("  \t\t; ").Append(c._cn.ToString());
+          while((sb.Length-ls) < 46) {
+            sb.Append(" ");
+          }
+          sb.Append("; ").Append(c._cn.ToString());
         }
         sb.Append("\r\n");
+        ls = sb.Length;
       }
       return sb.ToString();
     }
   }
-  internal enum InstCode : byte {
-    NOP = 0x00,
-
-    DUP = 0x02,
-    DROP,
-    NIP,
-    SWAP,
-    OVER,
-    ROT,
-
-    NOT = 0x08,
-    AND,
-    OR,
-    XOR,
-    LSL,
-    LSR,
-    ASR,
-
-    ADD = 0x10,
-    SUB,
-    MUL,
-    DIV,
-    MOD,
-    INC,
-    DEC,
-    NEG,
-
-    CEQ = 0x20,
-    CNE,
-    CGT,
-    CGE,
-    CLT,
-    CLE,
-
-    NOT_L = 0x28,
-    AND_L,
-    OR_L,
-    XOR_L,
-
-    LDI_0 = 0x38,
-    LDI_S1,
-    LDI_S2,
-    LDI_S4,
-    LDI_U1,
-    LDI_U2,
-    LDI_1,
-    LDI_M1,
-
-
-    LD_P0 = 0x40,
-    LD_P1,
-    LD_P2,
-    LD_P3,
-    LD_P4,
-    LD_P5,
-    LD_P6,
-    LD_P7,
-    LD_P8,
-    LD_P9,
-    LD_PA,
-    LD_PB,
-    LD_PC,
-    LD_PD,
-    LD_PE,
-    LD_PF,
-
-    LD_L0 = 0x50,
-    LD_L1,
-    LD_L2,
-    LD_L3,
-    LD_L4,
-    LD_L5,
-    LD_L6,
-    LD_L7,
-    LD_L8,
-    LD_L9,
-    LD_LA,
-    LD_LB,
-    LD_LC,
-    LD_LD,
-    LD_LE,
-    LD_LF,
-
-    ST_P0 = 0x60,
-    ST_P1,
-    ST_P2,
-    ST_P3,
-    ST_P4,
-    ST_P5,
-    ST_P6,
-    ST_P7,
-    ST_P8,
-    ST_P9,
-    ST_PA,
-    ST_PB,
-    ST_PC,
-    ST_PD,
-    ST_PE,
-    ST_PF,
-
-    ST_L0 = 0x70,
-    ST_L1,
-    ST_L2,
-    ST_L3,
-    ST_L4,
-    ST_L5,
-    ST_L6,
-    ST_L7,
-    ST_L8,
-    ST_L9,
-    ST_LA,
-    ST_LB,
-    ST_LC,
-    ST_LD,
-    ST_LE,
-    ST_LF,
-
-    LDM_B1_S = 0x80,
-    LDM_S1_S,
-    LDM_S2_S,
-    LDM_S4_S,
-    LDM_U1_S,
-    LDM_U2_S,
-
-    LDM_B1_CS8 = 0x88,
-    LDM_S1_CS8,
-    LDM_S2_CS8,
-    LDM_S4_CS8,
-    LDM_U1_CS8,
-    LDM_U2_CS8,
-
-    LDM_B1_CS16 = 0x90,
-    LDM_S1_CS16,
-    LDM_S2_CS16,
-    LDM_S4_CS16,
-    LDM_U1_CS16,
-    LDM_U2_CS16,
-
-    LDM_B1_C16 = 0x98,
-    LDM_S1_C16,
-    LDM_S2_C16,
-    LDM_S4_C16,
-    LDM_U1_C16,
-    LDM_U2_C16,
-
-    STM_B1_S = 0xA0,
-    STM_S1_S,
-    STM_S2_S,
-    STM_S4_S,
-
-    STM_B1_CS8 = 0xA8,
-    STM_S1_CS8,
-    STM_S2_CS8,
-    STM_S4_CS8,
-
-    STM_B1_CS16 = 0xB0,
-    STM_S1_CS16,
-    STM_S2_CS16,
-    STM_S4_CS16,
-
-    STM_B1_C16 = 0xB8,
-    STM_S1_C16,
-    STM_S2_C16,
-    STM_S4_C16,
-
-    IN = 0xC0,
-    OUT = 0xC1,
-
-    SJMP = 0xF0,
-    JZ = 0xF1,
-    JNZ = 0xF2,
-    JMP = 0xF3,
-    SCALL = 0xF4,
-    CALL = 0xF7,
-
-    LABEL = 0xF8,
-
-    TEST_EQ = 0xFE,
-    RET = 0xFF,
+  internal class DPC_Loop {
+    public DPC_Loop(int sp1, ICollection<string> labels) {
+      this.sp1 = sp1;
+      this.labels=labels;
+      L1=new Inst(InstCode.LABEL);
+      L2=new Inst(InstCode.LABEL);
+      L3=new Inst(InstCode.LABEL);
+    }
+    public Inst L1, L2, L3;
+    public int sp1, sp2;
+    public ICollection<string> labels;
   }
-
   internal class Inst {
     internal uint addr;
     internal byte[] _code;
     internal Merker _param;
     internal CodeNode _cn;
     internal Inst _ref;
+
+    public bool canOptimized;
 
     public Inst(InstCode cmd, Merker param = null, CodeNode cn = null) {
       _param = param;
@@ -627,32 +475,22 @@ namespace X13 {
       }
     }
     public override string ToString() {
-      if(_code.Length == 1) {
-        return ((InstCode)_code[0]).ToString();
-      } else if(_code.Length == 2) {
-        return ((InstCode)_code[0]).ToString() + "  \t0x" + _code[1].ToString("X2");
-      } else if(_code.Length == 3) {
-        return ((InstCode)_code[0]).ToString() + "  \t0x" + _code[2].ToString("X2") + _code[1].ToString("X2");
-      } else if(_code.Length == 5) {
-        return ((InstCode)_code[0]).ToString() + "  \t0x" + _code[4].ToString("X2") + _code[3].ToString("X2") + _code[2].ToString("X2") + _code[1].ToString("X2");
+      if(_code.Length > 0) {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(((InstCode)_code[0]).ToString());
+        if(_code.Length > 1) {
+          while(sb.Length < 12) {
+            sb.Append(" ");
+          }
+          sb.Append("0x");
+          for(int i = _code.Length - 1; i > 0; i--) {
+            sb.Append(_code[i].ToString("X2"));
+          }
+        }
+        return sb.ToString();
       } else {
         return null;
       }
     }
-    public bool canOptimized;
-  }
-  internal enum VM_DType {
-    NONE,
-    BOOL,
-    UINT8,
-    SINT8,
-    UINT16,
-    SINT16,
-    SINT32,
-    FUNCTION,
-    PARAMETER,
-    LOCAL,
-    INPUT,
-    OUTPUT,
   }
 }
