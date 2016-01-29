@@ -78,8 +78,8 @@ namespace X13 {
         _sp.Pop();
 
         for(int i = node.Arguments.Length - 1; i > 0; i--) {
-          cur.code.Add(new Inst(InstCode.NIP ));
-          d=_sp.Pop();
+          cur.code.Add(new Inst(InstCode.NIP));
+          d = _sp.Pop();
           _sp.Pop();
           _sp.Push(d);
         }
@@ -90,7 +90,7 @@ namespace X13 {
       return Visit(node as Expression);
     }
     protected override Compiler Visit(Constant node) {
-      int v = node.Value==null?0:(int)node.Value;
+      int v = node.Value == null ? 0 : (int)node.Value;
       LoadConstant(node, v);
       return this;
     }
@@ -103,13 +103,13 @@ namespace X13 {
         if(node.Type == DecrimentType.Predecriment) {
           d2 = new Inst(InstCode.DUP) { canOptimized = true };
           _sp.Push(d2);
-          cur.code.Add(d1=new Inst(InstCode.DEC));
+          cur.code.Add(d1 = new Inst(InstCode.DEC));
           _sp.Push(d1);
           cur.code.Add(d2);
         } else {
           cur.code.Add(d1 = new Inst(InstCode.DUP) { canOptimized = true });
           _sp.Push(d1);
-          cur.code.Add(d1=new Inst(InstCode.DEC));
+          cur.code.Add(d1 = new Inst(InstCode.DEC));
           _sp.Push(d1);
         }
         Store(node, a);
@@ -218,7 +218,7 @@ namespace X13 {
         } else {
           cur.code.Add(d1 = new Inst(InstCode.DUP) { canOptimized = true });
           _sp.Push(d1);
-          cur.code.Add(d2=new Inst(InstCode.INC));
+          cur.code.Add(d2 = new Inst(InstCode.INC));
           _sp.Push(d2);
         }
         Store(node, a);
@@ -443,8 +443,8 @@ namespace X13 {
       VM_DType type;
       int sp2 = _sp.Count;
 
-      List<Assignment> inList=new List<Assignment>();
-      foreach(var vd in node.Body.Select(z => z as VariableDefinition).Where(z => z != null)){
+      List<Assignment> inList = new List<Assignment>();
+      foreach(var vd in node.Body.Select(z => z as VariableDefinition).Where(z => z != null)) {
         inList.AddRange(vd.Initializers.Select(z => z as Assignment).Where(z => z != null));
       }
 
@@ -453,7 +453,7 @@ namespace X13 {
         addr = uint.MaxValue;
         if(v.Initializer != null && v.Initializer is FunctionDefinition) {
           type = VM_DType.FUNCTION;
-        } else if(v.Name.Length>2 && _predefs.TryGetValue(v.Name.Substring(0, 2), out type) && UInt32.TryParse(v.Name.Substring(2), out addr)) {
+        } else if(v.Name.Length > 2 && _predefs.TryGetValue(v.Name.Substring(0, 2), out type) && UInt32.TryParse(v.Name.Substring(2), out addr)) {
           addr &= 0xFFFF;
           if(type == VM_DType.INPUT || type == VM_DType.OUTPUT) {
             addr = (uint)((uint)(((byte)v.Name[0]) << 24) | (uint)(((byte)v.Name[1]) << 16) | addr);
@@ -502,7 +502,7 @@ namespace X13 {
         node.Body[i].Visit(this);
         while(_sp.Count > sp) {
           var d = _sp.Pop();
-          if(!d.canOptimized || !cur.code.Remove(d) ) {
+          if(!d.canOptimized || !cur.code.Remove(d)) {
             cur.code.Add(new Inst(InstCode.DROP));
           }
         }
@@ -520,7 +520,7 @@ namespace X13 {
     }
     protected override Compiler Visit(Continue node) {
       DPC_Loop cl;
-      if(node.Label!=null) {
+      if(node.Label != null) {
         var l = node.Label.ToString();
         cl = cur.loops.FirstOrDefault(z => z.labels.Any(y => y == l));
         if(cl == null) {
@@ -529,7 +529,7 @@ namespace X13 {
       } else {
         cl = cur.loops.Peek();
       }
-      int tmp=_sp.Count;
+      int tmp = _sp.Count;
       while(tmp > cl.sp2) {
         tmp--;
         cur.code.Add(new Inst(InstCode.DROP));
@@ -552,12 +552,12 @@ namespace X13 {
 
       while(_sp.Count > cl.sp2) {
         _sp.Pop();
-         cur.code.Add(new Inst(InstCode.DROP));
+        cur.code.Add(new Inst(InstCode.DROP));
       }
 
       cur.code.Add(cl.L2);
       node.Condition.Visit(this);
-      cur.code.Add(new Inst(InstCode.JNZ, null, node.Condition){ _ref=cl.L1});
+      cur.code.Add(new Inst(InstCode.JNZ, null, node.Condition) { _ref = cl.L1 });
       cur.code.Add(cl.L3);
       _sp.Pop();
       cur.loops.Pop();
@@ -605,7 +605,7 @@ namespace X13 {
     protected override Compiler Visit(IfElse node) {
       Inst j1, j2, j3;
       node.Condition.Visit(this);
-      
+
       j1 = new Inst(InstCode.JZ, null, node.Condition);
       cur.code.Add(j1);
       _sp.Pop();
@@ -628,7 +628,24 @@ namespace X13 {
       return this;
     }
     protected override Compiler Visit(InfinityLoop node) {
-      return Visit(node as CodeNode);
+      var cl = new DPC_Loop(_sp.Count, node.Labels);
+      cur.loops.Push(cl);
+
+      cur.code.Add(cl.L1);
+      cur.code.Add(cl.L2);
+      cl.sp2 = _sp.Count;
+
+      node.Body.Visit(this);
+
+      while(_sp.Count > cl.sp2) {
+        _sp.Pop();
+        cur.code.Add(new Inst(InstCode.DROP));
+      }
+
+      cur.code.Add(new Inst(InstCode.JMP) { _ref = cl.L1 });
+      cur.code.Add(cl.L3);
+      cur.loops.Pop();
+      return this;
     }
     protected override Compiler Visit(LabeledStatement node) {
       return Visit(node as CodeNode);
@@ -644,45 +661,41 @@ namespace X13 {
     }
     protected override Compiler Visit(Switch node) {
       int i, j;
-      var labels = new Inst[node.Cases.Length+1];
-      labels[labels.Length - 1] = new Inst(InstCode.LABEL);
-      var cvs=node.Cases.Where(z=>z.Statement!=null).ToArray();
+      var labels = new Inst[node.Cases.Length];
+      var cvs = node.Cases.Where(z => z.Statement != null).OrderBy(z => z.Index).Union(node.Cases.Where(z => z.Statement == null)).ToArray();
       node.Image.Visit(this);
-      for(i = 0; i < cvs.Length; i++) {
-        if(i < cvs.Length - 1) {
-          cur.code.Add(new Inst(InstCode.DUP));
+      for(j = 0; j < cvs.Length; j++ ) {
+        labels[j] = new Inst(InstCode.LABEL);
+        if(cvs[j].Statement != null) {
+          if(j < cvs.Length - 2) {
+            cur.code.Add(new Inst(InstCode.DUP));
+          }
+          cvs[j].Statement.Visit(this);
+          cur.code.Add(new Inst(InstCode.CEQ));
+          cur.code.Add(new Inst(InstCode.JNZ, null, cvs[j].Statement) { _ref = labels[j] });
+          _sp.Pop();
+        } else {
+          cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[j] });
         }
-        labels[i] = new Inst(InstCode.LABEL);
-        cvs[i].Statement.Visit(this);
-        cur.code.Add(new Inst(InstCode.CEQ));
-        cur.code.Add(new Inst(InstCode.JNZ, null, cvs[i].Statement) { _ref = labels[i] });
-        _sp.Pop();
       }
       _sp.Pop();
-      if(cvs.Length == node.Cases.Length) {
-        cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length-1] });
-      } else {
-        labels[labels.Length - 2] = new Inst(InstCode.LABEL);
-        cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length - 2] });
-        var tmp = new SwitchCase[node.Cases.Length];
-        Array.Copy(cvs, tmp, cvs.Length);
-        tmp[tmp.Length - 1] = node.Cases.First(z => z.Statement == null);
-        cvs=tmp;
-      }
+
+      var cl = new DPC_Loop(_sp.Count, null);
+      cur.loops.Push(cl);
+
+      j = 0;
       for(i = 0; i < node.Body.Length; i++) {
-        for(j = 0; j < cvs.Length; j++) {
-          if(cvs[j].Index == i) {
-            cur.code.Add(labels[j]);
-            break;
-          }
+        if(j < cvs.Length && cvs[j].Index == i) {
+          cur.code.Add(labels[j]);
+          j++;
         }
-        if(node.Body[i] is Break) {
-          cur.code.Add(new Inst(InstCode.JMP) { _ref = labels[labels.Length - 1] });
-        } else {
-          node.Body[i].Visit(this);
-        }
-        cur.code.Add(labels[labels.Length-1]);
+        node.Body[i].Visit(this);
       }
+      while(j < labels.Length) {
+        cur.code.Add(labels[j++]);
+      }
+      cur.code.Add(cl.L3);
+      cur.loops.Pop();
       return this;
     }
     protected override Compiler Visit(Throw node) {

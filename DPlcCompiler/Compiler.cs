@@ -18,6 +18,13 @@ namespace X13 {
     public Compiler() {
       _predefs = new SortedList<string, VM_DType>();
       _predefs["Op"] = VM_DType.OUTPUT;
+      _predefs["On"] = VM_DType.OUTPUT;
+      _predefs["Pp"] = VM_DType.OUTPUT;
+      _predefs["Pn"] = VM_DType.OUTPUT;
+      _predefs["Ip"] = VM_DType.OUTPUT;
+      _predefs["In"] = VM_DType.OUTPUT;
+      _predefs["Av"] = VM_DType.OUTPUT;
+      _predefs["Ai"] = VM_DType.OUTPUT;
     }
     private void ScopePush(string name) {
       cur = new Scope(name);
@@ -155,16 +162,23 @@ namespace X13 {
       _scope = new Stack<Scope>();
       _programm = new List<Scope>();
       _sp = new Stack<Inst>();
+      uint addr;
+
       ScopePush("");
 
       var module = new Module(code, null, Options.SuppressConstantPropogation);
       module.Root.Visit(this);
+
       cur = _programm[0];
       if(cur.code.Count == 0 || cur.code[cur.code.Count - 1]._code.Length != 1 || cur.code[cur.code.Count - 1]._code[0] != (byte)InstCode.RET) {
         cur.code.Add(new Inst(InstCode.RET));
       }
-
-      uint addr = 0;
+      addr = 0;
+      foreach(var m in _memory.Where(z => (z.type == VM_DType.BOOL || z.type == VM_DType.SINT8 || z.type == VM_DType.SINT16 || z.type == VM_DType.SINT32 || z.type == VM_DType.UINT8 || z.type == VM_DType.UINT16))) {
+        m.Addr = addr++;
+      }
+  
+      addr = 0;
       foreach(var p in _programm) {
         if(p.entryPoint != null) {
           p.entryPoint.Addr = addr;
