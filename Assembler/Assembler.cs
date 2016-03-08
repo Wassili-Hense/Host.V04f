@@ -152,6 +152,8 @@ namespace X13 {
                 rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U1 : (byte)OP.LDI_S1, (byte)tmp_d };
               } else if(tmp_d > -32768 && tmp_d < 65536) {
                 rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U2 : (byte)OP.LDI_S2, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              }else if(tmp_d==int.MinValue){
+                rCmd = new byte[] { (byte)OP.LDI_MIN };
               } else {
                 rCmd = new byte[] { (byte)OP.LDI_S4, (byte)tmp_d, (byte)(tmp_d >> 8), (byte)(tmp_d >> 16), (byte)(tmp_d >> 24) };
               }
@@ -308,17 +310,8 @@ namespace X13 {
           case OpName.CLE:
             rCmd = new byte[] { (byte)OP.CLE };
             break;
-          case OpName.NOT_L:
-            rCmd = new byte[] { (byte)OP.NOT_L };
-            break;
-          case OpName.AND_L:
-            rCmd = new byte[] { (byte)OP.AND_L };
-            break;
-          case OpName.OR_L:
-            rCmd = new byte[] { (byte)OP.OR_L };
-            break;
-          case OpName.XOR_L:
-            rCmd = new byte[] { (byte)OP.XOR_L };
+          case OpName.CZE:
+            rCmd = new byte[] { (byte)OP.CZE };
             break;
           case OpName.DUP:
             rCmd = new byte[] { (byte)OP.DUP };
@@ -341,7 +334,7 @@ namespace X13 {
           case OpName.IN:
           case OpName.OUT:
             if(args != null && args.Length > 2 && UInt16.TryParse(args.Substring(2), out tmp_W)) {
-              rCmd = new byte[] { (byte)(op == OpName.OUT ? OP.OUT : OP.IN), (byte)tmp_W, (byte)(tmp_W >> 8), (byte)args[1], (byte)args[0] };
+              rCmd = new byte[] { (byte)(op == OpName.OUT ? OP.OUT : OP.IN), (byte)args[0], (byte)args[1], (byte)tmp_W, (byte)(tmp_W >> 8) };
             }
             break;
           case OpName.JMP:
@@ -435,10 +428,7 @@ namespace X13 {
       CLE,
       CEQ,
       CNE,
-      NOT_L,
-      AND_L,
-      OR_L,
-      XOR_L,
+      CZE,
       DUP,
       DROP,
       NIP,
@@ -491,11 +481,7 @@ namespace X13 {
       CGE,
       CLT,
       CLE,
-
-      NOT_L = 0x28,
-      AND_L,
-      OR_L,
-      XOR_L,
+      CZE,
 
       LDI_ZERO = 0x38,
       LDI_S1,
@@ -581,6 +567,7 @@ namespace X13 {
       LDM_S4_S,
       LDM_U1_S,
       LDM_U2_S,
+      LDI_MIN = 0x87,
 
       LDM_B1_CS8 = 0x88,
       LDM_S1_CS8,
