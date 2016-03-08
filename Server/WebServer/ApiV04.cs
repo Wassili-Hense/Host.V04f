@@ -24,8 +24,8 @@ namespace X13.WebServer {
     /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Subscribe(EventArguments args) {
-      string path=args[1].As<string>();
-      int req=args[2].As<int>();
+      string path=args[1].ToString();
+      int req=(int)args[2];
       Topic parent;
       List<Topic> resp=new List<Topic>();
       if(Topic.root.Exist(path, out parent)) {
@@ -46,7 +46,7 @@ namespace X13.WebServer {
         r[0]=new JSL.String(t.path);
         r[1]=new JSL.Number((t.children.Where(z=>z.name!="$schema").Any()?16:0)  | 15);
         var pr=t.schema;
-        r[2]=pr==null?JSC.JSObject.JSNull:new JSL.String(pr);
+        r[2]=pr==null?JSC.JSValue.Null:new JSL.String(pr);
         arr.Add(r);
       }
       args.Response(arr);
@@ -58,7 +58,7 @@ namespace X13.WebServer {
     /// RESPONSE: [success, oldvalue]
     /// </param>
     private void SetValue(EventArguments args) {
-      string path=args[1].As<string>();
+      string path=args[1].ToString();
       //TODO: check acl
       /*
        if(!acl(publish)){
@@ -79,7 +79,7 @@ namespace X13.WebServer {
     /// RESPONSE: success=true/false
     /// </param>
     private void Create(EventArguments args) {
-      string path=args[1].As<string>();
+      string path=args[1].ToString();
       var t=Topic.root.Get(path, true);
       args.Response(true);
     }
@@ -89,7 +89,7 @@ namespace X13.WebServer {
     /// </param>
     private void Remove(EventArguments args) {
       Topic t;
-      string path=args[1].As<string>();
+      string path=args[1].ToString();
       if(Topic.root.Exist(path, out t)) {
         t.Remove();
       }
@@ -100,8 +100,8 @@ namespace X13.WebServer {
     /// </param>
     private void Copy(EventArguments args) {
       Topic t, p;
-      string pathO=args[1].As<string>();
-      string pathP=args[2].As<string>();
+      string pathO=args[1].ToString();
+      string pathP=args[2].ToString();
       if(Topic.root.Exist(pathO, out t) && Topic.root.Exist(pathP, out p)) {
         CopyTopic(t, p);
       }
@@ -119,14 +119,14 @@ namespace X13.WebServer {
     /// </param>
     private void Move(EventArguments args) {
       Topic t, p;
-      string pathS=args[1].As<string>();
-      string pathD=args[2].As<string>();
+      string pathS = args[1].ToString();
+      string pathD = args[2].ToString();
       string nname;
       if(Topic.root.Exist(pathS, out t) && Topic.root.Exist(pathD, out p)) {
         if(args.Count<4) {
           nname=t.name;
         } else {
-          nname=args[3].As<string>();
+          nname = args[3].ToString();
         }
         t.Move(p, nname);
       }

@@ -27,7 +27,7 @@ namespace X13.PLC {
     internal ConcurrentDictionary<string, Topic> _children;
     internal List<SubRec> _subRecords;
     internal string _json;
-    internal JSObject _value;
+    internal JSValue _value;
     #endregion variables
 
     private Topic(Topic parent, string name) {
@@ -35,7 +35,7 @@ namespace X13.PLC {
       _flags[0]=true;  // saved
       _name=name;
       _parent=parent;
-      _value=JSObject.Undefined;
+      _value=JSValue.Undefined;
 
       if(parent==null) {
         _path="/";
@@ -61,21 +61,21 @@ namespace X13.PLC {
     public Type vType {
       get {
         switch(_value.ValueType) {
-        case JSObjectType.NotExists:
-        case JSObjectType.NotExistsInObject:
-        case JSObjectType.Undefined:
+        case JSValueType.NotExists:
+        case JSValueType.NotExistsInObject:
+        case JSValueType.Undefined:
           return null;
-        case JSObjectType.Bool:
+        case JSValueType.Boolean:
           return typeof(bool);
-        case JSObjectType.Int:
+        case JSValueType.Integer:
           return typeof(long);
-        case JSObjectType.Double:
+        case JSValueType.Double:
           return typeof(double);
-        case JSObjectType.Date:
+        case JSValueType.Date:
           return typeof(DateTime);
-        case JSObjectType.String:
+        case JSValueType.String:
           return typeof(string);
-        case JSObjectType.Object:
+        case JSValueType.Object:
           return _value.Value.GetType();
         }
         return null;
@@ -89,29 +89,29 @@ namespace X13.PLC {
           return sh;
         }
         switch(_value.ValueType) {
-        case JSObjectType.NotExists:
-        case JSObjectType.NotExistsInObject:
-        case JSObjectType.Undefined:
+        case JSValueType.NotExists:
+        case JSValueType.NotExistsInObject:
+        case JSValueType.Undefined:
           return null;
-        case JSObjectType.Bool:
+        case JSValueType.Boolean:
           return "boolean";
-        case JSObjectType.Int:
+        case JSValueType.Integer:
           return "integer";
-        case JSObjectType.Double:
+        case JSValueType.Double:
           return "number";
-        case JSObjectType.Date:
+        case JSValueType.Date:
           return "Date";
-        case JSObjectType.String:
+        case JSValueType.String:
           return "string";
-        case JSObjectType.Object:
+        case JSValueType.Object:
           if(_value==null) {
             return null;
           }
-          JSObject drf=_value.GetMember("$schema", false);
-          if (drf == null || !drf.IsExist || string.IsNullOrWhiteSpace(sh = drf.As<string>())){
+          JSValue drf=_value.GetProperty("$schema", PropertyScope.Сommon);
+          if (drf == null || !drf.Exists || string.IsNullOrWhiteSpace(sh = drf.ToString())){
             return "object";
           }
-          return drf.As<string>();
+          return drf.ToString();
         }
         return null;
       }
@@ -245,11 +245,11 @@ namespace X13.PLC {
       }
       return string.Compare(this._path, other._path);
     }
-    public JSObject valueRaw { get { return _value; } }
-    public object value { get { return (_value.ValueType>=JSObjectType.Object && !(_value.Value is JSObject))?_value.Value:_value; } set { this.Set(value); } }
+    public JSValue valueRaw { get { return _value; } }
+    public object value { get { return (_value.ValueType>=JSValueType.Object && !(_value.Value is JSValue))?_value.Value:_value; } set { this.Set(value); } }
     public T As<T>() {
       try {
-        return _value.As<T>();
+        return (T)(((IConvertible)_value).ToType(typeof(T), null));
       }
       catch(Exception) {
 
@@ -264,7 +264,7 @@ namespace X13.PLC {
       var c=Perform.Create(this, val, prim);
       PLC.instance.DoCmd(c, true);
     }
-    public void SetJson(JSObject jso, Topic prim=null) {
+    public void SetJson(JSValue jso, Topic prim=null) {
       var c=Perform.Create(this, Perform.Art.setJson, prim);
       c.o=jso;
       PLC.instance.DoCmd(c, false);
@@ -288,9 +288,9 @@ namespace X13.PLC {
           if(_json==null) {
             var t=_value.ValueType;
             JST.Date jd;
-            if(t==JSObjectType.NotExists || t==JSObjectType.NotExistsInObject || t==JSObjectType.Undefined) {
+            if(t==JSValueType.NotExists || t==JSValueType.NotExistsInObject || t==JSValueType.Undefined) {
               _json="null";
-            } else if(t==JSObjectType.Object && (jd=_value.Value as JST.Date)!=null) {
+            } else if(t==JSValueType.Object && (jd=_value.Value as JST.Date)!=null) {
               _json=jd.toISOString().ToString();
             } else {
               _json=JST.JSON.stringify(_value, null, null);

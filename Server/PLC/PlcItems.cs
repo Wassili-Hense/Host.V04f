@@ -1,13 +1,12 @@
 ﻿using NiL.JS;
 using NiL.JS.Core;
-using NiL.JS.Core.Modules;
-using NiL.JS.Core.TypeProxing;
 using JST = NiL.JS.BaseLibrary;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using NiL.JS.Core.Interop;
 
 namespace X13.PLC {
   internal interface PlcItem : ITenant {
@@ -99,8 +98,8 @@ namespace X13.PLC {
         return _origin;
       }
     }
-    public PiAlias(JSObject jso, Topic src, Topic prim)
-      : this(src.GetI(jso["alias"].As<string>(), true, prim, true)) {
+    public PiAlias(JSValue jso, Topic src, Topic prim)
+      : this(src.GetI(jso["alias"].ToString(), true, prim, true)) {
     }
     public PiAlias(Topic tOrigin) {
       _tOrigin=tOrigin;
@@ -116,7 +115,7 @@ namespace X13.PLC {
     }
 
     [DoNotEnumerate]
-    public JSObject toJSON(JSObject obj) {
+    public JSValue toJSON(JSValue obj) {
       var r=JSObject.CreateObject();
       r["$type"]="PiAlias";
       r["alias"]=origin.owner.path;
@@ -211,8 +210,8 @@ namespace X13.PLC {
     public PiVar input;
     public PiVar output;
 
-    public PiLink(JSObject jso, Topic src, Topic prim)
-      : this(src.parent.GetI(jso["i"].As<string>(), true, prim, true), src.parent.GetI(jso["o"].As<string>(), true, prim, true)) {
+    public PiLink(JSValue jso, Topic src, Topic prim)
+      : this(src.parent.GetI(jso["i"].ToString(), true, prim, true), src.parent.GetI(jso["o"].ToString(), true, prim, true)) {
     }
     public PiLink(Topic ip, Topic op) {
       _ipTopic = ip;
@@ -259,7 +258,7 @@ namespace X13.PLC {
 
           input.AddCont(this);
           output.AddCont(this);
-          if(input.layer != 0 || input.owner._value.IsDefinded) {
+          if(input.layer != 0 || input.owner._value.Defined) {
             output.owner.SetI(input.owner._value, _owner);
           }
         }
@@ -294,7 +293,7 @@ namespace X13.PLC {
         } else if(p.src != input.owner) {
           return;
         }
-        if(input.layer!=0 || input.owner._value.IsDefinded) {
+        if(input.layer!=0 || input.owner._value.Defined) {
           output.owner._value=input.owner._value;
           if(p.src==input.owner) {
             var c=Perform.Create(output.owner, Perform.Art.changed, this.owner);
@@ -305,8 +304,8 @@ namespace X13.PLC {
       }
     }
     [DoNotEnumerate]
-    public JSObject toJSON(JSObject obj) {
-      var r=JSObject.CreateObject();
+    public JSValue toJSON(JSValue obj) {
+      var r = JSObject.CreateObject();
       r["$type"]="PiLink";
       r["i"] = _owner==null || _owner.parent==null?_ipTopic.path:RelativePath(_owner.parent, _ipTopic);
       r["o"] = _owner==null || _owner.parent==null?_opTopic.path:RelativePath(_owner.parent, _opTopic);
@@ -336,8 +335,8 @@ namespace X13.PLC {
     public PiBlock[] calcPath;
     public SortedList<string, PiVar> _pins;
 
-    public PiBlock(JSObject jso, Topic src, Topic prim)
-      : this(jso["func"].As<string>()) {
+    public PiBlock(JSValue jso, Topic src, Topic prim)
+      : this(jso["func"].ToString()) {
     }
     public PiBlock(string func) {
       _funcName=func;
@@ -379,43 +378,44 @@ namespace X13.PLC {
       }
       return pd;
     }
-
-    protected override JSObject GetMember(JSObject name, bool forWrite, bool own) {
+    protected override JSValue GetProperty(JSValue name, bool forWrite, PropertyScope memberScope) {
       if(_owner == null) {
-        return JSObject.Undefined;
+        return JSValue.Undefined;
       }
-      if(name.As<string>()=="toJSON") {
-        return base.GetMember(name, forWrite, own);
+      if(name.ToString() == "toJSON") {
+        return base.GetProperty(name, forWrite, memberScope);
       }
-      string pName=name.As<string>();
+      string pName = name.ToString();
       if(_decl.pins.ContainsKey(pName)) {
         Topic r = _owner.GetI(pName, forWrite, _owner, true);
         if(r == null) {
-          return JSObject.Undefined;
+          return JSValue.Undefined;
         }
         return r._value;
       } else {
-        return base.GetMember(name, forWrite, own);
+        return base.GetProperty(name, forWrite, memberScope);
       }
     }
-    protected override void SetMember(JSObject name, JSObject value, bool strict) {
-      string pName=name.As<string>();
+    protected override void SetProperty(JSValue key, JSValue value, PropertyScope memberScope, bool throwOnError) {
+      string pName = key.ToString();
       if(_decl.pins.ContainsKey(pName)) {
         if(_owner == null) {
           return;
         }
-        Topic r = _owner.GetI(name.ToString(), true, _owner, true);
+        Topic r = _owner.GetI(pName, true, _owner, true);
         r.SetI(value.Clone(), _owner);
       } else {
-        base.SetMember(name, value, strict);
+        base.SetProperty(key, value, memberScope, throwOnError);
       }
     }
-    protected override IEnumerator<string> GetEnumeratorImpl(bool pdef) {
-      return _pins.OrderBy(z => z.Key).OrderBy(z => z.Value.layer).Select(z => z.Key).GetEnumerator();
+    protected override IEnumerator<KeyValuePair<string, JSValue>> GetEnumerator(bool hideNonEnum, EnumerationMode enumerationMode) {
+      //return base.GetEnumerator(hideNonEnum, enumerationMode);
+      return _pins.OrderBy(z => z.Key).OrderBy(z => z.Value.layer).Select(z=>new KeyValuePair<string, JSValue>(z.Key, z.Value.owner._value)).GetEnumerator();
+      //return _pins.OrderBy(z => z.Key).OrderBy(z => z.Value.layer).Select(z => z.Key).GetEnumerator();
     }
     [DoNotEnumerate]
-    public JSObject toJSON(JSObject obj) {
-      var r=JSObject.CreateObject();
+    public JSValue toJSON(JSValue obj) {
+      var r = JSObject.CreateObject();
       r["$type"]="PiBlock";
       r["func"]=_funcName;
       return r;
@@ -472,7 +472,7 @@ namespace X13.PLC {
   internal class PiDeclarer : CustomType {
     private static JST.Function ctor;
     static PiDeclarer() {
-      ctor= new Script("function Construct(){ return Function.apply(null, arguments); }").Context.GetVariable("Construct").Value as JST.Function;
+      ctor= new Module("function Construct(){ return Function.apply(null, arguments); }").Context.GetVariable("Construct").Value as JST.Function;
     }
 
     public static PiDeclarer Get(string name) {
@@ -482,7 +482,7 @@ namespace X13.PLC {
       }
       return null;
     }
-    public static PiDeclarer Create(JSObject jso, Topic src, Topic prim) {
+    public static PiDeclarer Create(JSValue jso, Topic src, Topic prim) {
       PiDeclarer rez;
       if(src.vType==typeof(PiDeclarer)) {
         rez=src.As<PiDeclarer>();
@@ -490,33 +490,33 @@ namespace X13.PLC {
         rez=new PiDeclarer();
       }
 
-      JSObject tmp;
+      JSValue tmp;
       tmp=jso["init"];
-      if(tmp.ValueType==JSObjectType.String) {
-        rez._initFunc = ctor.Invoke(new Arguments { tmp }) as JST.Function;
+      if(tmp.ValueType==JSValueType.String) {
+        rez._initFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
       }
       tmp=jso["calc"];
-      if(tmp.ValueType==JSObjectType.String) {
-        rez._calcFunc = ctor.Invoke(new Arguments { tmp }) as JST.Function;
+      if(tmp.ValueType == JSValueType.String) {
+        rez._calcFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
       }
       tmp=jso["deinit"];
-      if(tmp.ValueType==JSObjectType.String) {
-        rez._deinitFunc = ctor.Invoke(new Arguments { tmp }) as JST.Function;
+      if(tmp.ValueType == JSValueType.String) {
+        rez._deinitFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
       }
       rez.pins=new SortedList<string, PinDeclarer>();
       tmp=jso["pins"];
-      if(tmp.ValueType==JSObjectType.Object) {
+      if(tmp.ValueType == JSValueType.Object) {
         foreach(var p in tmp) {
-          rez.pins[p]=new PinDeclarer(tmp[p]);
+          rez.pins[p.Key]=new PinDeclarer(p.Value);
         }
       }
-      if((tmp=jso["info"]).ValueType==JSObjectType.String) {
-        rez.info=tmp.As<string>();
+      if((tmp = jso["info"]).ValueType == JSValueType.String) {
+        rez.info=tmp.ToString();
       } else {
         rez.info=string.Empty;
       }
-      if((tmp=jso["image"]).ValueType==JSObjectType.String) {
-        rez.image=tmp.As<string>();
+      if((tmp = jso["image"]).ValueType == JSValueType.String) {
+        rez.image=tmp.ToString();
       } else {
         rez.image=null;
       }
@@ -536,23 +536,23 @@ namespace X13.PLC {
 
     public void Init(PiBlock This) {
       if(_initFunc!=null) {
-        _initFunc.Invoke(This, null);
+        _initFunc.Call(This, null);
       }
     }
     public void Calc(PiBlock This) {
       if(_calcFunc!=null) {
-        _calcFunc.Invoke(This, null);
+        _calcFunc.Call(This, null);
       }
     }
     public void DeInit(PiBlock This) {
       if(_deinitFunc!=null) {
-        _deinitFunc.Invoke(This, null);
+        _deinitFunc.Call(This, null);
       }
     }
 
     [DoNotEnumerate]
-    public JSObject toJSON(JSObject obj) {
-      var r=JSObject.CreateObject();
+    public JSValue toJSON(JSValue obj) {
+      var r = JSObject.CreateObject();
       r["$type"]="PiDeclarer";
       if(_initFunc!=null) {
         r["init"]=GetFunctionBody(_initFunc);
@@ -564,7 +564,7 @@ namespace X13.PLC {
         r["deinit"]=GetFunctionBody(_deinitFunc);
       }
       if(pins!=null && pins.Count>0) {
-        var p=JSObject.CreateObject();
+        var p = JSObject.CreateObject();
         foreach(var kv in pins) {
           p[kv.Key]=kv.Value.toJSON(null);
         }
@@ -593,12 +593,12 @@ namespace X13.PLC {
     public readonly bool mandatory;
     public readonly string info;
     public readonly string declarer;
-    public readonly JSObject defaultValue;
+    public readonly JSValue defaultValue;
 
-    public PinDeclarer(JSObject jso) {
-      JSObject tmp;
-      if((tmp=jso["pos"]).ValueType==JSObjectType.String) {
-        string ps=tmp.As<string>();
+    public PinDeclarer(JSValue jso) {
+      JSValue tmp;
+      if((tmp = jso["pos"]).ValueType == JSValueType.String) {
+        string ps=tmp.ToString();
         if(ps==null || ps.Length!=1) {
           position=-1;
         } else if(ps[0]>='A' && ps[0]<='Z') {  // inputs
@@ -619,29 +619,29 @@ namespace X13.PLC {
       } else {
         position=-1;
       }
-      if((tmp=jso["mandatory"]).ValueType==JSObjectType.Bool && tmp.As<bool>()) {
+      if((tmp = jso["mandatory"]).ValueType == JSValueType.Boolean && (bool)tmp) {
         mandatory=true;
       } else {
         mandatory=false;
       }
-      if((tmp=jso["info"]).ValueType==JSObjectType.String) {
-        info=tmp.As<string>();
+      if((tmp = jso["info"]).ValueType == JSValueType.String) {
+        info=tmp.ToString();
       } else {
         info=string.Empty;
       }
-      if((tmp=jso["declarer"]).ValueType==JSObjectType.String) {
-        declarer=tmp.As<string>();
+      if((tmp = jso["declarer"]).ValueType == JSValueType.String) {
+        declarer=tmp.ToString();
       } else {
         declarer=string.Empty;
       }
-      if((tmp=jso["default"]).IsExist) {
+      if((tmp=jso["default"]).Exists) {
         defaultValue=tmp;
       } else {
         defaultValue=null;
       }
     }
-    public JSObject toJSON(JSObject obj) {
-      var r=JSObject.CreateObject();
+    public JSValue toJSON(JSValue obj) {
+      var r = JSObject.CreateObject();
       if(ip) {
         r["pos"]=(char)('A'+position);
       } else if(op) {

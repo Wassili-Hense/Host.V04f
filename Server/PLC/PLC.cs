@@ -17,7 +17,7 @@ namespace X13.PLC {
     public static PLC instance { get; private set; }
 
     private ConcurrentQueue<Perform> _tcQueue;
-    private Dictionary<string, Func<JSObject, Topic, Topic, JSObject>> _knownTypes;
+    private Dictionary<string, Func<JSValue, Topic, Topic, JSValue>> _knownTypes;
     private List<Perform> _prOp;
     private int _busyFlag;
     private int _pfPos;
@@ -32,7 +32,7 @@ namespace X13.PLC {
       _blocks = new List<PiBlock>();
       _vars = new Dictionary<Topic, PiVar>();
       _tcQueue = new ConcurrentQueue<Perform>();
-      _knownTypes=new Dictionary<string, Func<JSObject, Topic, Topic, JSObject>>();
+      _knownTypes=new Dictionary<string, Func<JSValue, Topic, Topic, JSValue>>();
       _rLayerVars = new List<PiVar>();
       _prOp = new List<Perform>(128);
       _busyFlag = 1;
@@ -242,7 +242,7 @@ namespace X13.PLC {
       }
     }
 
-    public void RegisterType(string name, Func<JSObject, Topic, Topic, JSObject> f) {
+    public void RegisterType(string name, Func<JSValue, Topic, Topic, JSValue> f) {
       _knownTypes[name]=f;
     }
 
@@ -317,7 +317,7 @@ namespace X13.PLC {
           t._children = c.src._children;
           c.src._children = null;
           t._value = c.src._value;
-          c.src._value = JSObject.Undefined;
+          c.src._value = JSValue.Undefined;
           if(c.src._subRecords != null) {
             foreach(var st in c.src._subRecords) {
               if(st.path.StartsWith(oPath)) {
@@ -367,11 +367,11 @@ namespace X13.PLC {
       if(cmd.art == Perform.Art.remove || cmd.art == Perform.Art.setJson || (cmd.art == Perform.Art.set && !object.Equals(cmd.src._value, cmd.o))) {
         cmd.old_o = cmd.src._value;
         if(cmd.art == Perform.Art.setJson) {
-          var jso=cmd.o as JSObject;
-          JSObject ty;
-          if(jso.ValueType==JSObjectType.Object && jso.Value!=null && (ty=jso.GetMember("$type")).IsDefinded) {
-            Func<JSObject, Topic, Topic, JSObject> f;
-            if(_knownTypes.TryGetValue(ty.As<string>(), out f) && f!=null) {
+          var jso=cmd.o as JSValue;
+          JSValue ty;
+          if(jso.ValueType==JSValueType.Object && jso.Value!=null && (ty=jso.GetProperty("$type")).Defined) {
+            Func<JSValue, Topic, Topic, JSValue> f;
+            if(_knownTypes.TryGetValue(ty.ToString(), out f) && f!=null) {
               cmd.src._value=f(jso, cmd.src, cmd.prim);
             } else {
               X13.Log.Warning("{0}.setJson({1}) - unknown $type", cmd.src.path, cmd.o);
@@ -381,58 +381,7 @@ namespace X13.PLC {
             cmd.src._value = jso;
           }
         } else {
-          switch(Type.GetTypeCode(cmd.o==null?null:cmd.o.GetType())) {
-          case TypeCode.Boolean:
-            cmd.src._value=new JSL.Boolean((bool)cmd.o);
-            break;
-          case TypeCode.Byte:
-          case TypeCode.SByte:
-          case TypeCode.Int16:
-          case TypeCode.Int32:
-          case TypeCode.UInt16:
-            cmd.src._value=new JSL.Number(Convert.ToInt32(cmd.o));
-            break;
-          case TypeCode.Int64:
-          case TypeCode.UInt32:
-          case TypeCode.UInt64:
-            cmd.src._value=new JSL.Number(Convert.ToInt64(cmd.o));
-            break;
-          case TypeCode.Single:
-          case TypeCode.Double:
-          case TypeCode.Decimal:
-            cmd.src._value=new JSL.Number(Convert.ToDouble(cmd.o));
-            break;
-          case TypeCode.DateTime: {
-              var dt = ((DateTime)cmd.o);
-              var a=new Arguments();
-              a.Add(new JSL.Number(dt.Year));
-              a.Add(new JSL.Number(dt.Month-1));
-              a.Add(new JSL.Number(dt.Day));
-              a.Add(new JSL.Number(dt.Hour));
-              a.Add(new JSL.Number(dt.Minute));
-              a.Add(new JSL.Number(dt.Second));
-              a.Add(new JSL.Number(dt.Millisecond));
-              var jdt=new JSL.Date(a);
-              cmd.src._value=new JSObject(jdt);  //.getTime() .valueOf()
-            }
-            break;
-          case TypeCode.Empty:
-            cmd.src._value=JSObject.Undefined;
-            break;
-          case TypeCode.String:
-            cmd.src._value=new JSL.String((string)cmd.o);
-            break;
-          case TypeCode.Object:
-          default: {
-              JSObject jo;
-              if((jo = cmd.o as JSObject)!=null) {
-                cmd.src._value=jo;
-              } else {
-                cmd.src._value=new JSObject(cmd.o);
-              }
-            }
-            break;
-          }
+          cmd.src._value = JSValue.Marshal(cmd.o);
         }
         if(cmd.art != Perform.Art.remove) {
           cmd.art = Perform.Art.changed;

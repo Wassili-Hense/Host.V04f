@@ -12,60 +12,6 @@ using WebSocketSharp.Server;
 
 namespace X13.WebServer {
   public class SIO_Connection : WebSocketBehavior {  // Socket.IO servers connection
-    public static JSC.JSObject obg2jso(object o) {
-      JSC.JSObject jo;
-      switch(Type.GetTypeCode(o==null?null:o.GetType())) {
-      case TypeCode.Boolean:
-        jo=new JSL.Boolean((bool)o);
-        break;
-      case TypeCode.Byte:
-      case TypeCode.SByte:
-      case TypeCode.Int16:
-      case TypeCode.Int32:
-      case TypeCode.UInt16:
-        jo=new JSL.Number(Convert.ToInt32(o));
-        break;
-      case TypeCode.Int64:
-      case TypeCode.UInt32:
-      case TypeCode.UInt64:
-        jo=new JSL.Number(Convert.ToInt64(o));
-        break;
-      case TypeCode.Single:
-      case TypeCode.Double:
-      case TypeCode.Decimal:
-        jo=new JSL.Number(Convert.ToDouble(o));
-        break;
-      case TypeCode.DateTime: {
-        var dt = ((DateTime)o);
-          var a=new JSC.Arguments();
-          a.Add(new JSL.Number(dt.Year));
-          a.Add(new JSL.Number(dt.Month-1));
-          a.Add(new JSL.Number(dt.Day));
-          a.Add(new JSL.Number(dt.Hour));
-          a.Add(new JSL.Number(dt.Minute));
-          a.Add(new JSL.Number(dt.Second));
-          a.Add(new JSL.Number(dt.Millisecond));
-          var jdt=new JSL.Date(a);
-          jo=new JSC.JSObject(jdt);
-        }
-        break;
-      case TypeCode.Empty:
-        jo=JSC.JSObject.Undefined;
-        break;
-      case TypeCode.String:
-        jo=new JSL.String((string)o);
-        break;
-      case TypeCode.Object:
-      default: {
-          if((jo = o as JSC.JSObject)==null) {
-            jo=new JSC.JSObject(o);
-          }
-        }
-        break;
-      }
-      return jo;
-    }
-
     private SortedList<string, Action<EventArguments>> _events;
     protected X13.PLC.Topic _owner;
     protected SIO_Connection()
@@ -162,7 +108,7 @@ namespace X13.WebServer {
       }
     }
 
-    protected void Register(JSC.JSObject name, Action<EventArguments> func) {
+    protected void Register(JSC.JSValue name, Action<EventArguments> func) {
       lock(_events) {
         _events[JSL.JSON.stringify(name, null, null)]=func;
       }
@@ -173,7 +119,7 @@ namespace X13.WebServer {
       }
       var r=new JSL.Array(args.Length);
       for(int i=0; i<args.Length; i++) {
-        r[i]=obg2jso(args[i]);
+        r[i]=JSC.JSValue.Marshal(args[i]);
       }
       string msg=JSL.JSON.stringify(r, null, null);
       this.Send("42"+msg);
@@ -185,17 +131,17 @@ namespace X13.WebServer {
     public class EventArguments {
       private static JSF.ExternalFunction _JSON_Replacer;
       static EventArguments() {
-        _JSON_Replacer=new JSF.ExternalFunction(ConvertDate);
+        _JSON_Replacer = new JSF.ExternalFunction(ConvertDate);
       }
-      private static JSC.JSObject ConvertDate(JSC.JSObject thisBind, JSC.Arguments args) {
-        if(args.Length==2 && args[1].ValueType==JSC.JSObjectType.String) {
+      private static JSC.JSValue ConvertDate(JSC.JSValue thisBind, JSC.Arguments args) {
+        if(args.Length==2 && args[1].ValueType==JSC.JSValueType.String) {
           // 2015-09-16T14:15:18.994Z
-          var s=args[1].As<string>();
+          var s=args[1].ToString();
           if(s!=null && s.Length==24 && s[4]=='-' && s[7]=='-' && s[10]=='T' && s[13]==':' && s[16]==':' && s[19]=='.') {
             var a=new JSC.Arguments();
             a.Add(args[1]);
             var jdt=new JSL.Date(a);
-            return new JSC.JSObject(jdt);
+            return JSC.JSValue.Wrap(jdt);
           }
         }
         return args[1];
@@ -262,7 +208,7 @@ namespace X13.WebServer {
         this.Count=req.Count();
       }
 
-      public JSC.JSObject this[int idx] {
+      public JSC.JSValue this[int idx] {
         get {
           return _request[idx];
         }
@@ -270,7 +216,7 @@ namespace X13.WebServer {
       public void Response(params object[] args) {
         _response=new JSL.Array(args.Length);
         for(int i=0; i<args.Length; i++) {
-          _response[i]=obg2jso(args[i]);
+          _response[i] = JSC.JSValue.Marshal(args[i]);
         }
         _error=false;
       }
