@@ -1,0 +1,28 @@
+﻿<Window x:Class="X13.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
+        xmlns:x13="clr-namespace:X13"
+        Title="X13 Dashboard" Loaded="Window_Loaded" Closed="Window_Closed">
+    <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <Menu >
+      <MenuItem Header="File">
+        <MenuItem Header="Connect" Click="miConnect_Click"/>
+      </MenuItem>
+    </Menu>
+    <xcad:DockingManager Name="dmMain" Grid.Row="1" AllowMixedOrientation="True" >
+      <xcad:DockingManager.DocumentHeaderTemplate>
+        <DataTemplate>
+          <Grid MaxWidth="120">
+            <TextBlock Text="{Binding Title}" HorizontalAlignment="Right" />
+          </Grid>
+        </DataTemplate>
+      </xcad:DockingManager.DocumentHeaderTemplate>
+
+    </xcad:DockingManager> 
+    </Grid>
+</Window>

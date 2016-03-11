@@ -87,8 +87,6 @@ namespace X13 {
 
     private string _cfgPath;
     private Mutex _singleInstance;
-    private string _lfPath;
-    private DateTime _firstDT;
     private Thread _thread;
     private AutoResetEvent _tick;
     private bool _terminate;
@@ -101,11 +99,7 @@ namespace X13 {
       string siName=string.Format("Global\\X13.HAServer@{0}", Path.GetFullPath(_cfgPath).Replace('\\', '$'));
       _singleInstance=new Mutex(true, siName);
 
-      if(!Directory.Exists("../log")) {
-        Directory.CreateDirectory("../log");
-      }
       AppDomain.CurrentDomain.UnhandledException+=new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
-      Log.Write+=Log_Write;
       if(!_singleInstance.WaitOne(TimeSpan.Zero, true)) {
         Log.Error("only one instance at a time");
         _singleInstance=null;
@@ -157,55 +151,6 @@ namespace X13 {
     }
     private void Tick(object o) {
       _tick.Set();
-    }
-    private void Log_Write(LogLevel ll, DateTime dt, string msg) {
-      char ll_c;
-      switch(ll) {
-      case LogLevel.Error:
-        ll_c='E';
-        break;
-      case LogLevel.Warning:
-        ll_c='W';
-        break;
-      case LogLevel.Info:
-        ll_c='I';
-        break;
-      default:
-        ll_c='D';
-        break;
-      }
-      string rez=string.Concat(dt.ToString("HH:mm:ss.ff"), "[", ll_c, "] ", msg);
-      LogLevel lt=LogLevel.Info;
-      //if(_lThreshold!=null) {
-      //  lt=_lThreshold.value;
-      //}
-      if((int)ll>=(int)lt) {
-        if(_lfPath==null || _firstDT!=dt.Date) {
-          _firstDT=dt.Date;
-          try {
-            foreach(string f in Directory.GetFiles("../log/", "*.log", SearchOption.TopDirectoryOnly)) {
-              if(File.GetLastWriteTime(f).AddDays(6)<_firstDT)
-                File.Delete(f);
-            }
-          }
-          catch(System.IO.IOException) {
-          }
-          _lfPath="../log/"+_firstDT.ToString("yyMMdd")+".log";
-        }
-        for(int i=2; i>=0; i--) {
-          try {
-            using(FileStream fs=File.Open(_lfPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite)) {
-              fs.Seek(0, SeekOrigin.End);
-              byte[] ba=Encoding.UTF8.GetBytes(rez+"\r\n");
-              fs.Write(ba, 0, ba.Length);
-            }
-            break;
-          }
-          catch(System.IO.IOException) {
-            Thread.Sleep(15);
-          }
-        }
-      }
     }
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
       try {

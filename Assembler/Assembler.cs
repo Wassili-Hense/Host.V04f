@@ -623,6 +623,5 @@ namespace X13 {
       TEST_EQ = 0xFE,
       RET = 0xFF,
     }
-
   }
 }

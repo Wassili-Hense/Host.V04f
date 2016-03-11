@@ -41,8 +41,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NiL.JS, Version=2.0.867.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
-      <HintPath>..\packages\NiL.JS.2.0.867.0\lib\net40\NiL.JS.dll</HintPath>
+    <Reference Include="NiL.JS, Version=2.1.881.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
+      <HintPath>..\packages\NiL.JS.2.1.881.0\lib\net40\NiL.JS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
