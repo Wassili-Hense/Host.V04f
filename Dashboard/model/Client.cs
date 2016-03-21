@@ -43,11 +43,17 @@ namespace X13 {
     private int _rccnt;
     private bool? _verbose;
     private bool _waitPong;
+    private long _respCnt;
+    private SortedList<string, Action<EventArguments>> _events;
+    private SortedList<long, Action<EventArguments>> _response;
 
     public Client(string host, string password) {
       if(!Uri.TryCreate(host, UriKind.Absolute, out url)) {
         throw new ArgumentException("host");
       }
+      _events = new SortedList<string, Action<EventArguments>>();
+      _response = new SortedList<long, Action<EventArguments>>();
+      _respCnt = 1;
       _uPass = password;
       root = new Topic(this);
       _st = State.Connecting;
@@ -154,16 +160,40 @@ namespace X13 {
           break;
         case '4':   // message: actual message, client and server should call their callbacks with the data.
           if(e.Data.Length > 1) {
+            EventArguments ea;
             switch(e.Data[1]) {
             case '0':  // CONNECT
               _st = State.Ready;
+              this.Emit(4, "/", 2, new Action<EventArguments>(SubscribeResp));
               break;
             case '2':  // EVENT
               EventArguments.ParseEvent(this, e.Data);
               break;
             case '1':  // DISCONNECT
             case '3':  // ACK
+              ea = EventArguments.Parse(e.Data);
+              if(ea != null) {
+                Action<EventArguments> f;
+                lock(_response) {
+                  if(!_response.TryGetValue(ea.msgId, out f)) {
+                    f = null;
+                  } else {
+                    _response.Remove(ea.msgId);
+                  }
+                }
+                if(f != null) {
+                  try {
+                    f(ea);
+                  }
+                  catch(Exception ex) {
+                    Log.Warning("{0} R {1} - {2}", url, e.Data, ex);
+                  }
+                }
+              }
+              break;
             case '4':  // ERROR
+              Log.Warning("{0} R {1}", url, e.Data);
+              break;
             case '5':  // BINARY_EVENT
             case '6':  // BINARY_ACK
               break;
@@ -181,23 +211,38 @@ namespace X13 {
         }
       }
     }
+    private void SubscribeResp(EventArguments a) {
 
-    private void Register(JSC.JSValue name, Action<EventArguments> func) {
+    }
+
+    public void Register(JSC.JSValue name, Action<EventArguments> func) {
       lock(_events) {
         _events[JSL.JSON.stringify(name, null, null)] = func;
       }
     }
-    private void Emit(params object[] args) {
+    public void Emit(params object[] args) {
       if(args == null || args.Length == 0) {
         return;
       }
-      var r = new JSL.Array(args.Length);
-      for(int i = 0; i < args.Length; i++) {
-        r[i] = JSC.JSValue.Marshal(args[i]);
+      int len = args.Length;
+      string header;
+      Action<EventArguments> cb;
+      if((cb = args[len - 1] as Action<EventArguments>) != null) {
+        len--;
+        long c=System.Threading.Interlocked.Increment(ref _respCnt);
+        header = "42" + c.ToString();
+        lock(_response) {
+          _response[c] = cb;
+        }
+      } else {
+        header = "42";
+      }
+      var r = new JSL.Array(len);
+      for(int i = 0; i < len; i++) {
+        r[i] = args[i] as JSC.JSValue??JSC.JSValue.Marshal(args[i]);
       }
       string msg = JSL.JSON.stringify(r, null, null);
-      this.Send("42" + msg);
-      X13.Log.Debug("{0}.emit({1})", this.ToString(), msg);
+      this.Send(header + msg);
     }
 
     public class EventArguments {
@@ -217,6 +262,18 @@ namespace X13 {
           }
         }
         return args[1];
+      }
+      public static EventArguments Parse(string msg) {
+        long msgId;
+        int idx = msg.IndexOf('[', 2);
+        if(idx < 3 || !long.TryParse(msg.Substring(2, idx - 2), out msgId)) {
+          msgId = -1;
+        }
+        var jo = JSL.JSON.parse(msg.Substring(idx), _JSON_Replacer) as JSL.Array;
+        if(jo == null) {
+          return null;
+        }
+        return new EventArguments(msgId, jo);
       }
       public static bool ParseEvent(Client conn, string msg) {
         string sb;
@@ -244,10 +301,10 @@ namespace X13 {
           Log.Warning("{0}ERROR: {1}", sb, tmpS);
           return false;
         }
-        EventArguments ea = new EventArguments(conn, msgId, jo);
+        EventArguments ea = new EventArguments(msgId, jo);
         try {
           f(ea);
-          if(ea._msgId >= 0 || (ea._error && ea._response != null)) {
+          if(ea.msgId >= 0 || (ea._error && ea._response != null)) {
             tmpS = ea._response == null ? "[]" : JSL.JSON.stringify(ea._response, null, null);
             conn.Send(string.Concat("4", ea._error ? "4" : "3", msgId < 0 ? string.Empty : msgId.ToString(), tmpS));
             if(ea._error) {
@@ -265,17 +322,15 @@ namespace X13 {
         return true;
       }
 
-      private Client _conn;
-      private long _msgId;
+      public readonly long msgId;
       private JSL.Array _request;
       private JSL.Array _response;
       private bool _error;
 
       public readonly int Count;
 
-      private EventArguments(Client conn, long msgId, JSL.Array req) {
-        this._conn = conn;
-        this._msgId = msgId;
+      private EventArguments(long msgId, JSL.Array req) {
+        this.msgId = msgId;
         this._request = req;
         this.Count = req.Count();
       }
@@ -288,7 +343,7 @@ namespace X13 {
       public void Response(params object[] args) {
         _response = new JSL.Array(args.Length);
         for(int i = 0; i < args.Length; i++) {
-          _response[i] = JSC.JSValue.Marshal(args[i]);
+          _response[i] = args[i] as JSC.JSValue??JSC.JSValue.Marshal(args[i]);
         }
         _error = false;
       }
