@@ -213,6 +213,7 @@ namespace X13 {
     }
     private void SubscribeResp(EventArguments a) {
 
+      //Workspace.This.AddMsg(msg);
     }
 
     public void Register(JSC.JSValue name, Action<EventArguments> func) {
@@ -363,6 +364,24 @@ namespace X13 {
       NoAnswer,
       BadAuth,
       Dispose,
+    }
+
+    private class ClMsgPub : INotMsg {
+      private Client _cl;
+      public void Parse(Workspace ws) {
+        bool success = true;
+        //
+
+
+        //
+        if(this.src != null) {
+          this.src.Complete(success);
+        }
+      }
+
+      public void Complete(bool success) {
+      }
+      public INotMsg src { get; private set; }
     }
   }
 }

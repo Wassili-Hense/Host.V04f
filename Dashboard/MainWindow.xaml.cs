@@ -13,6 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml;
+using X13.Data;
 
 namespace X13 {
   /// <summary>
@@ -23,8 +24,9 @@ namespace X13 {
 
     public MainWindow() {
       _cfgPath = @"../data/Dashboard.cfg";
+      X13.Data.DWorkspace.ui = this.Dispatcher;
       InitializeComponent();
-      dmMain.DataContext = Workspace.This;
+      //dmMain.DataContext = Workspace.This;
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) {
@@ -62,14 +64,7 @@ namespace X13 {
         }
         if(layoutS != null) {
           var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
-          layoutSerializer.LayoutSerializationCallback += (s, e1) => {
-            if(!string.IsNullOrWhiteSpace(e1.Model.ContentId)) {
-              e1.Content = Workspace.This.Open(e1.Model.ContentId);
-              if(e1.Content == null) {
-                e1.Cancel = true;
-              }
-            }
-          };
+          layoutSerializer.LayoutSerializationCallback += LSF;
           layoutSerializer.Deserialize(new System.IO.StringReader(layoutS));
         }
       }
@@ -77,7 +72,21 @@ namespace X13 {
         Log.Error("Load config - {0}", ex.Message);
       }
     }
+    private void LSF(object sender, Xceed.Wpf.AvalonDock.Layout.Serialization.LayoutSerializationCallbackEventArgs arg) {
+      if(!string.IsNullOrWhiteSpace(arg.Model.ContentId)) {
+        //arg.Content = Workspace.This.Open(arg.Model.ContentId);
+        //if(arg.Content == null) {
+        //  arg.Cancel = true;
+        //}
+      }
+    }
     private void Window_Closed(object sender, EventArgs e) {
+      try {
+        DWorkspace.This.Exit();
+      }
+      catch(Exception ex) {
+        Log.Error("DWorkspace.Exit() - {0}", ex.Message);
+      }
       var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
       try {
         var lDoc = new XmlDocument();
@@ -117,10 +126,12 @@ namespace X13 {
       catch(Exception ex) {
         Log.Error("Save config - {0}", ex.Message);
       }
+      Log.Finish();
     }
 
-    private void miConnect_Click(object sender, RoutedEventArgs e) {
-      var t=Client.Get(new Uri("ws://localhost/"), true);
+    private async void miConnect_Click(object sender, RoutedEventArgs e) {
+      var t = await DWorkspace.This.GetAsync(new Uri("ws://localhost/tmp"), true);
+      Log.Debug("t={0}", t == null ? "null" : t.name);
     }
   }
 }

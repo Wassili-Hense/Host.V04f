@@ -35,8 +35,8 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
-    <Reference Include="NiL.JS, Version=2.1.881.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
-      <HintPath>..\packages\NiL.JS.2.1.881.0\lib\net45\NiL.JS.dll</HintPath>
+    <Reference Include="NiL.JS, Version=2.1.883.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
+      <HintPath>..\packages\NiL.JS.2.1.883.0\lib\net45\NiL.JS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="PresentationUI, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL" />
@@ -102,16 +102,21 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Data\A04Client.cs" />
+    <Compile Include="Data\DChildren.cs" />
+    <Compile Include="Data\DTopic.cs" />
+    <Compile Include="Data\DWorkspace.cs" />
+    <Compile Include="Data\SioClient.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="model\Client.cs" />
-    <Compile Include="model\ObservableDictionary.cs" />
-    <Compile Include="model\Topic.cs" />
-    <Compile Include="model\Workspace.cs" />
+    <None Include="model\Client.cs" />
+    <None Include="model\ObservableDictionary.cs" />
+    <None Include="model\Topic.cs" />
+    <None Include="model\Workspace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

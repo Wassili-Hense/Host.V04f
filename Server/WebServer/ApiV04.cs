@@ -4,8 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using X13.PLC;
-using JSC=NiL.JS.Core;
-using JSL=NiL.JS.BaseLibrary;
+using JSC = NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.WebServer {
   internal sealed class ApiV04 : SIO_Connection {
@@ -24,33 +24,32 @@ namespace X13.WebServer {
     /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Subscribe(EventArguments args) {
-      string path=args[1].ToString();
-      int req=(int)args[2];
+      string path = args[1].ToString();
+      int req = (int)args[2];
       Topic parent;
-      List<Topic> resp=new List<Topic>();
+      List<Topic> resp = new List<Topic>();
       if(Topic.root.Exist(path, out parent)) {
         resp.Add(parent);
-        if((req & 2)==2) {
+        if((req & 2) == 2) {
           resp.AddRange(parent.children);
         }
       }
-      var arr=new JSL.Array();
+      var arr = new JSL.Array();
       foreach(var t in resp) {
         JSL.Array r;
-        if((req & 1)==1 && t==parent) {
-          r=new JSL.Array(4);
-          r[3]=t.valueRaw;
+        if((req & 1) == 1 && t == parent) {
+          r = new JSL.Array(4);
+          r[3] = t.valueRaw;
         } else {
-          r=new JSL.Array(3);
+          r = new JSL.Array(3);
         }
-        r[0]=new JSL.String(t.path);
-        r[1]=new JSL.Number((t.children.Where(z=>z.name!="$schema").Any()?16:0)  | 15);
-        var pr=t.schema;
-        r[2]=pr==null?JSC.JSValue.Null:new JSL.String(pr);
+        r[0] = new JSL.String(t.path);
+        r[1] = new JSL.Number((t.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
+        var pr = t.schema;
+        r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
         arr.Add(r);
       }
       args.Response(arr);
-
     }
     /// <summary>set topics value</summary>
     /// <param name="args">
@@ -58,7 +57,7 @@ namespace X13.WebServer {
     /// RESPONSE: [success, oldvalue]
     /// </param>
     private void SetValue(EventArguments args) {
-      string path=args[1].ToString();
+      string path = args[1].ToString();
       //TODO: check acl
       /*
        if(!acl(publish)){
@@ -69,19 +68,33 @@ namespace X13.WebServer {
          }
        }
        */
-      Topic t=Topic.root.Get(path, true, _owner);
+      Topic t = Topic.root.Get(path, true, _owner);
       t.SetJson(args[2], _owner);
       args.Response(true);
     }
     /// <summary>Create topic</summary>
     /// <param name="args">
     /// REQUEST: [8, path]
-    /// RESPONSE: success=true/false
+    /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Create(EventArguments args) {
-      string path=args[1].ToString();
-      var t=Topic.root.Get(path, true);
-      args.Response(true);
+      string path = args[1].ToString();
+      var t = Topic.root.Get(path, true);
+
+      var arr = new JSL.Array();
+      JSL.Array r;
+      if(t.valueRaw != null) {
+        r = new JSL.Array(4);
+        r[3] = t.valueRaw;
+      } else {
+        r = new JSL.Array(3);
+      }
+      r[0] = new JSL.String(t.path);
+      r[1] = new JSL.Number((t.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
+      var pr = t.schema;
+      r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
+      arr.Add(r);
+      args.Response(arr);
     }
     /// <summary>Remove topic</summary>
     /// <param name="args">
@@ -89,7 +102,7 @@ namespace X13.WebServer {
     /// </param>
     private void Remove(EventArguments args) {
       Topic t;
-      string path=args[1].ToString();
+      string path = args[1].ToString();
       if(Topic.root.Exist(path, out t)) {
         t.Remove();
       }
@@ -100,14 +113,14 @@ namespace X13.WebServer {
     /// </param>
     private void Copy(EventArguments args) {
       Topic t, p;
-      string pathO=args[1].ToString();
-      string pathP=args[2].ToString();
+      string pathO = args[1].ToString();
+      string pathP = args[2].ToString();
       if(Topic.root.Exist(pathO, out t) && Topic.root.Exist(pathP, out p)) {
         CopyTopic(t, p);
       }
     }
     private void CopyTopic(Topic t, Topic p) {
-      Topic n=p.Get(t.name, true);
+      Topic n = p.Get(t.name, true);
       foreach(var c in t.children.ToArray()) {
         CopyTopic(c, n);
       }
@@ -123,8 +136,8 @@ namespace X13.WebServer {
       string pathD = args[2].ToString();
       string nname;
       if(Topic.root.Exist(pathS, out t) && Topic.root.Exist(pathD, out p)) {
-        if(args.Count<4) {
-          nname=t.name;
+        if(args.Count < 4) {
+          nname = t.name;
         } else {
           nname = args[3].ToString();
         }
