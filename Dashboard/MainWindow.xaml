@@ -3,8 +3,12 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
         xmlns:x13="clr-namespace:X13"
+        xmlns:x13ui="clr-namespace:X13.UI"
         Title="X13 Dashboard" Loaded="Window_Loaded" Closed="Window_Closed">
-    <Grid>
+  <Window.Resources>
+    <x13ui:ActiveDocumentConverter x:Key="ActiveDocumentConverter"/>
+  </Window.Resources>
+  <Grid>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
@@ -14,7 +18,8 @@
         <MenuItem Header="Connect" Click="miConnect_Click"/>
       </MenuItem>
     </Menu>
-    <xcad:DockingManager Name="dmMain" Grid.Row="1" AllowMixedOrientation="True" >
+    <xcad:DockingManager x:Name="dmMain" Grid.Row="1" AllowMixedOrientation="True" 
+			ActiveContent="{Binding ActiveDocument, Converter={StaticResource ActiveDocumentConverter}, Mode=TwoWay}" DocumentsSource="{Binding Files}">
       <xcad:DockingManager.DocumentHeaderTemplate>
         <DataTemplate>
           <Grid MaxWidth="120">
@@ -23,6 +28,14 @@
         </DataTemplate>
       </xcad:DockingManager.DocumentHeaderTemplate>
 
-    </xcad:DockingManager> 
-    </Grid>
+      <xcad:DockingManager.LayoutItemContainerStyle>
+        <Style TargetType="{x:Type xcad:LayoutItem}">
+          <Setter Property="Title" Value="{Binding Model.data.name}"/>
+          <Setter Property="ContentId" Value="{Binding Model.data.fullPath}"/>
+          <Setter Property="ToolTip" Value="{Binding Model.data.fullPath}" />
+        </Style>
+      </xcad:DockingManager.LayoutItemContainerStyle>
+
+    </xcad:DockingManager>
+  </Grid>
 </Window>

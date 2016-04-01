@@ -26,7 +26,8 @@ namespace X13 {
       _cfgPath = @"../data/Dashboard.cfg";
       X13.Data.DWorkspace.ui = this.Dispatcher;
       InitializeComponent();
-      //dmMain.DataContext = Workspace.This;
+      dmMain.DataContext = DWorkspace.This;
+      //this.dmMain.Theme = new AvalonDock.Themes.VS2013.Vs2013BlueTheme();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) {
@@ -129,9 +130,9 @@ namespace X13 {
       Log.Finish();
     }
 
-    private async void miConnect_Click(object sender, RoutedEventArgs e) {
-      var t = await DWorkspace.This.GetAsync(new Uri("ws://localhost/tmp"), true);
-      Log.Debug("t={0}", t == null ? "null" : t.name);
+    private void miConnect_Click(object sender, RoutedEventArgs e) {
+      DWorkspace.This.Open("ws://localhost/");
+      //DWorkspace.This.Open("ws://localhost/Test/Alpha");
     }
   }
 }

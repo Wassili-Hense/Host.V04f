@@ -7,9 +7,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
+using System.ComponentModel;
+using System.Windows.Controls;
+using System.Collections.ObjectModel;
+using X13.UI;
 
 namespace X13.Data {
-  internal class DWorkspace {
+  internal class DWorkspace : INotifyPropertyChanged {
     #region static
     private static DWorkspace _this;
     public static System.Windows.Threading.Dispatcher ui;
@@ -39,17 +43,25 @@ namespace X13.Data {
     }
     #endregion static
 
+    #region instance variables
     private SortedList<string, A04Client> _clients;
     private Thread _bw;
     private bool _runing;
     private System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
+    private UiBaseForm _activeDocument;
+    private ObservableCollection<UiBaseForm> _files;
+    private ReadOnlyObservableCollection<UiBaseForm> _readonyFiles;
+
+    #endregion instance variables
 
     private DWorkspace() {
       _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _clients = new SortedList<string, A04Client>();
+      _files = new ObservableCollection<UiBaseForm>();
       _bw = new Thread(ThFunction);
       _runing = true;
       _bw.Start();
+      _activeDocument = null;
     }
     public Task<DTopic> GetAsync(Uri url, bool create) {
       var up = Uri.UnescapeDataString(url.UserInfo).Split(':');
@@ -65,6 +77,12 @@ namespace X13.Data {
         }
       }
       return cl.root.GetAsync(url.LocalPath, create);
+    }
+    public UiBaseForm Open(string path) {
+      UiBaseForm ui=new UI.InspectorForm(path);
+      _files.Add(ui);
+      ActiveDocument = ui;
+      return ui;
     }
     public void Exit() {
       lock(_clients) {
@@ -85,6 +103,24 @@ namespace X13.Data {
 
     }
 
+    public UiBaseForm ActiveDocument {
+      get { return _activeDocument; }
+      set {
+        if(_activeDocument != value) {
+          _activeDocument = value;
+          RaisePropertyChanged("ActiveDocument");
+        }
+      }
+    }
+    public ReadOnlyObservableCollection<UiBaseForm> Files {
+      get {
+        if(_readonyFiles == null)
+          _readonyFiles = new ReadOnlyObservableCollection<UiBaseForm>(_files);
+
+        return _readonyFiles;
+      }
+    }
+
     #region Background worker
     public void AddMsg(INotMsg msg) {
       _msgs.Enqueue(msg);
@@ -101,6 +137,13 @@ namespace X13.Data {
     }
     #endregion Background worker
 
+    #region INotifyPropertyChanged
+    private void RaisePropertyChanged(string propertyName) {
+      if(PropertyChanged != null)
+        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+    }
+    public event PropertyChangedEventHandler PropertyChanged;
+    #endregion INotifyPropertyChanged
   }
   internal interface INotMsg {
     void Process(DWorkspace ws);

@@ -41,6 +41,8 @@ namespace X13.Data {
     public string name { get; private set; }
     public string path { get; private set; }
     public string schema { get; private set; }
+    public JSC.JSValue value { get { return _value; } }
+    public DChildren children { get { return _children; } }
 
     private void OnPropertyChanged(string propertyName) {
       if(PropertyChanged != null) {
@@ -63,8 +65,11 @@ namespace X13.Data {
       public Task<DTopic> Task { get { return _tcs.Task; } }
 
       public void Process(DWorkspace ws) {
-        int idx1 = _cur.path.Length ;
-        if(_path == null || _path.Length <= idx1) {
+        int idx1 = _cur.path.Length;
+        if(idx1>1) {
+          idx1++;
+        }
+        if(_path == null || _path.Length <= _cur.path.Length) {
           if(_cur._value != null) {
             _tcs.SetResult(_cur);
           } else {
@@ -72,14 +77,14 @@ namespace X13.Data {
           }
           return;
         }
-        DTopic next=null;
-          int idx2 = _path.IndexOf('/', idx1);
-          if(idx2 < 0) {
-            idx2 = _path.Length;
-          }
-          string name = _path.Substring(idx1, idx2 - idx1);
+        DTopic next = null;
+        int idx2 = _path.IndexOf('/', idx1);
+        if(idx2 < 0) {
+          idx2 = _path.Length;
+        }
+        string name = _path.Substring(idx1, idx2 - idx1);
 
-        if((_cur._flags & 16) == 16 || _cur._flags==0) {  // 0 => 1st request
+        if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
           if(_cur._children == null) {
             _cur._client.Request(_cur.path, 2, this);
             return;
@@ -92,10 +97,10 @@ namespace X13.Data {
         if(next == null) {
           if(_create) {
             _cur._client.Create(_path.Substring(0, idx2), this);
-            return;
           } else {
             _tcs.SetResult(null);
           }
+          return;
         }
         _cur = next;
         ws.AddMsg(this);
@@ -116,7 +121,7 @@ namespace X13.Data {
             DWorkspace.ui.BeginInvoke(_cur._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, DTopic.childrenString);
           }
           foreach(var cb in cc.Select(z => z.Value == null ? null : z.Value.Select(y => y.Value).ToArray())) {
-            if(cb==null || cb.Length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
+            if(cb == null || cb.Length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
               continue;
             }
             aPath = cb[0].Value as string;
@@ -125,7 +130,7 @@ namespace X13.Data {
               if(!aPath.StartsWith(_cur.path)) {
                 continue;
               }
-              aName = aPath.Substring(_cur.path.Length);
+              aName = aPath.Substring(_cur.path.Length==1?1:(_cur.path.Length+1));
               next = new DTopic(_cur, aName);
               _cur._children.Add(next);
             } else {
@@ -142,5 +147,7 @@ namespace X13.Data {
         }
       }
     }
+
+    public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Path) + this.path.Substring(1); } }
   }
 }

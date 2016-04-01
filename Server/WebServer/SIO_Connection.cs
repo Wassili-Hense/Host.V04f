@@ -19,7 +19,7 @@ namespace X13.WebServer {
       _events=new SortedList<string, Action<EventArguments>>();
     }
     protected override void OnOpen() {
-      this.Send(string.Format("0{{\"sid\":\"{0}\", \"upgrades\":[], \"pingTimeout\":50000, \"pingInterval\":15000 }}", this.ID));
+      this.Send(string.Format("0{{\"sid\":\"{0}\", \"upgrades\":[], \"pingTimeout\":500000, \"pingInterval\":300000 }}", this.ID));
 
       System.Net.IPEndPoint remoteEndPoint = this.Context.UserEndPoint;
       {
