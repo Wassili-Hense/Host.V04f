@@ -107,10 +107,10 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
+		  bool childrenPC=false;
           DTopic next;
-          JSL.Array ca = value as JSL.Array;
-          IEnumerable<KeyValuePair<string, JSC.JSValue>> cc;
-          if(ca == null || (int)ca.length != 1 || (cc = ca[0] as IEnumerable<KeyValuePair<string, JSC.JSValue>>) == null) {
+          JSL.Array ca = value as JSL.Array, cc;
+          if(ca == null || (int)ca.length != 1 || (cc = ca[0].Value as JSL.Array) == null) {
             _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
             return;
           }
@@ -118,10 +118,10 @@ namespace X13.Data {
           int aFlags;
           if(_cur._children == null) {
             _cur._children = new DChildren();
-            DWorkspace.ui.BeginInvoke(_cur._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, DTopic.childrenString);
+			childrenPC=true;
           }
-          foreach(var cb in cc.Select(z => z.Value == null ? null : z.Value.Select(y => y.Value).ToArray())) {
-            if(cb == null || cb.Length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
+          foreach(var cb in cc.Select(z => z.Value.Value as JSL.Array)) {
+            if(cb == null || (int)cb.length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
               continue;
             }
             aPath = cb[0].Value as string;
@@ -138,10 +138,13 @@ namespace X13.Data {
             }
             next._flags = aFlags;
             next.schema = cb[2].Value as string;
-            if(cb.Length == 4) {
+            if((int)cb.length == 4) {
               next._value = cb[3];
             }
           }
+		  if(childrenPC) {
+			DWorkspace.ui.BeginInvoke(_cur._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, DTopic.childrenString);
+		  }
         } else {
           _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
         }
