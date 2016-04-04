@@ -132,7 +132,7 @@ namespace X13.Data {
               }
               aName = aPath.Substring(_cur.path.Length==1?1:(_cur.path.Length+1));
               next = new DTopic(_cur, aName);
-              _cur._children.Add(next);
+              _cur._children.AddItem(next);
             } else {
               next = _cur;
             }

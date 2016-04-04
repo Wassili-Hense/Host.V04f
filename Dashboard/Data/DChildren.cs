@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
@@ -7,91 +8,61 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace X13.Data {
-  internal class DChildren : ICollection<DTopic>, INotifyCollectionChanged, INotifyPropertyChanged {
-    private const string CountString = "Count";
-    private readonly Action<NotifyCollectionChangedEventArgs> _ActNTC;
-    private readonly Action<string> _ActNPC;
-    private SortedList<string, DTopic> _data;
-
-    public DChildren() {
-      _data = new SortedList<string, DTopic>();
-      _ActNTC = new Action<NotifyCollectionChangedEventArgs>(OnCollectionChanged);
-      _ActNPC = new Action<string>(OnPropertyChanged);
-    }
-    public bool TryGetValue(string key, out DTopic value) {
-      return _data.TryGetValue(key, out value);
-    }
-
-
-    #region ICollection<Topic> Members
-    public void Add(DTopic item) {
+  internal class DChildren : ObservableCollection<DTopic> {
+    public void AddItem(DTopic item) {
       if(item == null) {
-        throw new ArgumentNullException("value");
+        throw new ArgumentNullException("item");
       }
-
-      DTopic oItem;
-      if(_data.TryGetValue(item.name, out oItem)) {
+      int idx;
+      if(TryGetIndex(item.name, out idx)) {
+        var oItem = this[idx];
         if(Equals(oItem, item))
           return;
-        _data[item.name] = item;
-        DWorkspace.ui.BeginInvoke(_ActNTC
-          , System.Windows.Threading.DispatcherPriority.DataBind
-          , new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oItem));
-
+        this[idx] = item;
       } else {
-        _data[item.name] = item;
-        DWorkspace.ui.BeginInvoke(_ActNTC
-          , System.Windows.Threading.DispatcherPriority.DataBind
-          , new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+        this.Insert(idx, item);
       }
     }
-    public void Clear() {
-      throw new NotSupportedException();
+    public bool TryGetValue(string key, out DTopic value) {
+      int idx;
+      if(TryGetIndex(key, out idx)) {
+        value = this[idx];
+        return true;
+      } else {
+        value = null;
+        return false;
+      }
     }
-    public bool Contains(DTopic item) {
-      return _data.ContainsValue(item);
-    }
-    public void CopyTo(DTopic[] array, int arrayIndex) {
-      _data.Values.CopyTo(array, arrayIndex);
-    }
-    public int Count { get { return _data.Count; } }
-    public bool IsReadOnly {
-      get { return false; }
-    }
-    public bool Remove(DTopic item) {
-      throw new NotImplementedException();
-    }
-    #endregion ICollection<Topic> Members
+    private bool TryGetIndex(string name, out int mid) {
+      int min = 0, max = this.Count - 1, cmp;
+      mid = 0;
 
-    #region IEnumerable<Topic> Members
-    public IEnumerator<DTopic> GetEnumerator() {
-      return _data.Values.GetEnumerator();
+      while(min <= max) {
+        mid = (min + max) / 2;
+        cmp = string.Compare(this[mid].name, name);
+        if(cmp < 0) {
+          min = mid + 1;
+          mid = min;
+        } else if(cmp > 0) {
+          max = mid - 1;
+          mid = max;
+        } else {
+          return true;
+        }
+      }
+      return false;
     }
-    #endregion IEnumerable<topc> Members
-
-    #region IEnumerable Members
-    System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
-      return _data.Values.GetEnumerator();
-    }
-    #endregion IEnumerable Members
-
-    #region INotifyCollectionChanged Members
-    public event NotifyCollectionChangedEventHandler CollectionChanged;
-    #endregion
-
-    #region INotifyPropertyChanged Members
-    public event PropertyChangedEventHandler PropertyChanged;
-    #endregion
-
-    protected virtual void OnPropertyChanged(string propertyName) {
+    protected override event PropertyChangedEventHandler PropertyChanged;
+    public override event NotifyCollectionChangedEventHandler CollectionChanged;
+    protected override void OnPropertyChanged(PropertyChangedEventArgs e) {
       if(PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        DWorkspace.ui.BeginInvoke(PropertyChanged, System.Windows.Threading.DispatcherPriority.DataBind, this, e);
       }
     }
-    private void OnCollectionChanged(NotifyCollectionChangedEventArgs e) {
-      OnPropertyChanged(CountString);
-      if(CollectionChanged != null)
-        CollectionChanged(this, e);
+    protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e) {
+      if(CollectionChanged != null) {
+        DWorkspace.ui.BeginInvoke(CollectionChanged, System.Windows.Threading.DispatcherPriority.DataBind, this, e);
+      }
     }
   }
 }

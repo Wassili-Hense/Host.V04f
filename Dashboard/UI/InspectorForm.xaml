@@ -6,7 +6,7 @@
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
              d:DesignHeight="200" d:DesignWidth="600">
-    <Grid Background="#00000000">
+    <Grid Background="White">
     <Grid.Resources>
       <DataTemplate x:Key="ChildrenDataTemplate">
         <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top">
@@ -20,8 +20,8 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <TextBlock Name="tbValue" />
-    <ItemsControl x:Name="UserList" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=children}" Grid.Row="1" >
+    <ContentControl Content="{Binding valueVC}" />
+    <ItemsControl ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Grid.Row="1" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
           <StackPanel Orientation="Horizontal"/>

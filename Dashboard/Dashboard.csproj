@@ -82,6 +82,9 @@
       <DependentUpon>InspectorForm.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\UiBaseForm.cs" />
+    <Compile Include="UI\ValueControl.xaml.cs">
+      <DependentUpon>ValueControl.xaml</DependentUpon>
+    </Compile>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -109,12 +112,12 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="UI\ValueControl.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
-    <None Include="model\Client.cs" />
-    <None Include="model\ObservableDictionary.cs" />
-    <None Include="model\Topic.cs" />
-    <None Include="model\Workspace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
