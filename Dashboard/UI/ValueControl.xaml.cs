@@ -45,9 +45,25 @@ namespace X13.UI {
       this.DataContext = this;
       //PropertyChangedReise("valueStr");
     }
-    public string valueStr { get; private set; }
+    public void UpdateData(JSC.JSValue val) {
+      _value = val;
+      PropertyChangedReise("value");
+    }
 
-    public string name { get { return _name??"value"; } }
+    public string valueStr { get; private set; }
+    public object value {
+      get { return _value.Value; }
+      set {
+        if(_parent == null) {
+          _src.SetData(value);
+        } else {
+          _parent._value[_name] = JSC.JSValue.Marshal(value);
+        }
+      }
+    }
+    public string view { get { return _value.ValueType.ToString(); } }
+
+    public string name { get { return _name ?? "value"; } }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
 
     public event PropertyChangedEventHandler PropertyChanged;
@@ -58,5 +74,25 @@ namespace X13.UI {
       }
     }
 
+
+  }
+
+  public class ValueViewTS : DataTemplateSelector {
+    public DataTemplate Default { get; set; }
+    public DataTemplate Bool { get; set; }
+
+    public override DataTemplate SelectTemplate(object item, DependencyObject container) {
+      var cp = container as ContentPresenter;
+      if(cp != null) {
+        var vc = cp.Content as ValueControl;
+        if(cp != null) {
+          switch(vc.view) {
+          case "Boolean":
+            return Bool;
+          }
+        }
+      }
+      return Default;
+    }
   }
 }

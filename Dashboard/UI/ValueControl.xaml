@@ -3,10 +3,25 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d">
     <Grid VerticalAlignment="Top" Margin="10, 0, 0, 0">
-    <Grid.ColumnDefinitions>
-      <ColumnDefinition Width="auto" MinWidth="80"/>
+    <Grid.Resources>
+      <x13ui:ValueViewTS x:Key="tsValue">
+        <x13ui:ValueViewTS.Default>
+          <DataTemplate>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding valueStr}"  Margin="0,2" />            
+          </DataTemplate>
+        </x13ui:ValueViewTS.Default>
+        <x13ui:ValueViewTS.Bool>
+          <DataTemplate>
+            <CheckBox IsChecked="{Binding value}" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.Bool>
+      </x13ui:ValueViewTS>
+    </Grid.Resources>
+      <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="auto" MinWidth="20" SharedSizeGroup="vcName" />
       <ColumnDefinition/>
     </Grid.ColumnDefinitions>
     <Grid.RowDefinitions>
@@ -14,8 +29,9 @@
       <RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <Border Grid.Row="0" Grid.ColumnSpan="2" BorderThickness="0,1" Background="White" BorderBrush="#FFD4D4D4" />
-    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding name}" Margin="0,2" />
-    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding valueStr}"  Margin="0,2" />
+    <TextBlock Grid.Row="0" Grid.Column="0" Text="{Binding name}" Margin="3,2,10,2" />
+    <ContentPresenter Grid.Row="0" Grid.Column="1" Margin="5,2" ContentTemplateSelector="{StaticResource tsValue}" Content="{Binding}">
+    </ContentPresenter>
     <ItemsControl Grid.Row="1" Grid.ColumnSpan="2" ItemsSource="{Binding fields}">
     </ItemsControl>
   </Grid>

@@ -41,7 +41,7 @@ namespace X13.Data {
     public string name { get; private set; }
     public string path { get; private set; }
     public string schema { get; private set; }
-    public JSC.JSValue value { get { return _value; } }
+    public JSC.JSValue value { get { return _value; } set { _value = value; } }
     public DChildren children { get { return _children; } }
 
     private void OnPropertyChanged(string propertyName) {

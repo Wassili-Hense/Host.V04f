@@ -1,4 +1,7 @@
-﻿using System;
+﻿using JSL = NiL.JS.BaseLibrary;
+using JSC = NiL.JS.Core;
+using JSF = NiL.JS.Core.Functions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -31,6 +34,11 @@ namespace X13.UI {
       get { return "IN"; }
     }
     public object data { get { return _data; } }
+    internal void SetData(object value) {
+      _data.value = JSC.JSValue.Marshal(value);
+      valueVC.UpdateData(_data.value);
+    }
+
     public ValueControl valueVC { get; private set; }
     private void DataUpd(Task<DTopic> t) {
       if(t.IsCompleted) {
@@ -48,5 +56,6 @@ namespace X13.UI {
         DWorkspace.This.Open(t.fullPath);
       }
     }
+
   }
 }

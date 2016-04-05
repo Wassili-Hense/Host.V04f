@@ -20,7 +20,7 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <ContentControl Content="{Binding valueVC}" />
+    <ContentControl Content="{Binding valueVC}" Grid.IsSharedSizeScope="True" />
     <ItemsControl ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Grid.Row="1" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>

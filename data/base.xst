@@ -24,5 +24,8 @@
     <item name='Gamma' value='"ABCDEFGHI"' saved='True'>
       <item name='$schema' value='"str2"' saved='True' />
     </item>
+    <item name='Delta' value='true' saved='True'>
+      <item name='$schema' value='"Checkbox"' saved='True' />
+    </item>
   </item>
 </root>
