@@ -3,24 +3,177 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
-             d:DesignHeight="200" d:DesignWidth="600">
-    <Grid Background="White">
+             FontFamily="Consolas" FontSize="14">
+  <Grid Background="White">
     <Grid.Resources>
       <DataTemplate x:Key="ChildrenDataTemplate">
         <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top">
-        <StackPanel MouseUp="StackPanel_MouseUp">
-          <Label HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
-        </StackPanel>
+          <StackPanel MouseUp="StackPanel_MouseUp">
+            <Label HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
+          </StackPanel>
         </Border>
       </DataTemplate>
+      <x13ui:ValueViewTS x:Key="tsValue">
+        <x13ui:ValueViewTS.Default>
+          <DataTemplate>
+            <TextBlock Text="{Binding valueStr}" Foreground="Black" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.Default>
+        <x13ui:ValueViewTS.Bool>
+          <DataTemplate>
+            <CheckBox IsChecked="{Binding value}" GotFocus="ValueControl_GotFocus" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.Bool>
+        <x13ui:ValueViewTS.Double>
+          <DataTemplate>
+            <xctk:DoubleUpDown Value="{Binding value}" BorderThickness="0" Foreground="Black" HorizontalAlignment="Left" GotFocus="ValueControl_GotFocus" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.Double>
+        <x13ui:ValueViewTS.String>
+          <DataTemplate>
+            <TextBox Text="{Binding value}" BorderThickness="0" Padding="0" Background="#FFE2FCFF" Foreground="Black" HorizontalContentAlignment="Left" GotFocus="ValueControl_GotFocus" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.String>
+        <x13ui:ValueViewTS.Date>
+          <DataTemplate>
+            <xctk:DateTimePicker Value="{Binding value}" Background="#FFE2FCFF" Foreground="Black" HorizontalAlignment="Left" GotFocus="ValueControl_GotFocus" />
+          </DataTemplate>
+        </x13ui:ValueViewTS.Date>
+      </x13ui:ValueViewTS>
+      <Style x:Key="TreeViewItemFocusVisual">
+        <Setter Property="Control.Template">
+          <Setter.Value>
+            <ControlTemplate>
+              <Rectangle/>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
+      <PathGeometry x:Key="TreeArrow" Figures="M0,0 L0,6 L6,0 z"/>
+      <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Width" Value="16"/>
+        <Setter Property="Height" Value="16"/>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="{x:Type ToggleButton}">
+              <Border Width="16" Height="16" Background="Transparent" Padding="5,5,5,5">
+                <Path x:Name="ExpandPath" Fill="Transparent" Stroke="#FF989898" Data="{StaticResource TreeArrow}">
+                  <Path.RenderTransform>
+                    <RotateTransform Angle="135" CenterX="3" CenterY="3"/>
+                  </Path.RenderTransform>
+                </Path>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF1BBBFA"/>
+                  <Setter Property="Fill" TargetName="ExpandPath" Value="Transparent"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                  <Setter Property="RenderTransform" TargetName="ExpandPath">
+                    <Setter.Value>
+                      <RotateTransform Angle="180" CenterX="3" CenterY="3"/>
+                    </Setter.Value>
+                  </Setter>
+                  <Setter Property="Fill" TargetName="ExpandPath" Value="#FF595959"/>
+                  <Setter Property="Stroke" TargetName="ExpandPath" Value="#FF262626"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
+      </Style>
     </Grid.Resources>
-      <Grid.RowDefinitions>
+    <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <ContentControl Content="{Binding valueVC}" Grid.IsSharedSizeScope="True" />
+    <TreeView ItemsSource="{Binding valueVC}" BorderThickness="0">
+      <TreeView.ItemContainerStyle>
+        <Style TargetType="{x:Type TreeViewItem}">
+          <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+          <Setter Property="Background" Value="#40EEEEEE"/>
+          <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
+          <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}"/>
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                <Grid SnapsToDevicePixels="true">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="19"/>
+                    <ColumnDefinition Width="*"/>
+                  </Grid.ColumnDefinitions>
+                  <Grid.RowDefinitions>
+                    <RowDefinition MinHeight="20" Height="Auto"/>
+                    <RowDefinition/>
+                  </Grid.RowDefinitions>
+                  <Border           Grid.Column="0" Grid.Row="0" x:Name="BTop" BorderBrush="Black" BorderThickness="0,1,0,0" Margin="-9,10,4,10" VerticalAlignment="Top" Visibility="Collapsed" />
+                  <Border           Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" x:Name="BLine" BorderBrush="Black" BorderThickness="1,0,0,1" Margin="10,10,0,10" Visibility="Collapsed" />
+                  <ToggleButton     Grid.Column="0" Grid.Row="0" x:Name="Expander" Style="{StaticResource ExpandCollapseToggleStyle}" ClickMode="Press" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"/>
+                  <Border           Grid.Column="1" Grid.Row="0" Name="BContent" BorderBrush="LightGray" BorderThickness="1,0.5,0,0.5">
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" MinWidth="80" SharedSizeGroup="vcName"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBlock        Grid.Column="0" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
+                      <Image            Grid.Column="1" Grid.Row="0" Source="/Dashboard;component/Images/ty_topic.png" VerticalAlignment="Top" Width="16" Height="16" Margin="0" />
+                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" ContentTemplateSelector="{StaticResource tsValue}" Content="{Binding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                    </Grid>
+                  </Border>
+                  <ItemsPresenter   Grid.Column="1" Grid.Row="1" x:Name="ItemsHost" />
+                </Grid>
+                <ControlTemplate.Triggers>
+                  <Trigger Property="IsExpanded" Value="false">
+                    <Setter Property="Visibility" TargetName="ItemsHost" Value="Collapsed"/>
+                  </Trigger>
+                  <Trigger Property="HasItems" Value="false">
+                    <Setter Property="Visibility" TargetName="Expander" Value="Hidden"/>
+                    <Setter Property="Visibility" TargetName="BTop" Value="Visible"/>
+                  </Trigger>
+                  <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                      <Condition Property="IsExpanded" Value="true" />
+                      <Condition Property="HasItems" Value="true" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Visibility" TargetName="BLine" Value="Visible"/>
+                  </MultiTrigger>
+                  <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                      <Condition Property="IsSelected" Value="true"/>
+                      <Condition Property="IsSelectionActive" Value="true"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="BorderBrush" TargetName="BContent" Value="Black" />
+                  </MultiTrigger>
+                  <Trigger Property="IsEnabled" Value="false">
+                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                  </Trigger>
+                </ControlTemplate.Triggers>
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
+          <Style.Triggers>
+            <Trigger Property="VirtualizingStackPanel.IsVirtualizing" Value="true">
+              <Setter Property="ItemsPanel">
+                <Setter.Value>
+                  <ItemsPanelTemplate>
+                    <VirtualizingStackPanel HorizontalAlignment="Stretch"/>
+                  </ItemsPanelTemplate>
+                </Setter.Value>
+              </Setter>
+            </Trigger>
+          </Style.Triggers>
+
+        </Style>
+      </TreeView.ItemContainerStyle>
+      <TreeView.ItemTemplate>
+        <HierarchicalDataTemplate DataType="{x:Type x13ui:ValueControl}"  ItemsSource="{Binding fields}" />
+      </TreeView.ItemTemplate>
+    </TreeView>
     <ItemsControl ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Grid.Row="1" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>

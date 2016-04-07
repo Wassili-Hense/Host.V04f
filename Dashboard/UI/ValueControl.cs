@@ -6,20 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows.Controls;
+using System.Windows;
 
 namespace X13.UI {
-  public partial class ValueControl : UserControl, INotifyPropertyChanged {
+  public class ValueControl : INotifyPropertyChanged {
     private InspectorForm _src;
     private ValueControl _parent;
     private string _name;
@@ -40,10 +33,7 @@ namespace X13.UI {
         _fields = null;
       }
       valueStr = (_value.Value == null) ? "null" : (_value.Value.ToString());
-
-      InitializeComponent();
-      this.DataContext = this;
-      //PropertyChangedReise("valueStr");
+      IsExpanded = true;
     }
     public void UpdateData(JSC.JSValue val) {
       _value = val;
@@ -52,7 +42,12 @@ namespace X13.UI {
 
     public string valueStr { get; private set; }
     public object value {
-      get { return _value.Value; }
+      get {
+        if(_value.ValueType == JSC.JSValueType.Date) {
+          return (_value.Value as JSL.Date).ToDateTime();
+        }
+        return _value.Value;
+      }
       set {
         if(_parent == null) {
           _src.SetData(value);
@@ -62,7 +57,7 @@ namespace X13.UI {
       }
     }
     public string view { get { return _value.ValueType.ToString(); } }
-
+    public bool IsExpanded { get; set; }
     public string name { get { return _name ?? "value"; } }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
 
@@ -73,13 +68,14 @@ namespace X13.UI {
         PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
       }
     }
-
-
   }
-
   public class ValueViewTS : DataTemplateSelector {
     public DataTemplate Default { get; set; }
     public DataTemplate Bool { get; set; }
+    //public DataTemplate Integer { get; set; }
+    public DataTemplate Double { get; set; }
+    public DataTemplate String { get; set; }
+    public DataTemplate Date { get; set; }
 
     public override DataTemplate SelectTemplate(object item, DependencyObject container) {
       var cp = container as ContentPresenter;
@@ -89,6 +85,12 @@ namespace X13.UI {
           switch(vc.view) {
           case "Boolean":
             return Bool;
+          case "Double":
+            return Double;
+          case "String":
+            return this.String;
+          case "Date":
+            return this.Date;
           }
         }
       }
