@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace X13.Data {
-  internal class DChildren : ObservableCollection<DTopic> {
+  public class DChildren : ObservableCollection<DTopic> {
     public void AddItem(DTopic item) {
       if(item == null) {
         throw new ArgumentNullException("item");

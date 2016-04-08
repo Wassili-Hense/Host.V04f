@@ -21,7 +21,7 @@ namespace X13.Data {
         throw new ArgumentException("host");
       }
       _connEvnt = new List<WaitConnect>();
-      _sio = new SioClient(url.Scheme + "://" + url.DnsSafeHost + ":" + url.Port.ToString() + "/api/v04", ProcessMessage);
+      _sio = new SioClient((url.Scheme == "x13s" ? "wss://" : "ws://") + url.DnsSafeHost + (url.IsDefaultPort ? string.Empty : ":" + url.Port.ToString()) + "/api/v04", ProcessMessage);
       root = new DTopic(this);
     }
     public void Request(string path, int mask, INotMsg req) {

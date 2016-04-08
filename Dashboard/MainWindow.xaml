@@ -31,7 +31,7 @@
       <xcad:DockingManager.LayoutItemContainerStyle>
         <Style TargetType="{x:Type xcad:LayoutItem}">
           <Setter Property="Title" Value="{Binding Model.data.name}"/>
-          <Setter Property="ContentId" Value="{Binding Model.data.fullPath}"/>
+          <Setter Property="ContentId" Value="{Binding Model.ContentId}"/>
           <Setter Property="ToolTip" Value="{Binding Model.data.fullPath}" />
         </Style>
       </xcad:DockingManager.LayoutItemContainerStyle>

@@ -20,7 +20,6 @@ using System.Collections.ObjectModel;
 
 namespace X13.UI {
   public partial class InspectorForm : UiBaseForm {
-    private DTopic _data;
 
     public InspectorForm(string path) {
       valueVC = new ObservableCollection<ValueControl>();
@@ -28,25 +27,24 @@ namespace X13.UI {
       InitializeComponent();
       DWorkspace.This.GetAsync(new Uri(path), false).ContinueWith((t) => this.Dispatcher.BeginInvoke(new Action<Task<DTopic>>(this.DataUpd), t));
     }
-    public override string ToString() {
-      return _data==null?"IN":("InspectorForm:" + _data.fullPath);
-    }
 
-    public override string viewArt {
-      get { return "IN"; }
-    }
-    public object data { get { return _data; } }
-    internal void SetData(object value) {
+    public void SetData(object value) {
       _data.value = JSC.JSValue.Marshal(value);
       valueVC[0].UpdateData(_data.value);
     }
 
     public ObservableCollection<ValueControl> valueVC { get; private set; }
+
+    public override string viewArt {
+      get { return "IN"; }
+    }
+
     private void DataUpd(Task<DTopic> t) {
       if(t.IsCompleted) {
         _data = t.Result;
         OnPropertyChanged("data");
-        var v= new ValueControl(this, null, null, _data.value);
+        OnPropertyChanged("ContentId");
+        var v = new ValueControl(this, null, null, _data.value);
         if(valueVC.Count == 0) {
           valueVC.Add(v);
         } else {
@@ -55,7 +53,6 @@ namespace X13.UI {
         OnPropertyChanged("valueVC");
       }
     }
-
     private void StackPanel_MouseUp(object sender, MouseButtonEventArgs e) {
       StackPanel p;
       DTopic t;
@@ -63,7 +60,6 @@ namespace X13.UI {
         DWorkspace.This.Open(t.fullPath);
       }
     }
-
     private void ValueControl_GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       TreeViewItem parent;

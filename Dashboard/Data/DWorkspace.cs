@@ -79,7 +79,13 @@ namespace X13.Data {
       return cl.root.GetAsync(url.LocalPath, create);
     }
     public UiBaseForm Open(string path) {
-      UiBaseForm ui=new UI.InspectorForm(path);
+      Uri u;
+      if(!Uri.TryCreate(path, UriKind.Absolute, out u)) {
+        Log.Warning("Workspace.Open({0}) - Bad ContentID", path);
+        return null;
+      }
+      var v = u.Query;
+      UiBaseForm ui=new UI.InspectorForm(u.GetLeftPart(UriPartial.Path));
       _files.Add(ui);
       ActiveDocument = ui;
       return ui;

@@ -6,7 +6,7 @@
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
-             FontFamily="Consolas" FontSize="14">
+             FontFamily="Consolas" FontSize="12">
   <Grid Background="White">
     <Grid.Resources>
       <DataTemplate x:Key="ChildrenDataTemplate">

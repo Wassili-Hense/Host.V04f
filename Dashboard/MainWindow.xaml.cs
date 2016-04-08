@@ -75,10 +75,10 @@ namespace X13 {
     }
     private void LSF(object sender, Xceed.Wpf.AvalonDock.Layout.Serialization.LayoutSerializationCallbackEventArgs arg) {
       if(!string.IsNullOrWhiteSpace(arg.Model.ContentId)) {
-        //arg.Content = Workspace.This.Open(arg.Model.ContentId);
-        //if(arg.Content == null) {
-        //  arg.Cancel = true;
-        //}
+        arg.Content = DWorkspace.This.Open(arg.Model.ContentId);
+        if(arg.Content == null) {
+          arg.Cancel = true;
+        }
       }
     }
     private void Window_Closed(object sender, EventArgs e) {
@@ -131,7 +131,7 @@ namespace X13 {
     }
 
     private void miConnect_Click(object sender, RoutedEventArgs e) {
-      DWorkspace.This.Open("ws://localhost/");
+      DWorkspace.This.Open("x13://localhost/");
       //DWorkspace.This.Open("ws://localhost/Test/Alpha");
     }
   }

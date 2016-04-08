@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace X13.Data {
-  internal class DTopic : INotifyPropertyChanged {
+  public class DTopic : INotifyPropertyChanged {
     private const string childrenString = "children";
     private readonly Action<string> _ActNPC;
 
@@ -20,12 +20,13 @@ namespace X13.Data {
 
 
     private DTopic(DTopic parent, string name) {
-      this._client = parent._client;
+      this.parent = parent;
+      this._client = this.parent._client;
       this.name = name;
-      this.path = parent == _client.root ? ("/" + name) : (parent.path + "/" + name);
+      this.path = this.parent == _client.root ? ("/" + name) : (this.parent.path + "/" + name);
       _ActNPC = new Action<string>(OnPropertyChanged);
     }
-    public DTopic(A04Client cl) {
+    internal DTopic(A04Client cl) {
       _client = cl;
       this.name = _client.url.ToString();
       this.path = "/";
@@ -40,6 +41,7 @@ namespace X13.Data {
 
     public string name { get; private set; }
     public string path { get; private set; }
+    public DTopic parent { get; private set; }
     public string schema { get; private set; }
     public JSC.JSValue value { get { return _value; } set { _value = value; } }
     public DChildren children { get { return _children; } }
