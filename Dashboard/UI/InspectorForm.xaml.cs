@@ -57,7 +57,7 @@ namespace X13.UI {
       StackPanel p;
       DTopic t;
       if((p = sender as StackPanel) != null && (t = p.DataContext as DTopic) != null) {
-        DWorkspace.This.Open(t.fullPath);
+        DWorkspace.This.Open(t);
       }
     }
     private void ValueControl_GotFocus(object sender, RoutedEventArgs e) {

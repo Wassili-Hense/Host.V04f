@@ -28,7 +28,7 @@ namespace X13.Data {
     }
     internal DTopic(A04Client cl) {
       _client = cl;
-      this.name = _client.url.ToString();
+      this.name = _client.url.ToString().TrimEnd('/');
       this.path = "/";
       _ActNPC = new Action<string>(OnPropertyChanged);
     }
@@ -153,6 +153,6 @@ namespace X13.Data {
       }
     }
 
-    public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Path) + this.path.Substring(1); } }
+    public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
   }
 }

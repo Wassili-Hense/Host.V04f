@@ -12,7 +12,7 @@ namespace X13.UI {
     protected DTopic _data;
 
     public abstract string viewArt { get; }
-    public object data { get { return _data; } }
+    public DTopic data { get { return _data; } }
     public string ContentId { get { return _data == null ? "Inspector" : (_data.fullPath + "?view=" + viewArt); } }
     public event PropertyChangedEventHandler PropertyChanged;
 

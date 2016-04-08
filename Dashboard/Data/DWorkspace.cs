@@ -78,18 +78,38 @@ namespace X13.Data {
       }
       return cl.root.GetAsync(url.LocalPath, create);
     }
-    public UiBaseForm Open(string path) {
-      Uri u;
-      if(!Uri.TryCreate(path, UriKind.Absolute, out u)) {
-        Log.Warning("Workspace.Open({0}) - Bad ContentID", path);
-        return null;
+    public UiBaseForm Open(string path, string view=null) {
+      if(string.IsNullOrEmpty(view)) {
+        view = "IN";
+      } else if(view.StartsWith("?view=")) {
+        view = view.Substring(6);
       }
-      var v = u.Query;
-      UiBaseForm ui=new UI.InspectorForm(u.GetLeftPart(UriPartial.Path));
-      _files.Add(ui);
+      UiBaseForm ui;
+      ui = _files.FirstOrDefault(z => z != null && z.data != null && z.data.fullPath == path && z.viewArt == view);
+      if(ui == null) {
+        ui = new UI.InspectorForm(path);
+        _files.Add(ui);
+      }
       ActiveDocument = ui;
       return ui;
     }
+    internal void Open(DTopic t, string view=null) {
+      //TODO: if(view==null) t.schema => view
+      this.Open(t.fullPath, view);
+    }
+    internal void Close(string path, string view) {
+      UiBaseForm ui;
+      if(string.IsNullOrEmpty(view)) {
+        view = "IN";
+      } else if(view.StartsWith("?view=")) {
+        view = view.Substring(6);
+      }
+      ui = _files.FirstOrDefault(z => z != null && z.data != null && z.data.fullPath == path && z.viewArt == view);
+      if(ui != null) {
+        _files.Remove(ui);
+      }
+    }
+
     public void Exit() {
       lock(_clients) {
         foreach(var cl in _clients) {
@@ -150,6 +170,9 @@ namespace X13.Data {
     }
     public event PropertyChangedEventHandler PropertyChanged;
     #endregion INotifyPropertyChanged
+
+
+
   }
   internal interface INotMsg {
     void Process(DWorkspace ws);

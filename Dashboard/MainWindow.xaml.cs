@@ -75,7 +75,13 @@ namespace X13 {
     }
     private void LSF(object sender, Xceed.Wpf.AvalonDock.Layout.Serialization.LayoutSerializationCallbackEventArgs arg) {
       if(!string.IsNullOrWhiteSpace(arg.Model.ContentId)) {
-        arg.Content = DWorkspace.This.Open(arg.Model.ContentId);
+        Uri u;
+        if(!Uri.TryCreate(arg.Model.ContentId, UriKind.Absolute, out u)) {
+          Log.Warning("Restore Layout({0}) - Bad ContentID", arg.Model.ContentId);
+          arg.Cancel = true;
+          return;
+        }
+        arg.Content = DWorkspace.This.Open(u.GetLeftPart(UriPartial.Path), u.Query);
         if(arg.Content == null) {
           arg.Cancel = true;
         }
@@ -132,7 +138,14 @@ namespace X13 {
 
     private void miConnect_Click(object sender, RoutedEventArgs e) {
       DWorkspace.This.Open("x13://localhost/");
-      //DWorkspace.This.Open("ws://localhost/Test/Alpha");
+    }
+
+    private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
+      Uri u;
+      if(Uri.TryCreate(e.Document.ContentId, UriKind.Absolute, out u)) {
+        DWorkspace.This.Close(u.GetLeftPart(UriPartial.Path), u.Query);
+      }
+      
     }
   }
 }

@@ -4,7 +4,7 @@
         xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
         xmlns:x13="clr-namespace:X13"
         xmlns:x13ui="clr-namespace:X13.UI"
-        Title="X13 Dashboard" Loaded="Window_Loaded" Closed="Window_Closed">
+        Title="X13 Dashboard" Loaded="Window_Loaded" Closed="Window_Closed" FontFamily="Consolas" FontSize="12" Background="White">
   <Window.Resources>
     <x13ui:ActiveDocumentConverter x:Key="ActiveDocumentConverter"/>
   </Window.Resources>
@@ -13,17 +13,17 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <Menu >
+    <Menu Background="White" >
       <MenuItem Header="File">
         <MenuItem Header="Connect" Click="miConnect_Click"/>
       </MenuItem>
     </Menu>
     <xcad:DockingManager x:Name="dmMain" Grid.Row="1" AllowMixedOrientation="True" 
-			ActiveContent="{Binding ActiveDocument, Converter={StaticResource ActiveDocumentConverter}, Mode=TwoWay}" DocumentsSource="{Binding Files}">
+			ActiveContent="{Binding ActiveDocument, Converter={StaticResource ActiveDocumentConverter}, Mode=TwoWay}" DocumentsSource="{Binding Files}" DocumentClosed="dmMain_DocumentClosed">
       <xcad:DockingManager.DocumentHeaderTemplate>
         <DataTemplate>
           <Grid MaxWidth="120">
-            <TextBlock Text="{Binding Title}" HorizontalAlignment="Right" />
+            <TextBlock Text="{Binding Title}" HorizontalAlignment="Right" VerticalAlignment="Center" FontFamily="Consolas" FontSize="14" />
           </Grid>
         </DataTemplate>
       </xcad:DockingManager.DocumentHeaderTemplate>
