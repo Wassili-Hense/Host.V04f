@@ -1,4 +1,4 @@
-﻿<x13ui:UiBaseForm x:Class="X13.UI.InspectorForm"
+﻿<UserControl x:Class="X13.UI.InspectorForm"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -6,8 +6,8 @@
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
-             FontFamily="Consolas" FontSize="12" Background="#FFE8E8E8">
-  <Grid Background="White" Margin="5,0,5,10">
+             FontFamily="Consolas" FontSize="12">
+  <Grid>
     <Grid.Resources>
       <DataTemplate x:Key="ChildrenDataTemplate">
         <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top">
@@ -89,11 +89,9 @@
     </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <x13ui:AddressBar DataContext="{Binding data}" />
-    <TreeView Grid.Row="1" ItemsSource="{Binding valueVC}" BorderThickness="0">
+    <TreeView Grid.Row="0" Name="tvValue" BorderThickness="0">
       <TreeView.ItemContainerStyle>
         <Style TargetType="{x:Type TreeViewItem}">
           <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
@@ -175,7 +173,7 @@
         <HierarchicalDataTemplate DataType="{x:Type x13ui:ValueControl}"  ItemsSource="{Binding fields}" />
       </TreeView.ItemTemplate>
     </TreeView>
-    <ItemsControl Grid.Row="2" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" >
+    <ItemsControl Grid.Row="1" Name="icChildren" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
           <StackPanel Orientation="Horizontal"/>
@@ -183,4 +181,4 @@
       </ItemsControl.ItemsPanel>
     </ItemsControl>
   </Grid>
-</x13ui:UiBaseForm>
+</UserControl>

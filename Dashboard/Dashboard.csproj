@@ -90,13 +90,12 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="UI\ActiveDocumentConverter.cs" />
-    <Compile Include="UI\AddressBar.xaml.cs">
-      <DependentUpon>AddressBar.xaml</DependentUpon>
-    </Compile>
     <Compile Include="UI\InspectorForm.xaml.cs">
       <DependentUpon>InspectorForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\UiBaseForm.cs" />
+    <Compile Include="UI\UIDocument.xaml.cs">
+      <DependentUpon>UIDocument.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\ValueControl.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -121,11 +120,11 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="UI\AddressBar.xaml">
+    <Page Include="UI\InspectorForm.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="UI\InspectorForm.xaml">
+    <Page Include="UI\UIDocument.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -48,16 +48,16 @@ namespace X13.Data {
     private Thread _bw;
     private bool _runing;
     private System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
-    private UiBaseForm _activeDocument;
-    private ObservableCollection<UiBaseForm> _files;
-    private ReadOnlyObservableCollection<UiBaseForm> _readonyFiles;
+	private UIDocument _activeDocument;
+    private ObservableCollection<UIDocument> _files;
+    private ReadOnlyObservableCollection<UIDocument> _readonyFiles;
 
     #endregion instance variables
 
     private DWorkspace() {
       _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _clients = new SortedList<string, A04Client>();
-      _files = new ObservableCollection<UiBaseForm>();
+	  _files = new ObservableCollection<UIDocument>();
       _bw = new Thread(ThFunction);
       _runing = true;
       _bw.Start();
@@ -78,16 +78,17 @@ namespace X13.Data {
       }
       return cl.root.GetAsync(url.LocalPath, create);
     }
-    public UiBaseForm Open(string path, string view=null) {
+	public UIDocument Open(string path, string view=null) {
       if(string.IsNullOrEmpty(view)) {
         view = "IN";
       } else if(view.StartsWith("?view=")) {
         view = view.Substring(6);
       }
-      UiBaseForm ui;
-      ui = _files.FirstOrDefault(z => z != null && z.data != null && z.data.fullPath == path && z.viewArt == view);
+	  string id=path+"?view="+view;
+	  UIDocument ui;
+      ui = _files.FirstOrDefault(z => z != null && z.ContentId==id);
       if(ui == null) {
-        ui = new UI.InspectorForm(path);
+		ui = new UI.UIDocument(path);
         _files.Add(ui);
       }
       ActiveDocument = ui;
@@ -98,14 +99,15 @@ namespace X13.Data {
       this.Open(t.fullPath, view);
     }
     internal void Close(string path, string view) {
-      UiBaseForm ui;
+	  UIDocument ui;
       if(string.IsNullOrEmpty(view)) {
         view = "IN";
       } else if(view.StartsWith("?view=")) {
         view = view.Substring(6);
       }
-      ui = _files.FirstOrDefault(z => z != null && z.data != null && z.data.fullPath == path && z.viewArt == view);
-      if(ui != null) {
+	  string id=path+"?view="+view;
+	  ui = _files.FirstOrDefault(z => z != null && z.ContentId==id);
+	  if(ui != null) {
         _files.Remove(ui);
       }
     }
@@ -126,10 +128,9 @@ namespace X13.Data {
           _bw = null;
         }
       }
-
     }
 
-    public UiBaseForm ActiveDocument {
+	public UIDocument ActiveDocument {
       get { return _activeDocument; }
       set {
         if(_activeDocument != value) {
@@ -138,10 +139,10 @@ namespace X13.Data {
         }
       }
     }
-    public ReadOnlyObservableCollection<UiBaseForm> Files {
+	public ReadOnlyObservableCollection<UIDocument> Files {
       get {
         if(_readonyFiles == null)
-          _readonyFiles = new ReadOnlyObservableCollection<UiBaseForm>(_files);
+		  _readonyFiles = new ReadOnlyObservableCollection<UIDocument>(_files);
 
         return _readonyFiles;
       }
@@ -170,9 +171,6 @@ namespace X13.Data {
     }
     public event PropertyChangedEventHandler PropertyChanged;
     #endregion INotifyPropertyChanged
-
-
-
   }
   internal interface INotMsg {
     void Process(DWorkspace ws);
