@@ -23,11 +23,11 @@ namespace X13 {
     private string _cfgPath;
 
     public MainWindow() {
+	  this.StateChanged += WindowStateChanged;
       _cfgPath = @"../data/Dashboard.cfg";
       X13.Data.DWorkspace.ui = this.Dispatcher;
       InitializeComponent();
       dmMain.DataContext = DWorkspace.This;
-      //this.dmMain.Theme = new AvalonDock.Themes.VS2013.Vs2013BlueTheme();
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) {
@@ -135,11 +135,6 @@ namespace X13 {
       }
       Log.Finish();
     }
-
-    private void miConnect_Click(object sender, RoutedEventArgs e) {
-      DWorkspace.This.Open("x13://localhost/");
-    }
-
     private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
       Uri u;
       if(Uri.TryCreate(e.Document.ContentId, UriKind.Absolute, out u)) {
@@ -147,5 +142,42 @@ namespace X13 {
       }
       
     }
+	private void buNewDocument_Click(object sender, RoutedEventArgs e) {
+	  DWorkspace.This.Open("ws://localhost/");
+	}
+
+	private void WindowStateChanged(object sender, EventArgs e) {
+	  var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+
+	  if(this.WindowState == WindowState.Maximized) {
+		// Make sure window doesn't overlap with the taskbar.
+		var screen = System.Windows.Forms.Screen.FromHandle(handle);
+		if(screen.Primary) {
+		  this.Padding = new Thickness(
+			  SystemParameters.WorkArea.Left + 7,
+			  SystemParameters.WorkArea.Top + 7,
+			  (SystemParameters.PrimaryScreenWidth - SystemParameters.WorkArea.Right) + 7,
+			  (SystemParameters.PrimaryScreenHeight - SystemParameters.WorkArea.Bottom) + 5);
+		}
+	  } else {
+		this.Padding = new Thickness(7, 7, 7, 5);
+	  }
+	}
+	private void CloseButtonClick(object sender, RoutedEventArgs e) {
+	  SystemCommands.CloseWindow(this);
+	}
+
+	private void MinButtonClick(object sender, RoutedEventArgs e) {
+	  SystemCommands.MinimizeWindow(this);
+	}
+
+	private void MaxButtonClick(object sender, RoutedEventArgs e) {
+	  if(this.WindowState == WindowState.Maximized) {
+		SystemCommands.RestoreWindow(this);
+	  } else { 
+		SystemCommands.MaximizeWindow(this); 
+	  }
+	}
+
   }
 }
