@@ -21,9 +21,16 @@ using System.ComponentModel;
 
 namespace X13.UI {
   public partial class InspectorForm : UserControl, INotifyPropertyChanged {
-    public InspectorForm() {
+    public InspectorForm(DTopic data) {
       valueVC = new ObservableCollection<ValueControl>();
-	  this.DataContextChanged+=InspectorForm_DataContextChanged;
+      this.data = data;
+      var v = new ValueControl(this, null, null, data.value);
+      if(valueVC.Count == 0) {
+        valueVC.Add(v);
+      } else {
+        valueVC[0] = v;
+      }
+
       InitializeComponent();
 	  this.tvValue.ItemsSource=valueVC;
 	  this.icChildren.DataContext=this;
@@ -35,25 +42,12 @@ namespace X13.UI {
 	  data.value = JSC.JSValue.Marshal(value);
 	  valueVC[0].UpdateData(data.value);
     }
-	private void InspectorForm_DataContextChanged(object sender, DependencyPropertyChangedEventArgs e) {
-	  var t=e.NewValue as DTopic;
-	  if(t!=null) {
-		data=t;
-		OnPropertyChanged("data");
-		var v = new ValueControl(this, null, null, data.value);
-		if(valueVC.Count == 0) {
-		  valueVC.Add(v);
-		} else {
-		  valueVC[0] = v;
-		}
-	  }
-	}
 
     private void StackPanel_MouseUp(object sender, MouseButtonEventArgs e) {
       StackPanel p;
       DTopic t;
       if((p = sender as StackPanel) != null && (t = p.DataContext as DTopic) != null) {
-        DWorkspace.This.Open(t);
+        DWorkspace.This.Open(t.fullPath);
       }
     }
     private void ValueControl_GotFocus(object sender, RoutedEventArgs e) {

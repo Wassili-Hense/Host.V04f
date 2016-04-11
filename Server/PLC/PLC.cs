@@ -65,7 +65,7 @@ namespace X13.PLC {
       _knownTypes["PiDeclarer"]=PiDeclarer.Create;
     }
     public void Start() {
-      Import(@"..\data\base.xst");
+      Import(@"../data/base.xst");
       Topic.root.Get("/var/started/year").value = DateTime.Now.Year;
       Topic.root.Get("/var/started").value=DateTime.Now;
     }

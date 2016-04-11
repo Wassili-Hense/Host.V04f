@@ -89,13 +89,13 @@
     </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
-      <RowDefinition/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition />
     </Grid.RowDefinitions>
-    <TreeView Grid.Row="0" Name="tvValue" BorderThickness="0" Margin="5">
+    <TreeView Grid.Row="0" Name="tvValue" BorderThickness="0" Margin="5,0">
       <TreeView.ItemContainerStyle>
         <Style TargetType="{x:Type TreeViewItem}">
           <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-          <Setter Property="Background" Value="#40EEEEEE"/>
           <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
           <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}"/>
           <Setter Property="Template">
@@ -173,7 +173,7 @@
         <HierarchicalDataTemplate DataType="{x:Type x13ui:ValueControl}"  ItemsSource="{Binding fields}" />
       </TreeView.ItemTemplate>
     </TreeView>
-    <ItemsControl Grid.Row="1" Name="icChildren" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Margin="5,0,5,5" >
+    <ItemsControl Grid.Row="1" Name="icChildren" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Margin="5,5,5,0" Background="White" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
           <StackPanel Orientation="Horizontal"/>

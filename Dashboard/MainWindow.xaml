@@ -5,8 +5,9 @@
         xmlns:x13="clr-namespace:X13"
         xmlns:x13ui="clr-namespace:X13.UI"
 		xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
-		TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display"
-        Loaded="Window_Loaded" Closed="Window_Closed" FontFamily="Consolas" FontSize="12">
+		TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Consolas" FontSize="12"
+        Background="{DynamicResource {x:Static at:AeroColors.BaseColor1Key}}"
+        Loaded="Window_Loaded" Closed="Window_Closed">
 	<Window.Style>
 		<Style TargetType="Window">
 			<Setter Property="WindowChrome.WindowChrome">
@@ -43,7 +44,7 @@
 			</Setter>
 		</Style>
 	</Window.Resources>
-	<Grid>
+  <Grid>
 		<Grid.RowDefinitions>
 			<RowDefinition Height="32"/>
 			<RowDefinition/>
@@ -51,7 +52,6 @@
 		<Grid Height="32">
 			<Grid.Resources>
 				<Style TargetType="Grid">
-					<Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor1Key}}" />
 					<Style.Triggers>
 						<DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
 							<Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.GradientInactiveCaptionBrushKey}}" />
@@ -105,7 +105,7 @@
 			<xcad:DockingManager.DocumentHeaderTemplate>
 				<DataTemplate>
 					<Grid MaxWidth="140">
-						<TextBlock Text="{Binding Title}" VerticalAlignment="Center" FontFamily="Consolas" FontSize="12" Margin="5,0" />
+						<TextBlock Text="{Binding Title}" FontFamily="Consolas" FontSize="12" />
 					</Grid>
 				</DataTemplate>
 			</xcad:DockingManager.DocumentHeaderTemplate>

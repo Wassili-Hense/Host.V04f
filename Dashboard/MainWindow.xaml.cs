@@ -143,7 +143,7 @@ namespace X13 {
       
     }
 	private void buNewDocument_Click(object sender, RoutedEventArgs e) {
-	  DWorkspace.This.Open("ws://localhost/");
+	  DWorkspace.This.Open(null);
 	}
 
 	private void WindowStateChanged(object sender, EventArgs e) {

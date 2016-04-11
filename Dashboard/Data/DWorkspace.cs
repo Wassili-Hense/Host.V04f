@@ -66,7 +66,7 @@ namespace X13.Data {
     public Task<DTopic> GetAsync(Uri url, bool create) {
       var up = Uri.UnescapeDataString(url.UserInfo).Split(':');
       string uName = (up.Length > 0 && !string.IsNullOrWhiteSpace(up[0])) ? (up[0] + "@") : string.Empty;
-      string host = url.Scheme + "://" + uName + url.DnsSafeHost + (url.IsDefaultPort ? string.Empty : ":" + url.Port.ToString()) + "/";
+      string host = url.Scheme + "://" + uName + url.DnsSafeHost + (url.IsDefaultPort ? string.Empty : (":" + url.Port.ToString())) + "/";
       A04Client cl;
       if(!_clients.TryGetValue(host, out cl)) {
         lock(_clients) {
@@ -79,24 +79,27 @@ namespace X13.Data {
       return cl.root.GetAsync(url.LocalPath, create);
     }
 	public UIDocument Open(string path, string view=null) {
-      if(string.IsNullOrEmpty(view)) {
-        view = "IN";
-      } else if(view.StartsWith("?view=")) {
-        view = view.Substring(6);
+      string id;
+      if(string.IsNullOrEmpty(path)) {
+        id = null;
+        path = null;
+        view = null;
+      } else {
+        if(view != null && view.StartsWith("?view=")) {
+          view = view.Substring(6);
+        } else {
+          view = "IN";
+        }
+        id = path + "?view=" + view;
       }
-	  string id=path+"?view="+view;
 	  UIDocument ui;
       ui = _files.FirstOrDefault(z => z != null && z.ContentId==id);
       if(ui == null) {
-		ui = new UI.UIDocument(path);
+		ui = new UI.UIDocument(path, view);
         _files.Add(ui);
       }
       ActiveDocument = ui;
       return ui;
-    }
-    internal void Open(DTopic t, string view=null) {
-      //TODO: if(view==null) t.schema => view
-      this.Open(t.fullPath, view);
     }
     internal void Close(string path, string view) {
 	  UIDocument ui;
