@@ -62,9 +62,9 @@ namespace X13.WebServer {
       /*
        if(!acl(publish)){
          if(acl(subscribe)){
-           args.Response(false, t.valueRaw);
+           args.Error(false, t.valueRaw);
          } else {
-           args.Response(false);
+           args.Error(false);
          }
        }
        */

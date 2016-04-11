@@ -37,6 +37,14 @@ namespace X13.Data {
       arr[1] = path;
       this.Send(new SioClient.Request(0, arr, req));
     }
+    internal void Publish(string path, JSC.JSValue value, INotMsg req) {
+      var arr = new JSL.Array(3);
+      arr[0] = 6;
+      arr[1] = path;
+      arr[2] = value;
+      this.Send(new SioClient.Request(0, arr, req));
+    }
+
     public void Close() {
       if(_sio != null) {
         _sio.Close();

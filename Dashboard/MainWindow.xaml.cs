@@ -88,12 +88,6 @@ namespace X13 {
       }
     }
     private void Window_Closed(object sender, EventArgs e) {
-      try {
-        DWorkspace.This.Exit();
-      }
-      catch(Exception ex) {
-        Log.Error("DWorkspace.Exit() - {0}", ex.Message);
-      }
       var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
       try {
         var lDoc = new XmlDocument();
@@ -132,6 +126,12 @@ namespace X13 {
       }
       catch(Exception ex) {
         Log.Error("Save config - {0}", ex.Message);
+      }
+      try {
+        DWorkspace.This.Exit();
+      }
+      catch(Exception ex) {
+        Log.Error("DWorkspace.Exit() - {0}", ex.Message);
       }
       Log.Finish();
     }

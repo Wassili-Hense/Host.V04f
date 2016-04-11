@@ -66,7 +66,6 @@ namespace X13.UI {
         if(_view == "IN") {
           if((ccMain.Content as InspectorForm)== null) {
             ccMain.Content = new InspectorForm(_data);
-            Log.Debug("new InspectorForm({0})", _data.fullPath);
           }
         }
 	  }

@@ -38,10 +38,11 @@ namespace X13.UI {
 
 	public ObservableCollection<ValueControl> valueVC { get; private set; }
 	public DTopic data { get; private set; }
-    public void SetData(object value) {
-	  data.value = JSC.JSValue.Marshal(value);
-	  valueVC[0].UpdateData(data.value);
+    public void DataChanged(JSC.JSValue val) {
+      data.SetValue(val).Wait();
+      valueVC[0].UpdateData(data.value);
     }
+
 
     private void StackPanel_MouseUp(object sender, MouseButtonEventArgs e) {
       StackPanel p;

@@ -43,7 +43,17 @@ namespace X13.Data {
     public string path { get; private set; }
     public DTopic parent { get; private set; }
     public string schema { get; private set; }
-    public JSC.JSValue value { get { return _value; } set { _value = value; } }
+    public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
+    public JSC.JSValue value { 
+      get { 
+        return _value; 
+      } 
+    }
+    public Task<bool> SetValue(JSC.JSValue val) {
+      var ds=new TopicPublish(this, val);
+      DWorkspace.This.AddMsg(ds);
+      return ds.Task;
+    }
     public DChildren children { get { return _children; } }
 
     private void OnPropertyChanged(string propertyName) {
@@ -152,7 +162,35 @@ namespace X13.Data {
         }
       }
     }
+    private class TopicPublish : INotMsg {
+      private TaskCompletionSource<bool> _tcs;
+      private DTopic _topic;
+      private JSC.JSValue _value;
+      private bool _complete;
 
-    public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
+      public TopicPublish(DTopic t, JSC.JSValue value) {
+        _topic = t;
+        _value = value;
+        _tcs = new TaskCompletionSource<bool>();
+      }
+      public Task<bool> Task { get { return _tcs.Task; } }
+
+      public void Process(DWorkspace ws) {
+        if(!_complete) {
+          _topic._client.Publish(_topic.path, _value, this);
+        }
+      }
+
+      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+        if(success) {
+          _topic._value=this._value;
+          _tcs.SetResult(true);
+        } else {
+          _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));
+        }
+        _complete = true;
+      }
+    }
+
   }
 }

@@ -23,24 +23,39 @@ namespace X13.UI {
       _src = src;
       _parent = parent;
       _name = name;
-      _value = value;
-      if(_value.ValueType == JSC.JSValueType.Object) {
-        _fields = new ObservableCollection<ValueControl>();
-        foreach(var kv in _value.OrderBy(z => z.Key)) {
-          _fields.Add(new ValueControl(_src, this, kv.Key, kv.Value));
-        }
-      } else {
-        _fields = null;
-      }
-      valueStr = (_value.Value == null) ? "null" : (_value.Value.ToString());
+      _fields = new ObservableCollection<ValueControl>();
+      UpdateData(value);
       IsExpanded = true;
     }
     public void UpdateData(JSC.JSValue val) {
       _value = val;
+      if(_value.ValueType == JSC.JSValueType.Object) {
+        ValueControl vc;
+        int i;
+        foreach(var kv in _value.OrderBy(z => z.Key)) {
+          vc = _fields.FirstOrDefault(z => z._name == kv.Key);
+          if(vc != null) {
+            vc.UpdateData(kv.Value);
+          } else {
+            for(i = _fields.Count - 1; i >= 0; i--) {
+              if(string.Compare(_fields[i]._name, kv.Key) < 0) {
+                break;
+              }
+            }
+            _fields.Insert(i + 1, new ValueControl(_src, this, kv.Key, kv.Value));
+          }
+        }
+        var keys=_value.Select(z=>z.Key).ToArray();
+        for(i = _fields.Count - 1; i>=0 ; i--) {
+          if(!keys.Contains(_fields[i]._name)) {
+            _fields.RemoveAt(i);
+          }
+        }
+      }
       PropertyChangedReise("value");
     }
 
-    public string valueStr { get; private set; }
+    public string valueStr { get { return (_value == null || _value.Value == null) ? "null" : (_value.Value.ToString()); } }
     public object value {
       get {
         if(_value.ValueType == JSC.JSValueType.Date) {
@@ -49,25 +64,45 @@ namespace X13.UI {
         return _value.Value;
       }
       set {
-        if(_parent == null) {
-          _src.SetData(value);
-        } else {
-          _parent._value[_name] = JSC.JSValue.Marshal(value);
+        if(!object.Equals(value, _value)) {
+          if(_parent == null) {
+            _src.DataChanged(JSC.JSValue.Marshal(value));
+          } else {
+            _parent.ChangeValue(_name, JSC.JSValue.Marshal(value));
+          }
         }
       }
     }
+
     public string view { get { return _value.ValueType.ToString(); } }
     public bool IsExpanded { get; set; }
     public string name { get { return _name ?? "value"; } }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
 
-    public event PropertyChangedEventHandler PropertyChanged;
+    private void ChangeValue(string name, JSC.JSValue val) {
+      if(_value.ValueType == JSC.JSValueType.Object) {
+        var jo = JSC.JSObject.CreateObject();
+        foreach(var kv in _value.OrderBy(z => z.Key)) {
+          jo[kv.Key] = kv.Key == name ? val : kv.Value;
+        }
+        if(_parent == null) {
+          _src.DataChanged(jo);
+        } else {
+          _parent.ChangeValue(_name, jo);
+        }
+      } else {
+        throw new NotImplementedException();
+      }
+    }
 
+    #region INotifyPropertyChanged Members
+    public event PropertyChangedEventHandler PropertyChanged;
     private void PropertyChangedReise(string propertyName) {
       if(PropertyChanged != null) {
         PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
       }
     }
+    #endregion INotifyPropertyChanged Members
   }
   public class ValueViewTS : DataTemplateSelector {
     public DataTemplate Default { get; set; }
