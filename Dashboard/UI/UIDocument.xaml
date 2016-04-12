@@ -7,12 +7,15 @@
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
              FontFamily="Consolas" FontSize="12">
-  <Grid Margin="0">
+  <Grid  Margin="10,5">
+    <Grid.Resources>
+      <BitmapImage x:Key="NullImage" UriSource="/Dashboard;component/Images/ty_topic.png" />
+    </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
-    <Border Padding="0" CornerRadius="3" Margin="10,5,10,0">
+    <Border Padding="5,0" CornerRadius="3">
       <Border.Style>
         <Style TargetType="Border" >
           <Setter Property="Background" Value="White" />
@@ -23,7 +26,7 @@
           </Style.Triggers>
         </Style>
       </Border.Style>
-      <Grid Margin="5,0">
+      <Grid Margin="0">
         <TextBox Name="tbAddress" Text="{Binding data.fullPath, Mode=OneWay}" IsKeyboardFocusedChanged="TextBox_IsKeyboardFocusedChanged" IsReadOnlyCaretVisible="True" Padding="5,6" Margin="0,0,0,0" BorderThickness="0" KeyUp="TextBox_KeyUp" Loaded="tbAddress_Loaded">
           <TextBox.Style>
             <Style TargetType="TextBox">
@@ -84,8 +87,7 @@
         </ItemsControl>
       </Grid>
     </Border>
-
-    <ContentControl Name="ccMain" Grid.Row="1" Margin="5" Focusable="False" >
+    <ContentControl Name="ccMain" Grid.Row="1" Margin="0,5,0,0" Focusable="False" >
     </ContentControl>
   </Grid>
 </UserControl>

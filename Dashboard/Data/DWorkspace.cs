@@ -51,7 +51,6 @@ namespace X13.Data {
 	private UIDocument _activeDocument;
     private ObservableCollection<UIDocument> _files;
     private ReadOnlyObservableCollection<UIDocument> _readonyFiles;
-
     #endregion instance variables
 
     private DWorkspace() {

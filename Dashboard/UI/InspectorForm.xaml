@@ -9,13 +9,6 @@
              FontFamily="Consolas" FontSize="12">
   <Grid>
     <Grid.Resources>
-      <DataTemplate x:Key="ChildrenDataTemplate">
-        <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top">
-          <StackPanel MouseUp="StackPanel_MouseUp">
-            <Label HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
-          </StackPanel>
-        </Border>
-      </DataTemplate>
       <x13ui:ValueViewTS x:Key="tsValue">
         <x13ui:ValueViewTS.Default>
           <DataTemplate>
@@ -86,13 +79,14 @@
           </Setter.Value>
         </Setter>
       </Style>
+      <BitmapImage x:Key="NullImage" UriSource="/Dashboard;component/Images/ty_topic.png" />
     </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition Height="Auto"/>
       <RowDefinition />
     </Grid.RowDefinitions>
-    <TreeView Grid.Row="0" Name="tvValue" BorderThickness="0" Margin="5,0">
+    <TreeView Grid.Row="0" Name="tvValue" BorderThickness="0" Margin="0">
       <TreeView.ItemContainerStyle>
         <Style TargetType="{x:Type TreeViewItem}">
           <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
@@ -173,12 +167,26 @@
         <HierarchicalDataTemplate DataType="{x:Type x13ui:ValueControl}"  ItemsSource="{Binding fields}" />
       </TreeView.ItemTemplate>
     </TreeView>
-    <ItemsControl Grid.Row="1" Name="icChildren" ItemTemplate="{StaticResource ChildrenDataTemplate}" ItemsSource="{Binding Path=data.children}" Margin="5,5,5,0" Background="White" >
+    <ItemsControl Grid.Row="1" Name="icChildren" ItemsSource="{Binding Path=data.children}" Margin="0,5,0,0" Background="White" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <StackPanel Orientation="Horizontal"/>
+          <StackPanel Orientation="Vertical"/>
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left">
+            <Grid  MouseUp="StackPanel_MouseUp">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Label Grid.Column="0" HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
+              <Image Grid.Column="1" Width="16" Height="16" Source="{Binding schema.icon, FallbackValue={StaticResource NullImage}}" />
+            </Grid>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
     </ItemsControl>
   </Grid>
 </UserControl>

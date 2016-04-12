@@ -1,14 +1,11 @@
 <root head='/' saved='True'>
   <item name='etc' saved='True'>
     <item name='schema' saved='True'>
-      <item name='type' saved='True'>
-        <!--["null","boolean","integer","number","string","object","array"]-->
-        <item name='schema' value='{"$schema":"schema","view":"object","properties":{"view":{"view":"string"}}}' saved='True' />
-        <item name='schema' value='{ "$schema": "view", "properties": { "code": { "view": "jscode" }, "icon": "string" }, "default": { "code": "{displayName:\"\", render:function(){\n  var v;\n  return v;\n}}" } }' saved='True' />
-        <item name='zifra' value='{"$schema":"schema","view":"number","multipleOf":1,"minimum":0,"maximum":9}' saved='True'></item>
-        <item name='str1' value='{"$schema":"schema","view":"string","minLength":3}' saved='True'></item>
-        <item name='str2' value='{"$schema":"schema","view":"string","maxLength":10}' saved='True'></item>
-      </item>
+      <item name='Boolean' value='{"$schema":"schema","view":"Boolean","icon":"component/Images/ty_bool.png"}' saved='True' />
+      <item name='Integer' value='{"$schema":"schema","view":"Integer","icon":"component/Images/ty_i64.png"}' saved='True' />
+      <item name='Double' value='{"$schema":"schema","view":"Double","icon":"component/Images/ty_f02.png"}' saved='True' />
+      <item name='String' value='{"$schema":"schema","view":"String","icon":"component/Images/ty_str.png"}' saved='True' />
+      <item name='Date' value='{"$schema":"schema","view":"Date","icon":"component/Images/ty_dt.png"}' saved='True' />
     </item>
     <item name='UI' saved='True'>
       <item name='Topic' value='{"$schema":"view","code":"{displayName:\"UI.test\",render:function(){return React.DOM.label(null,\"Hello World!!!\");}}","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjEwMPRyoQAAAQdJREFUOE+lk0EKwkAMRefAXsEruBDcFARBXImCuCgIWhARwYUrRVpBREHmFKM/8qfpdIqCi0Bp816SacY458w/Yay10Zh2jq7byiTw3JRXg5GMOO2sxGH1CbwbtPc1kRc0gZBsZ0+3Ht9dmhQiQlfsyHwDNUwBu0FHBjZUwUu2SwhVWVlXRy5ywHoB58TH5fAqoWEeZja6CRwVQIIEjgWJBvGdMOS1DjaThx+DIv03CHPEqAASjsDfGVZG9XnvXO0AoIZ5aNyF8kBzgdMkLwWooAWAQwEAgnpLZZH0oRHWAswMeNG/+PV+vxO2ssrcfcJYFIygwfBORC+SvkR8/vky6US9802CF9HRD6t4GKDQAAAAAElFTkSuQmCC"}' saved='True' />
@@ -16,16 +13,16 @@
   </item>
   <item name='Test' saved='True'>
     <item name='Alpha' value='42' saved='True'>
-      <item name='$schema' value='"zifra"' saved='True' />
+      <!--item name='$schema' value='"zifra"' saved='True' /-->
     </item>
     <item name='Betta' value='"abcd"' saved='True'>
-      <item name='$schema' value='"str1"' saved='True' />
+      <!--item name='$schema' value='"str1"' saved='True' /-->
     </item>
     <item name='Gamma' value='"ABCDEFGHI"' saved='True'>
       <item name='$schema' value='"str2"' saved='True' />
     </item>
     <item name='Delta' value='true' saved='True'>
-      <item name='$schema' value='"Checkbox"' saved='True' />
+      <!--item name='$schema' value='"Checkbox"' saved='True' /-->
     </item>
   </item>
 </root>

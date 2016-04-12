@@ -45,9 +45,9 @@ namespace X13.UI {
 
 
     private void StackPanel_MouseUp(object sender, MouseButtonEventArgs e) {
-      StackPanel p;
+      FrameworkElement p;
       DTopic t;
-      if((p = sender as StackPanel) != null && (t = p.DataContext as DTopic) != null) {
+      if((p = sender as FrameworkElement) != null && (t = p.DataContext as DTopic) != null) {
         DWorkspace.This.Open(t.fullPath);
       }
     }

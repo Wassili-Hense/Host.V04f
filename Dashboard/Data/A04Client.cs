@@ -31,13 +31,13 @@ namespace X13.Data {
       arr[2] = mask;
       this.Send(new SioClient.Request(0, arr, req));
     }
-    internal void Create(string path, INotMsg req) {
+    public void Create(string path, INotMsg req) {
       var arr = new JSL.Array(2);
       arr[0] = 8;
       arr[1] = path;
       this.Send(new SioClient.Request(0, arr, req));
     }
-    internal void Publish(string path, JSC.JSValue value, INotMsg req) {
+    public void Publish(string path, JSC.JSValue value, INotMsg req) {
       var arr = new JSL.Array(3);
       arr[0] = 6;
       arr[1] = path;

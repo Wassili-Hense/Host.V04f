@@ -92,24 +92,24 @@ namespace X13.PLC {
         case JSValueType.NotExists:
         case JSValueType.NotExistsInObject:
         case JSValueType.Undefined:
-          return null;
+          return "Null";
         case JSValueType.Boolean:
-          return "boolean";
+          return "Boolean";
         case JSValueType.Integer:
-          return "integer";
+          return "Integer";
         case JSValueType.Double:
-          return "number";
+          return "Double";
         case JSValueType.Date:
           return "Date";
         case JSValueType.String:
-          return "string";
+          return "String";
         case JSValueType.Object:
           if(_value==null) {
-            return null;
+            return "Null";
           }
           JSValue drf=_value.GetProperty("$schema", PropertyScope.Сommon);
           if (drf == null || !drf.Exists || string.IsNullOrWhiteSpace(sh = drf.ToString())){
-            return "object";
+            return "Object";
           }
           return drf.ToString();
         }

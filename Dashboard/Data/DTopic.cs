@@ -11,12 +11,16 @@ using System.Threading.Tasks;
 namespace X13.Data {
   public class DTopic : INotifyPropertyChanged {
     private const string childrenString = "children";
+    private const string schemaString = "schema";
     private readonly Action<string> _ActNPC;
 
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     private DChildren _children;
     private JSC.JSValue _value;
+    private Schema _schemaOriginal;
+    private DTopic _schemaTopic;
+    private bool _schemaRequsted;
 
 
     private DTopic(DTopic parent, string name) {
@@ -37,12 +41,22 @@ namespace X13.Data {
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }
-    public event PropertyChangedEventHandler PropertyChanged;
-
+    public Schema schema {
+      get {
+        if(!_schemaRequsted) {
+          _schemaRequsted = true;
+          var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr, false);
+          task.ContinueWith(ExtractSchema);
+          return null;
+        } else {
+          return _schemaTopic==null?null:_schemaTopic._schemaOriginal;
+        }
+      }
+    }
     public string name { get; private set; }
     public string path { get; private set; }
     public DTopic parent { get; private set; }
-    public string schema { get; private set; }
+    public string schemaStr { get; private set; }
     public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
     public JSC.JSValue value { 
       get { 
@@ -56,12 +70,28 @@ namespace X13.Data {
     }
     public DChildren children { get { return _children; } }
 
+    private void ExtractSchema(Task<DTopic> t) {
+      if(t != null) {
+        if(t.IsFaulted) {
+          Log.Warning("ExtractSchema({0}) - {1}", schemaStr, t.Exception.Message);
+        } else if(t.IsCompleted) {
+          this._schemaTopic=t.Result;
+          DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
+          Log.Debug("{0}.ExtractSchema({1})", this.path, t.Result == null ? "null" : t.Result.name);
+        }
+      }
+    }
+
+    public event PropertyChangedEventHandler PropertyChanged;
     private void OnPropertyChanged(string propertyName) {
       if(PropertyChanged != null) {
         PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
       }
     }
 
+    public override string ToString() {
+      return this.fullPath + "<" + this.schemaStr + ">";
+    }
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
@@ -149,9 +179,18 @@ namespace X13.Data {
               next = _cur;
             }
             next._flags = aFlags;
-            next.schema = cb[2].Value as string;
+            next.schemaStr = cb[2].Value as string;
             if((int)cb.length == 4) {
               next._value = cb[3];
+              var v = cb[3];
+              JSC.JSValue sc;
+              if(v != null && v.ValueType == JSC.JSValueType.Object && v.Value!=null){
+                if((sc = v["$schema"]).ValueType == JSC.JSValueType.String ){
+                  if(sc.Value as string == "schema") {
+                    next._schemaOriginal = new Schema(v);
+                  }
+                }
+              }
             }
           }
 		  if(childrenPC) {
@@ -180,7 +219,6 @@ namespace X13.Data {
           _topic._client.Publish(_topic.path, _value, this);
         }
       }
-
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
           _topic._value=this._value;

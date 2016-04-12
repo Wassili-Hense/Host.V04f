@@ -81,6 +81,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Data\Schema.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Compile Include="UI\InspectorForm.xaml.cs">
       <DependentUpon>InspectorForm.xaml</DependentUpon>
@@ -138,6 +139,14 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\config.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ty_bool.png" />
+    <Resource Include="Images\ty_dt.png" />
+    <Resource Include="Images\ty_f02.png" />
+    <Resource Include="Images\ty_i64.png" />
+    <Resource Include="Images\ty_obj.png" />
+    <Resource Include="Images\ty_str.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
