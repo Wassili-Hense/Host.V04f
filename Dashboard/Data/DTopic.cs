@@ -77,7 +77,6 @@ namespace X13.Data {
         } else if(t.IsCompleted) {
           this._schemaTopic=t.Result;
           DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
-          Log.Debug("{0}.ExtractSchema({1})", this.path, t.Result == null ? "null" : t.Result.name);
         }
       }
     }

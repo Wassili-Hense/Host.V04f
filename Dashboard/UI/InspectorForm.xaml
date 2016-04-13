@@ -115,7 +115,7 @@
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
                       <TextBlock        Grid.Column="0" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
-                      <Image            Grid.Column="1" Grid.Row="0" Source="/Dashboard;component/Images/ty_topic.png" VerticalAlignment="Top" Width="16" Height="16" Margin="0" />
+                      <Image            Grid.Column="1" Grid.Row="0" Source="{Binding icon}" VerticalAlignment="Top" Width="16" Height="16" Margin="0" />
                       <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" ContentTemplateSelector="{StaticResource tsValue}" Content="{Binding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
                     </Grid>
                   </Border>
@@ -182,7 +182,7 @@
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
               <Label Grid.Column="0" HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
-              <Image Grid.Column="1" Width="16" Height="16" Source="{Binding schema.icon, FallbackValue={StaticResource NullImage}}" />
+              <Image Grid.Column="1" Width="16" Height="16" Source="{Binding schema.icon, TargetNullValue={StaticResource NullImage}, FallbackValue={StaticResource NullImage}}" />
             </Grid>
           </Border>
         </DataTemplate>

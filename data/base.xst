@@ -1,11 +1,13 @@
 <root head='/' saved='True'>
   <item name='etc' saved='True'>
     <item name='schema' saved='True'>
-      <item name='Boolean' value='{"$schema":"schema","view":"Boolean","icon":"component/Images/ty_bool.png"}' saved='True' />
-      <item name='Integer' value='{"$schema":"schema","view":"Integer","icon":"component/Images/ty_i64.png"}' saved='True' />
-      <item name='Double' value='{"$schema":"schema","view":"Double","icon":"component/Images/ty_f02.png"}' saved='True' />
-      <item name='String' value='{"$schema":"schema","view":"String","icon":"component/Images/ty_str.png"}' saved='True' />
-      <item name='Date' value='{"$schema":"schema","view":"Date","icon":"component/Images/ty_dt.png"}' saved='True' />
+      <item name='Null'    value='{"$schema":"schema","view":"Null"   }' saved='True' />
+      <item name='Boolean' value='{"$schema":"schema","view":"Boolean","icon":"Boolean"}' saved='True' />
+      <item name='Integer' value='{"$schema":"schema","view":"Integer","icon":"Integer"}' saved='True' />
+      <item name='Double'  value='{"$schema":"schema","view":"Double" ,"icon":"Double" }' saved='True' />
+      <item name='String'  value='{"$schema":"schema","view":"String" ,"icon":"String" }' saved='True' />
+      <item name='Date'    value='{"$schema":"schema","view":"Date"   ,"icon":"Date"   }' saved='True' />
+      <item name='schema'  value='{"$schema":"schema","view":"Object" ,"icon":"schema", "Properties": { "icon":{ "view":"String"}, "view":{ "view":"Null"}, "$schema":{ "view":"string"} } }' saved='True' /> 
     </item>
     <item name='UI' saved='True'>
       <item name='Topic' value='{"$schema":"view","code":"{displayName:\"UI.test\",render:function(){return React.DOM.label(null,\"Hello World!!!\");}}","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjEwMPRyoQAAAQdJREFUOE+lk0EKwkAMRefAXsEruBDcFARBXImCuCgIWhARwYUrRVpBREHmFKM/8qfpdIqCi0Bp816SacY458w/Yay10Zh2jq7byiTw3JRXg5GMOO2sxGH1CbwbtPc1kRc0gZBsZ0+3Ht9dmhQiQlfsyHwDNUwBu0FHBjZUwUu2SwhVWVlXRy5ywHoB58TH5fAqoWEeZja6CRwVQIIEjgWJBvGdMOS1DjaThx+DIv03CHPEqAASjsDfGVZG9XnvXO0AoIZ5aNyF8kBzgdMkLwWooAWAQwEAgnpLZZH0oRHWAswMeNG/+PV+vxO2ssrcfcJYFIygwfBORC+SvkR8/vky6US9802CF9HRD6t4GKDQAAAAAElFTkSuQmCC"}' saved='True' />

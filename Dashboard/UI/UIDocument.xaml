@@ -8,9 +8,6 @@
              mc:Ignorable="d" 
              FontFamily="Consolas" FontSize="12">
   <Grid  Margin="10,5">
-    <Grid.Resources>
-      <BitmapImage x:Key="NullImage" UriSource="/Dashboard;component/Images/ty_topic.png" />
-    </Grid.Resources>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>

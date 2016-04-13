@@ -24,6 +24,9 @@ namespace X13.UI {
     public InspectorForm(DTopic data) {
       valueVC = new ObservableCollection<ValueControl>();
       this.data = data;
+      if(this.data!=null){
+        this.data.PropertyChanged += data_PropertyChanged;
+      }
       var v = new ValueControl(this, null, null, data.value);
       if(valueVC.Count == 0) {
         valueVC.Add(v);
@@ -41,6 +44,12 @@ namespace X13.UI {
     public void DataChanged(JSC.JSValue val) {
       data.SetValue(val).Wait();
       valueVC[0].UpdateData(data.value);
+    }
+
+    private void data_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if(e.PropertyName == "schema") {
+        valueVC[0].UpdateSchema((data==null || data.schema==null)?null:data.schema.data);
+      }
     }
 
 

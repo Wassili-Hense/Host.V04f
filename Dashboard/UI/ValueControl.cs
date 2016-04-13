@@ -10,6 +10,8 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Media.Imaging;
+using X13.Data;
 
 namespace X13.UI {
   public class ValueControl : INotifyPropertyChanged {
@@ -17,7 +19,10 @@ namespace X13.UI {
     private ValueControl _parent;
     private string _name;
     private JSC.JSValue _value;
+    private JSC.JSValue _schema;
     private ObservableCollection<ValueControl> _fields;
+    private string _view;
+    private BitmapSource _icon;
 
     public ValueControl(InspectorForm src, ValueControl parent, string name, JSC.JSValue value) {
       _src = src;
@@ -25,6 +30,15 @@ namespace X13.UI {
       _name = name;
       _fields = new ObservableCollection<ValueControl>();
       UpdateData(value);
+      if(parent == null) {
+        if(src != null && src.data != null && src.data.schema != null && src.data.schema.data != null) {
+          UpdateSchema(src.data.schema.data);
+        } else {
+          UpdateSchema(null);
+        }
+      } else {
+        UpdateSchema(null);
+      }
       IsExpanded = true;
     }
     public void UpdateData(JSC.JSValue val) {
@@ -45,8 +59,8 @@ namespace X13.UI {
             _fields.Insert(i + 1, new ValueControl(_src, this, kv.Key, kv.Value));
           }
         }
-        var keys=_value.Select(z=>z.Key).ToArray();
-        for(i = _fields.Count - 1; i>=0 ; i--) {
+        var keys = _value.Select(z => z.Key).ToArray();
+        for(i = _fields.Count - 1; i >= 0; i--) {
           if(!keys.Contains(_fields[i]._name)) {
             _fields.RemoveAt(i);
           }
@@ -54,7 +68,59 @@ namespace X13.UI {
       }
       PropertyChangedReise("value");
     }
+    public void UpdateSchema(JSC.JSValue val) {
+      this._schema = val;
+      if(_schema != null && _schema.Value != null) {
+        var vv = _schema["view"];
+        if(vv.ValueType == JSC.JSValueType.String) {
+          _view = vv.Value as string;
+          PropertyChangedReise("view");
+        }
+        var iv = _schema["icon"];
+        if(iv.ValueType == JSC.JSValueType.String) {
+          _icon = DWorkspace.This.GetIcon(iv.Value as string);
+        } else {
+          _icon = null;
+        }
+        var pr = _schema["Properties"] as JSC.JSValue;
+        if(pr != null) {
+          ValueControl vc;
+          foreach(var kv in pr) {
+            vc = _fields.FirstOrDefault(z => z._name == kv.Key);
+            if(vc != null) {
+              vc.UpdateSchema(kv.Value);
+            }
+          }
+        }
+      } else {
+        _icon = null;
+        if(_view != null) {
+          _view = null;
+          PropertyChangedReise("view");
+        }
+      }
+      if(_icon == null) {
+        _icon = DWorkspace.This.GetIcon(view);
+      }
+      if(_icon == null) {
+        _icon = DWorkspace.This.GetIcon(null);
+      }
+      PropertyChangedReise("icon");
+    }
 
+    public bool IsExpanded { get; set; }
+    public string name { get { return _name ?? "value"; } }
+    public string view {
+      get {
+        var v = _view ?? _value.ValueType.ToString();
+        return v;
+      }
+    }
+    public BitmapSource icon {
+      get {
+        return _icon;
+      }
+    }
     public string valueStr { get { return (_value == null || _value.Value == null) ? "null" : (_value.Value.ToString()); } }
     public object value {
       get {
@@ -73,12 +139,11 @@ namespace X13.UI {
         }
       }
     }
-
-    public string view { get { return _value.ValueType.ToString(); } }
-    public bool IsExpanded { get; set; }
-    public string name { get { return _name ?? "value"; } }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
 
+    public override string ToString() {
+      return _src.data.path + "." + name;
+    }
     private void ChangeValue(string name, JSC.JSValue val) {
       if(_value.ValueType == JSC.JSValueType.Object) {
         var jo = JSC.JSObject.CreateObject();

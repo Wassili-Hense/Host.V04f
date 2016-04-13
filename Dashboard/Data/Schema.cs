@@ -12,24 +12,14 @@ namespace X13.Data {
   public class Schema {
     private JSC.JSValue _data;
 
-    public Schema(NiL.JS.Core.JSValue data) {
+    public Schema(JSC.JSValue data) {
       _data = data;
       var ji = _data["icon"];
-      string si;
-      if(ji.ValueType == JSC.JSValueType.String && !string.IsNullOrWhiteSpace(si = ji.Value as string)) {
-        if(si.StartsWith("data:image/png;base64,")) {
-          var bitmapData = Convert.FromBase64String(si.Substring(22));
-          var streamBitmap = new System.IO.MemoryStream(bitmapData);
-          var decoder = new PngBitmapDecoder(streamBitmap, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-          icon = decoder.Frames[0];
-        } else if(si.StartsWith("component/Images/")){
-          var url = new Uri("pack://application:,,,/Dashboard;" + si, UriKind.Absolute);
-          var decoder = new PngBitmapDecoder(url, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-          icon = decoder.Frames[0];
-        }
+      if(ji.ValueType == JSC.JSValueType.String) {
+        icon = DWorkspace.This.GetIcon(ji.Value as string);
       }
     }
-
+    public JSC.JSValue data { get { return _data; } }
     public BitmapSource icon { get; private set; }
   }
 }
