@@ -21,6 +21,24 @@ using System.ComponentModel;
 
 namespace X13.UI {
   public partial class InspectorForm : UserControl, INotifyPropertyChanged {
+    private static SortedList<string, Func<ValueControl, JSC.JSValue, IValueEditor>> _editors;
+
+    static InspectorForm(){
+      _editors=new SortedList<string,Func<ValueControl,JSC.JSValue,IValueEditor>>();
+      _editors["Boolean"]=(o, s)=>new veSliderBool(o, s);
+    }
+
+    public static IValueEditor GetEdititor(string view, ValueControl owner, JSC.JSValue schema) {
+      IValueEditor rez;
+      Func<ValueControl, JSC.JSValue, IValueEditor> ct;
+      if(_editors.TryGetValue(view, out ct) && ct!=null) {
+        rez = ct(owner, schema);
+      }else{
+        rez = new veDefault(owner, schema);
+      }
+      return rez;
+    }
+
     public InspectorForm(DTopic data) {
       valueVC = new ObservableCollection<ValueControl>();
       this.data = data;

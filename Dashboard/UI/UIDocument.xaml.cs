@@ -40,6 +40,7 @@ namespace X13.UI {
 
     public bool connected { get { return _data != null; } }
     public DTopic data { get { return _data; } }
+    public string view { get { return _view; } }
     public string ContentId { get { return (_data == null ?_path:_data.fullPath) + "?view=" + _view??"IN"; } }
 
     private void RequestData(Uri url) {

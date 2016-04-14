@@ -9,7 +9,7 @@
              FontFamily="Consolas" FontSize="12">
   <Grid>
     <Grid.Resources>
-      <x13ui:ValueViewTS x:Key="tsValue">
+      <!--x13ui:ValueViewTS x:Key="tsValue">
         <x13ui:ValueViewTS.Default>
           <DataTemplate>
             <TextBlock Text="{Binding valueStr}" Foreground="Black" />
@@ -35,7 +35,7 @@
             <xctk:DateTimePicker Value="{Binding value}" Background="#FFE2FCFF" Foreground="Black" HorizontalAlignment="Left" GotFocus="ValueControl_GotFocus" />
           </DataTemplate>
         </x13ui:ValueViewTS.Date>
-      </x13ui:ValueViewTS>
+      </x13ui:ValueViewTS-->
       <Style x:Key="TreeViewItemFocusVisual">
         <Setter Property="Control.Template">
           <Setter.Value>
@@ -116,7 +116,7 @@
                       </Grid.ColumnDefinitions>
                       <TextBlock        Grid.Column="0" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
                       <Image            Grid.Column="1" Grid.Row="0" Source="{Binding icon}" VerticalAlignment="Top" Width="16" Height="16" Margin="0" />
-                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" ContentTemplateSelector="{StaticResource tsValue}" Content="{Binding}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
                     </Grid>
                   </Border>
                   <ItemsPresenter   Grid.Column="1" Grid.Row="1" x:Name="ItemsHost" />
@@ -170,12 +170,12 @@
     <ItemsControl Grid.Row="1" Name="icChildren" ItemsSource="{Binding Path=data.children}" Margin="0,5,0,0" Background="White" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
-          <StackPanel Orientation="Vertical"/>
+          <WrapPanel Orientation="Vertical" />
         </ItemsPanelTemplate>
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate>
-          <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Left">
+          <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Stretch">
             <Grid  MouseUp="StackPanel_MouseUp">
               <Grid.ColumnDefinitions>
                 <ColumnDefinition/>

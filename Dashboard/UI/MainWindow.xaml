@@ -1,4 +1,4 @@
-﻿<Window x:Class="X13.MainWindow"
+﻿<Window x:Class="X13.UI.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
@@ -72,12 +72,12 @@
                    HorizontalAlignment="Right" Margin="4,-7,0,7" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" />
 			<Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click">
-				<Image Source="Images/newDoc.png" Width="24" Height="22" />
+				<Image Source="/Dashboard;component/Images/newDoc.png" Width="24" Height="22" />
 			</Button>
 			<TextBlock x:Name="Caption" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Dashboard" />
 			<Button Name="buConfig" Grid.Column="3" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click" HorizontalAlignment="Left">
-				<Image Source="Images/config.png" Width="24" Height="23" />
+				<Image Source="/Dashboard;component/Images/config.png" Width="24" Height="23" />
 			</Button>
 			<Button x:Name="MinButton" Grid.Column="4" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                     Click="MinButtonClick" WindowChrome.IsHitTestVisibleInChrome="True">

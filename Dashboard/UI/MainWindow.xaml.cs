@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 using System.Xml;
 using X13.Data;
 
-namespace X13 {
+namespace X13.UI {
   /// <summary>
   /// Interaction logic for MainWindow.xaml
   /// </summary>
@@ -136,9 +136,9 @@ namespace X13 {
       Log.Finish();
     }
     private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
-      Uri u;
-      if(Uri.TryCreate(e.Document.ContentId, UriKind.Absolute, out u)) {
-        DWorkspace.This.Close(u.GetLeftPart(UriPartial.Path), u.Query);
+      var form = e.Document.Content as UIDocument;
+      if(form!=null) {
+        DWorkspace.This.Close(form.data.fullPath, form.view);
       }
       
     }

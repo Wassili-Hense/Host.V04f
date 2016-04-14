@@ -66,9 +66,17 @@ namespace X13.UI {
           }
         }
       }
-      PropertyChangedReise("value");
+      if(editor == null) {
+        editor = InspectorForm.GetEdititor(this.view, this, _schema);
+        PropertyChangedReise("editor");
+      } else {
+        editor.ValueChanged(_value);
+      }
+      //PropertyChangedReise("value");
+
     }
     public void UpdateSchema(JSC.JSValue val) {
+      var oldView = this.view;
       this._schema = val;
       if(_schema != null && _schema.Value != null) {
         var vv = _schema["view"];
@@ -106,6 +114,10 @@ namespace X13.UI {
         _icon = DWorkspace.This.GetIcon(null);
       }
       PropertyChangedReise("icon");
+      if(editor == null || oldView!=this.view) {
+        editor = InspectorForm.GetEdititor(this.view, this, _schema);
+        PropertyChangedReise("editor");
+      }
     }
 
     public bool IsExpanded { get; set; }
@@ -119,6 +131,18 @@ namespace X13.UI {
     public BitmapSource icon {
       get {
         return _icon;
+      }
+    }
+    public IValueEditor editor { get; private set; }
+
+    public JSC.JSValue valueRaw { 
+      get { return _value; }
+      set {
+        if(_parent == null) {
+          _src.DataChanged(value);
+        } else {
+          _parent.ChangeValue(_name, value);
+        }
       }
     }
     public string valueStr { get { return (_value == null || _value.Value == null) ? "null" : (_value.Value.ToString()); } }
@@ -168,33 +192,5 @@ namespace X13.UI {
       }
     }
     #endregion INotifyPropertyChanged Members
-  }
-  public class ValueViewTS : DataTemplateSelector {
-    public DataTemplate Default { get; set; }
-    public DataTemplate Bool { get; set; }
-    //public DataTemplate Integer { get; set; }
-    public DataTemplate Double { get; set; }
-    public DataTemplate String { get; set; }
-    public DataTemplate Date { get; set; }
-
-    public override DataTemplate SelectTemplate(object item, DependencyObject container) {
-      var cp = container as ContentPresenter;
-      if(cp != null) {
-        var vc = cp.Content as ValueControl;
-        if(cp != null) {
-          switch(vc.view) {
-          case "Boolean":
-            return Bool;
-          case "Double":
-            return Double;
-          case "String":
-            return this.String;
-          case "Date":
-            return this.Date;
-          }
-        }
-      }
-      return Default;
-    }
   }
 }
