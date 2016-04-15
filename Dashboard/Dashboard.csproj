@@ -91,10 +91,14 @@
       <DependentUpon>UIDocument.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\ValueControl.cs" />
+    <Compile Include="UI\veDateTimePicker.cs" />
     <Compile Include="UI\veDefault.cs" />
+    <Compile Include="UI\veDouble.cs" />
+    <Compile Include="UI\veInteger.cs" />
     <Compile Include="UI\veSliderBool.xaml.cs">
       <DependentUpon>veSliderBool.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\veString.cs" />
     <Page Include="UI\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -162,6 +166,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\ty_schema.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\add.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\delete.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace X13.Data {
   public class DTopic : INotifyPropertyChanged {
+    private const string valueString = "value";
     private const string childrenString = "children";
     private const string schemaString = "schema";
     private readonly Action<string> _ActNPC;
@@ -69,15 +70,35 @@ namespace X13.Data {
       return ds.Task;
     }
     public DChildren children { get { return _children; } }
-
+    private void ValuePublished(JSC.JSValue val) {
+      if(!JSC.JSValue.Equals(_value, val)) {
+        _value = val;
+        if(schemaStr == "schema" && _value != null && _value.ValueType == JSC.JSValueType.Object && _value.Value != null) {
+          this._schemaOriginal = new Schema(_value);
+        }
+        DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, valueString);
+      }
+    }
     private void ExtractSchema(Task<DTopic> t) {
       if(t != null) {
         if(t.IsFaulted) {
           Log.Warning("ExtractSchema({0}) - {1}", schemaStr, t.Exception.Message);
         } else if(t.IsCompleted) {
-          this._schemaTopic=t.Result;
-          DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
+          if(this._schemaTopic != t.Result) {
+            if(this._schemaTopic != null) {
+              this._schemaTopic.PropertyChanged -= _schemaTopic_PropertyChanged;
+            }
+            this._schemaTopic = t.Result;
+            this._schemaTopic.PropertyChanged += _schemaTopic_PropertyChanged;
+            DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
+          }
         }
+      }
+    }
+
+    private void _schemaTopic_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if(e.PropertyName == "value") {
+        DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
       }
     }
 
@@ -180,16 +201,7 @@ namespace X13.Data {
             next._flags = aFlags;
             next.schemaStr = cb[2].Value as string;
             if((int)cb.length == 4) {
-              next._value = cb[3];
-              var v = cb[3];
-              JSC.JSValue sc;
-              if(v != null && v.ValueType == JSC.JSValueType.Object && v.Value!=null){
-                if((sc = v["$schema"]).ValueType == JSC.JSValueType.String ){
-                  if(sc.Value as string == "schema") {
-                    next._schemaOriginal = new Schema(v);
-                  }
-                }
-              }
+              next.ValuePublished(cb[3]);
             }
           }
 		  if(childrenPC) {
@@ -220,7 +232,7 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
-          _topic._value=this._value;
+          _topic.ValuePublished(this._value);
           _tcs.SetResult(true);
         } else {
           _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));

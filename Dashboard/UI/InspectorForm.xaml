@@ -9,33 +9,6 @@
              FontFamily="Consolas" FontSize="12">
   <Grid>
     <Grid.Resources>
-      <!--x13ui:ValueViewTS x:Key="tsValue">
-        <x13ui:ValueViewTS.Default>
-          <DataTemplate>
-            <TextBlock Text="{Binding valueStr}" Foreground="Black" />
-          </DataTemplate>
-        </x13ui:ValueViewTS.Default>
-        <x13ui:ValueViewTS.Bool>
-          <DataTemplate>
-            <CheckBox IsChecked="{Binding value}" GotFocus="ValueControl_GotFocus" />
-          </DataTemplate>
-        </x13ui:ValueViewTS.Bool>
-        <x13ui:ValueViewTS.Double>
-          <DataTemplate>
-            <xctk:DoubleUpDown Value="{Binding value}" BorderThickness="0" Foreground="Black" HorizontalAlignment="Left" GotFocus="ValueControl_GotFocus" />
-          </DataTemplate>
-        </x13ui:ValueViewTS.Double>
-        <x13ui:ValueViewTS.String>
-          <DataTemplate>
-            <TextBox Text="{Binding value}" BorderThickness="0" Padding="0" Background="#FFE2FCFF" Foreground="Black" HorizontalContentAlignment="Left" GotFocus="ValueControl_GotFocus" />
-          </DataTemplate>
-        </x13ui:ValueViewTS.String>
-        <x13ui:ValueViewTS.Date>
-          <DataTemplate>
-            <xctk:DateTimePicker Value="{Binding value}" Background="#FFE2FCFF" Foreground="Black" HorizontalAlignment="Left" GotFocus="ValueControl_GotFocus" />
-          </DataTemplate>
-        </x13ui:ValueViewTS.Date>
-      </x13ui:ValueViewTS-->
       <Style x:Key="TreeViewItemFocusVisual">
         <Setter Property="Control.Template">
           <Setter.Value>
@@ -106,17 +79,17 @@
                   </Grid.RowDefinitions>
                   <Border           Grid.Column="0" Grid.Row="0" x:Name="BTop" BorderBrush="Black" BorderThickness="0,1,0,0" Margin="-9,10,10,10" VerticalAlignment="Top" />
                   <Border           Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" x:Name="BLine" BorderBrush="Black" BorderThickness="1,0,0,1" Margin="10,10,5,10" Visibility="Collapsed" />
-                  <ToggleButton     Grid.Column="0" Grid.Row="0" x:Name="Expander" Style="{StaticResource ExpandCollapseToggleStyle}" ClickMode="Press" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}"/>
+                  <ToggleButton     Grid.Column="0" Grid.Row="0" x:Name="Expander" Style="{StaticResource ExpandCollapseToggleStyle}" ClickMode="Press" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" Focusable="True"/>
                   <Border           Grid.Column="1" Grid.Row="0" Name="BContent" BorderBrush="LightGray" BorderThickness="1,0.5,1,0.5">
-                    <Grid>
+                    <Grid Focusable="False">
                       <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" MinWidth="80" SharedSizeGroup="vcName"/>
                         <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="Auto" MinWidth="80" SharedSizeGroup="vcName"/>
                         <ColumnDefinition Width="*"/>
                       </Grid.ColumnDefinitions>
-                      <TextBlock        Grid.Column="0" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
-                      <Image            Grid.Column="1" Grid.Row="0" Source="{Binding icon}" VerticalAlignment="Top" Width="16" Height="16" Margin="0" />
-                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                      <Image            Grid.Column="0" Grid.Row="0" Source="{Binding icon}" VerticalAlignment="Top" Width="16" Height="16" Margin="0,1" />
+                      <TextBlock        Grid.Column="1" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
+                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Focusable="True" />
                     </Grid>
                   </Border>
                   <ItemsPresenter   Grid.Column="1" Grid.Row="1" x:Name="ItemsHost" />
@@ -167,7 +140,7 @@
         <HierarchicalDataTemplate DataType="{x:Type x13ui:ValueControl}"  ItemsSource="{Binding fields}" />
       </TreeView.ItemTemplate>
     </TreeView>
-    <ItemsControl Grid.Row="1" Name="icChildren" ItemsSource="{Binding Path=data.children}" Margin="0,5,0,0" Background="White" >
+    <ItemsControl Grid.Row="1" Name="icChildren" ItemsSource="{Binding Path=data.children}" Margin="0,5,0,0" Background="White" Focusable="False" >
       <ItemsControl.ItemsPanel>
         <ItemsPanelTemplate>
           <WrapPanel Orientation="Vertical" />
@@ -175,15 +148,20 @@
       </ItemsControl.ItemsPanel>
       <ItemsControl.ItemTemplate>
         <DataTemplate>
-          <Border BorderBrush="Black" BorderThickness="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Stretch">
-            <Grid  MouseUp="StackPanel_MouseUp">
+          <Border BorderThickness="1" Margin="5" VerticalAlignment="Top" HorizontalAlignment="Stretch" PreviewMouseLeftButtonUp="Border_PreviewMouseLeftButtonUp" Focusable="True">
+            <Grid>
               <Grid.ColumnDefinitions>
                 <ColumnDefinition/>
                 <ColumnDefinition Width="Auto"/>
               </Grid.ColumnDefinitions>
-              <Label Grid.Column="0" HorizontalAlignment="Center" Content="{Binding Path=name}" Margin="5" />
+              <TextBlock Grid.Column="0" HorizontalAlignment="Center" Text="{Binding Path=name}" Margin="5" />
               <Image Grid.Column="1" Width="16" Height="16" Source="{Binding schema.icon, TargetNullValue={StaticResource NullImage}, FallbackValue={StaticResource NullImage}}" />
             </Grid>
+            <Border.Style>
+              <Style TargetType="Border">
+                <Setter Property="BorderBrush" Value="Black" />
+              </Style>
+            </Border.Style>
           </Border>
         </DataTemplate>
       </ItemsControl.ItemTemplate>

@@ -20,11 +20,17 @@ namespace X13.UI {
   /// Interaction logic for veSliderBool.xaml
   /// </summary>
   public partial class veSliderBool : UserControl, IValueEditor {
+    public static IValueEditor Create(ValueControl owner, JSC.JSValue schema) {
+      return new veSliderBool(owner, schema);
+    }
+
     private ValueControl _owner;
     public veSliderBool(ValueControl owner, JSC.JSValue schema) {
       _owner = owner;
       InitializeComponent();
       ValueChanged(_owner.valueRaw);
+      cbBool.Checked+=cbBool_Checked;
+      cbBool.Unchecked+=cbBool_Unchecked;
     }
 
     public void ValueChanged(NiL.JS.Core.JSValue value) {
@@ -35,11 +41,15 @@ namespace X13.UI {
     }
 
     private void cbBool_Checked(object sender, RoutedEventArgs e) {
-      _owner.value = new JSL.Boolean(true);
+      _owner.valueRaw = new JSL.Boolean(true);
     }
 
     private void cbBool_Unchecked(object sender, RoutedEventArgs e) {
-      _owner.value = new JSL.Boolean(false);
+      _owner.valueRaw = new JSL.Boolean(false);
+    }
+
+    private void UserControl_GotFocus(object sender, RoutedEventArgs e) {
+      _owner.GotFocus(sender, e);
     }
   }
 }

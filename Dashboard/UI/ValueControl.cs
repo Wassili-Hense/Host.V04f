@@ -134,7 +134,6 @@ namespace X13.UI {
       }
     }
     public IValueEditor editor { get; private set; }
-
     public JSC.JSValue valueRaw { 
       get { return _value; }
       set {
@@ -145,34 +144,25 @@ namespace X13.UI {
         }
       }
     }
-    public string valueStr { get { return (_value == null || _value.Value == null) ? "null" : (_value.Value.ToString()); } }
-    public object value {
-      get {
-        if(_value.ValueType == JSC.JSValueType.Date) {
-          return (_value.Value as JSL.Date).ToDateTime();
-        }
-        return _value.Value;
-      }
-      set {
-        if(!object.Equals(value, _value)) {
-          if(_parent == null) {
-            _src.DataChanged(JSC.JSValue.Marshal(value));
-          } else {
-            _parent.ChangeValue(_name, JSC.JSValue.Marshal(value));
-          }
-        }
-      }
-    }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
 
-    public override string ToString() {
-      return _src.data.path + "." + name;
+    public void GotFocus(object sender, RoutedEventArgs e) {
+      _src.ValueControl_GotFocus(sender, e);
     }
     private void ChangeValue(string name, JSC.JSValue val) {
       if(_value.ValueType == JSC.JSValueType.Object) {
         var jo = JSC.JSObject.CreateObject();
         foreach(var kv in _value.OrderBy(z => z.Key)) {
-          jo[kv.Key] = kv.Key == name ? val : kv.Value;
+          if(kv.Key == name){
+            if(val != null && val.Defined) {
+              jo[kv.Key] = val;
+            } else {
+              jo.DeleteProperty(kv.Key);
+            }
+          } else {
+            jo[kv.Key] = kv.Value;
+          }
+           
         }
         if(_parent == null) {
           _src.DataChanged(jo);
@@ -181,6 +171,11 @@ namespace X13.UI {
         }
       } else {
         throw new NotImplementedException();
+      }
+    }
+    public void Delete() {
+      if(_parent != null) {
+        _parent.ChangeValue(_name, null);
       }
     }
 
@@ -192,5 +187,10 @@ namespace X13.UI {
       }
     }
     #endregion INotifyPropertyChanged Members
+
+    public override string ToString() {
+      return _src.data.path + "." + name;
+    }
+
   }
 }

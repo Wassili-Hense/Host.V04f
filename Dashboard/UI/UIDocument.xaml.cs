@@ -48,7 +48,9 @@ namespace X13.UI {
       DWorkspace.This.GetAsync(url, false).ContinueWith((t) => this.Dispatcher.BeginInvoke(new Action<Task<DTopic>>(this.DataUpd), t));
     }
     private void DataUpd(Task<DTopic> t) {
-	  if(t.IsCompleted) {
+      if(t.IsFaulted) {
+        Log.Warning("{0}", t.Exception.Message);
+      } else if(t.IsCompleted) {
 		_data = t.Result;
         _path = _data.fullPath;
 		OnPropertyChanged("data");

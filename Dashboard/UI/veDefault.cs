@@ -16,8 +16,10 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace X13.UI {
-  public class veDefault : TextBlock, IValueEditor {
+  internal class veDefault : TextBlock, IValueEditor {
     public veDefault(ValueControl owner, JSC.JSValue schema) {
+      base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+      base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
       ValueChanged(owner.valueRaw);
     }
 

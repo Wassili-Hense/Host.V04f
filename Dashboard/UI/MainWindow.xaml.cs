@@ -137,7 +137,7 @@ namespace X13.UI {
     }
     private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
       var form = e.Document.Content as UIDocument;
-      if(form!=null) {
+      if(form!=null && form.data!=null) {
         DWorkspace.This.Close(form.data.fullPath, form.view);
       }
       

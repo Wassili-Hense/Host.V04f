@@ -25,9 +25,12 @@ namespace X13.UI {
 
     static InspectorForm(){
       _editors=new SortedList<string,Func<ValueControl,JSC.JSValue,IValueEditor>>();
-      _editors["Boolean"]=(o, s)=>new veSliderBool(o, s);
+      _editors["Boolean"] = veSliderBool.Create;
+      _editors["Integer"] = veInteger.Create;
+      _editors["Double"] = veDouble.Create;
+      _editors["String"] = veString.Create;
+      _editors["Date"] = veDateTimePicker.Create;
     }
-
     public static IValueEditor GetEdititor(string view, ValueControl owner, JSC.JSValue schema) {
       IValueEditor rez;
       Func<ValueControl, JSC.JSValue, IValueEditor> ct;
@@ -57,28 +60,14 @@ namespace X13.UI {
 	  this.icChildren.DataContext=this;
     }
 
-	public ObservableCollection<ValueControl> valueVC { get; private set; }
+    #region Properies
+    public ObservableCollection<ValueControl> valueVC { get; private set; }
 	public DTopic data { get; private set; }
     public void DataChanged(JSC.JSValue val) {
       data.SetValue(val).Wait();
       valueVC[0].UpdateData(data.value);
     }
-
-    private void data_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      if(e.PropertyName == "schema") {
-        valueVC[0].UpdateSchema((data==null || data.schema==null)?null:data.schema.data);
-      }
-    }
-
-
-    private void StackPanel_MouseUp(object sender, MouseButtonEventArgs e) {
-      FrameworkElement p;
-      DTopic t;
-      if((p = sender as FrameworkElement) != null && (t = p.DataContext as DTopic) != null) {
-        DWorkspace.This.Open(t.fullPath);
-      }
-    }
-    private void ValueControl_GotFocus(object sender, RoutedEventArgs e) {
+    public void ValueControl_GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       TreeViewItem parent;
       DependencyObject parentObject;
@@ -92,8 +81,37 @@ namespace X13.UI {
       }
     }
 
-	#region INotifyPropertyChanged Members
-	public event PropertyChangedEventHandler PropertyChanged;
+    private void data_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if(e.PropertyName == "schema") {
+        valueVC[0].UpdateSchema((data==null || data.schema==null)?null:data.schema.data);
+      }
+    }
+    private void AddProperty_Click(object sender, RoutedEventArgs e) {
+
+    }
+    private void DeleteProperty_Click(object sender, RoutedEventArgs e) {
+      var fe = sender as FrameworkElement;
+      ValueControl vc;
+      if(fe != null && (vc = fe.DataContext as ValueControl) != null) {
+        vc.Delete();
+      }
+    }
+    #endregion Properies
+
+    #region Children
+
+    private void Border_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
+      FrameworkElement p;
+      DTopic t;
+      if((p = sender as FrameworkElement) != null && (t = p.DataContext as DTopic) != null) {
+        DWorkspace.This.Open(t.fullPath);
+        e.Handled = true;
+      }
+    }
+
+    #endregion Children
+    #region INotifyPropertyChanged Members
+    public event PropertyChangedEventHandler PropertyChanged;
 
 	internal void OnPropertyChanged(string propertyName) {
 	  if(PropertyChanged != null) {
@@ -101,5 +119,7 @@ namespace X13.UI {
 	  }
 	}
 	#endregion INotifyPropertyChanged Members
+
+
   }
 }
