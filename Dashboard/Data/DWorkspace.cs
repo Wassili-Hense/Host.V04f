@@ -52,24 +52,12 @@ namespace X13.Data {
 	private UIDocument _activeDocument;
     private ObservableCollection<UIDocument> _files;
     private ReadOnlyObservableCollection<UIDocument> _readonyFiles;
-    private SortedDictionary<string, BitmapSource> _icons;
     #endregion instance variables
 
     private DWorkspace() {
       _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _clients = new SortedList<string, A04Client>();
 	  _files = new ObservableCollection<UIDocument>();
-      _icons = new SortedDictionary<string, BitmapSource>();
-
-      LoadIcon(string.Empty, "ty_topic.png");
-      LoadIcon("Null", "ty_null.png");
-      LoadIcon("Boolean", "ty_bool.png");
-      LoadIcon("Integer", "ty_i64.png");
-      LoadIcon("Double", "ty_f02.png");
-      LoadIcon("String", "ty_str.png");
-      LoadIcon("Date", "ty_dt.png");
-      LoadIcon("Folder", "ty_topic.png");
-      LoadIcon("schema", "ty_schema.png");
 
       _bw = new Thread(ThFunction);
       _runing = true;
@@ -115,43 +103,23 @@ namespace X13.Data {
       return ui;
     }
     public void Close(string path, string view) {
-	  UIDocument ui;
+	  UIDocument d;
       if(string.IsNullOrEmpty(view)) {
         view = "IN";
       } else if(view.StartsWith("?view=")) {
         view = view.Substring(6);
       }
 	  string id=path+"?view="+view;
-	  ui = _files.FirstOrDefault(z => z != null && z.ContentId==id);
-	  if(ui != null) {
-        _files.Remove(ui);
+	  d = _files.FirstOrDefault(z => z != null && z.ContentId==id);
+	  if(d != null) {
+        _files.Remove(d);
       }
     }
-    public BitmapSource GetIcon(string icData) {
-      BitmapSource rez;
-      if(string.IsNullOrEmpty(icData)) {
-        icData = string.Empty;
+    public void Close(UIDocument doc) {
+      var d = _files.FirstOrDefault(z => z == doc);
+      if(d != null) {
+        _files.Remove(d);
       }
-      if(_icons.TryGetValue(icData, out rez)) {
-        return rez;
-      }
-      lock(_icons) {
-        if(!_icons.TryGetValue(icData, out rez)) {
-          if(icData.StartsWith("data:image/png;base64,")) {
-            var bitmapData = Convert.FromBase64String(icData.Substring(22));
-            var streamBitmap = new System.IO.MemoryStream(bitmapData);
-            var decoder = new PngBitmapDecoder(streamBitmap, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-            rez=decoder.Frames[0];
-            _icons[icData]=rez;
-          } else if(icData.StartsWith("component/Images/")) {
-            var url = new Uri("pack://application:,,,/Dashboard;" + icData, UriKind.Absolute);
-            var decoder = new PngBitmapDecoder(url, BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-            rez = decoder.Frames[0];
-            _icons[icData] = rez;
-          }
-        }
-      }
-      return rez;
     }
     public void Exit() {
       lock(_clients) {
@@ -189,11 +157,6 @@ namespace X13.Data {
       }
     }
 
-    private void LoadIcon(string name, string path) {
-      var decoder = new PngBitmapDecoder(new Uri("pack://application:,,,/Dashboard;component/Images/" + path, UriKind.Absolute), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);
-      _icons[name] = decoder.Frames[0];
-    }
-
     #region Background worker
     public void AddMsg(INotMsg msg) {
       _msgs.Enqueue(msg);
@@ -217,6 +180,7 @@ namespace X13.Data {
     }
     public event PropertyChangedEventHandler PropertyChanged;
     #endregion INotifyPropertyChanged
+
   }
   internal interface INotMsg {
     void Process(DWorkspace ws);

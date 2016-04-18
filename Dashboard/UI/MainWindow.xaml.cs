@@ -137,21 +137,19 @@ namespace X13.UI {
     }
     private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
       var form = e.Document.Content as UIDocument;
-      if(form!=null && form.data!=null) {
-        DWorkspace.This.Close(form.data.fullPath, form.view);
+      if(form!=null) {
+        DWorkspace.This.Close(form);
       }
-      
     }
 	private void buNewDocument_Click(object sender, RoutedEventArgs e) {
 	  DWorkspace.This.Open(null);
 	}
 
 	private void WindowStateChanged(object sender, EventArgs e) {
-	  var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-
 	  if(this.WindowState == WindowState.Maximized) {
 		// Make sure window doesn't overlap with the taskbar.
-		var screen = System.Windows.Forms.Screen.FromHandle(handle);
+        var handle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        var screen = System.Windows.Forms.Screen.FromHandle(handle);
 		if(screen.Primary) {
 		  this.Padding = new Thickness(
 			  SystemParameters.WorkArea.Left + 7,
@@ -161,6 +159,7 @@ namespace X13.UI {
 		}
 	  } else {
 		this.Padding = new Thickness(7, 7, 7, 5);
+        this.InvalidateVisual();
 	  }
 	}
 	private void CloseButtonClick(object sender, RoutedEventArgs e) {

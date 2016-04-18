@@ -16,7 +16,7 @@ namespace X13.Data {
       _data = data;
       var ji = _data["icon"];
       if(ji.ValueType == JSC.JSValueType.String) {
-        icon = DWorkspace.This.GetIcon(ji.Value as string);
+        icon = App.GetIcon(ji.Value as string);
       }
     }
     public JSC.JSValue data { get { return _data; } }

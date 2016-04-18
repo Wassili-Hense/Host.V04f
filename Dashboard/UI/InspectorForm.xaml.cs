@@ -86,16 +86,6 @@ namespace X13.UI {
         valueVC[0].UpdateSchema((data==null || data.schema==null)?null:data.schema.data);
       }
     }
-    private void AddProperty_Click(object sender, RoutedEventArgs e) {
-
-    }
-    private void DeleteProperty_Click(object sender, RoutedEventArgs e) {
-      var fe = sender as FrameworkElement;
-      ValueControl vc;
-      if(fe != null && (vc = fe.DataContext as ValueControl) != null) {
-        vc.Delete();
-      }
-    }
     #endregion Properies
 
     #region Children
@@ -119,6 +109,8 @@ namespace X13.UI {
 	  }
 	}
 	#endregion INotifyPropertyChanged Members
+
+
 
 
   }

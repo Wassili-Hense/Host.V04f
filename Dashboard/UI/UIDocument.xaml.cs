@@ -83,10 +83,17 @@ namespace X13.UI {
       }
     }
 	private void TextBox_IsKeyboardFocusedChanged(object sender, DependencyPropertyChangedEventArgs e) {
-	  this.icPanel.Visibility = ((bool)e.NewValue == true ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible);
+      if((bool)e.NewValue) {
+        this.icPanel.Visibility = System.Windows.Visibility.Collapsed;
+      } else if(connected) {
+        this.icPanel.Visibility = System.Windows.Visibility.Visible;
+      } else {
+        tbAddress.Focus();
+      }
+	  
 	}
     private void TextBox_KeyUp(object sender, KeyEventArgs e) {
-      if(e.Key == Key.Enter || e.Key == Key.Tab) {
+      if(e.Key == Key.Enter) {
         Uri url;
         if(Uri.TryCreate(tbAddress.Text, UriKind.Absolute, out url)) {
           tbAddress.Background = null;
@@ -94,6 +101,8 @@ namespace X13.UI {
         } else {
           tbAddress.Background = Brushes.LightPink;
         }
+      } else if(e.Key == Key.Escape) {
+        DWorkspace.This.Close(this);
       }
     }
 	private void Button_Click(object sender, RoutedEventArgs e) {

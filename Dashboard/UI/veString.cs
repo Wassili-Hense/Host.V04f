@@ -18,7 +18,6 @@ namespace X13.UI {
 
     public veString(ValueControl owner, JSC.JSValue schema) {
       _owner = owner;
-      base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
       base.BorderThickness = new System.Windows.Thickness(1, 0, 0, 0);
@@ -30,6 +29,7 @@ namespace X13.UI {
       ValueChanged(_owner.valueRaw);
       SchemaChanged(schema);
     }
+
     public void ValueChanged(JSC.JSValue value) {
       if(value.ValueType == JSC.JSValueType.String) {
         _oldValue = value.Value as string;
@@ -43,16 +43,29 @@ namespace X13.UI {
     }
 
     private void Publish() {
-        if(_oldValue != base.Text) {
-          _owner.valueRaw = new JSL.String(base.Text);
-        }
+      if(_oldValue != base.Text) {
+        _owner.valueRaw = new JSL.String(base.Text);
+      }
     }
+
     private void ve_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) {
       if(e.Key == System.Windows.Input.Key.Enter) {
         e.Handled = true;
         Publish();
       } else if(e.Key == System.Windows.Input.Key.Escape) {
+        e.Handled = true;
+        base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up));
         base.Text = _oldValue;
+      } else if(e.Key == System.Windows.Input.Key.PageDown) {
+        e.Handled = true;
+        if(!base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Down))) {
+          base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Next));
+        }
+      } else if(e.Key == System.Windows.Input.Key.PageUp) {
+        e.Handled = true;
+        if(!base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up))) {
+          base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Previous));
+        }
       }
     }
     private void ve_GotFocus(object sender, System.Windows.RoutedEventArgs e) {

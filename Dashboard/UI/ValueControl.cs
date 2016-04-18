@@ -86,7 +86,7 @@ namespace X13.UI {
         }
         var iv = _schema["icon"];
         if(iv.ValueType == JSC.JSValueType.String) {
-          _icon = DWorkspace.This.GetIcon(iv.Value as string);
+          _icon = App.GetIcon(iv.Value as string);
         } else {
           _icon = null;
         }
@@ -108,10 +108,10 @@ namespace X13.UI {
         }
       }
       if(_icon == null) {
-        _icon = DWorkspace.This.GetIcon(view);
+        _icon = App.GetIcon(view);
       }
       if(_icon == null) {
-        _icon = DWorkspace.This.GetIcon(null);
+        _icon = App.GetIcon(null);
       }
       PropertyChangedReise("icon");
       if(editor == null || oldView!=this.view) {
@@ -145,7 +145,56 @@ namespace X13.UI {
       }
     }
     public ObservableCollection<ValueControl> fields { get { return _fields; } }
+    public IEnumerable<MenuItem> MenuItems {
+      get {
+        var l = new List<MenuItem>();
+        JSC.JSValue f;
+        MenuItem mi;
+        MenuItem ma = new MenuItem() { Header = "Add" };
+        if(_schema != null) {
+          f = _schema["Properties"];
+          foreach(var kv in f.Where(z=>z.Value!=null && z.Value.ValueType==JSC.JSValueType.Object)) {
+            if(_fields.Any(z => z._name == kv.Key)) {
+              continue;
+            }
+            mi = new MenuItem();
+            mi.Header = kv.Key;
+            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+            }
+            mi.Tag = kv.Value;
+            mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
+          }
+        }
+        if(ma.HasItems) {
+          l.Add(ma);
+        }
+        if(_parent != null && (_schema==null || (f=_schema["required"]).ValueType!=JSC.JSValueType.Boolean || true!=(bool)f )) {
+          mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
+          mi.Click += miDelete_Click;
+          l.Add(mi);
+        }
+        return l;
+      }
+    }
 
+    void miAdd_Click(object sender, RoutedEventArgs e) {
+      var mi = sender as MenuItem;
+      if(mi!=null){
+        var name = mi.Header as string;
+        var decl = mi.Tag as JSC.JSValue;
+        if(name != null && decl != null) {
+          this.ChangeValue(name, decl["default"]);
+        }
+      }
+    }
+
+    void miDelete_Click(object sender, RoutedEventArgs e) {
+      if(_parent != null) {
+        _parent.ChangeValue(_name, null);
+      }
+    }
     public void GotFocus(object sender, RoutedEventArgs e) {
       _src.ValueControl_GotFocus(sender, e);
     }
@@ -154,7 +203,7 @@ namespace X13.UI {
         var jo = JSC.JSObject.CreateObject();
         foreach(var kv in _value.OrderBy(z => z.Key)) {
           if(kv.Key == name){
-            if(val != null && val.Defined) {
+            if(val != null) {
               jo[kv.Key] = val;
             } else {
               jo.DeleteProperty(kv.Key);
@@ -162,7 +211,9 @@ namespace X13.UI {
           } else {
             jo[kv.Key] = kv.Value;
           }
-           
+        }
+        if(val!=null && !jo.GetProperty(name, JSC.PropertyScope.Own).Defined) {
+          jo[name] = val;
         }
         if(_parent == null) {
           _src.DataChanged(jo);
@@ -171,11 +222,6 @@ namespace X13.UI {
         }
       } else {
         throw new NotImplementedException();
-      }
-    }
-    public void Delete() {
-      if(_parent != null) {
-        _parent.ChangeValue(_name, null);
       }
     }
 
@@ -191,6 +237,7 @@ namespace X13.UI {
     public override string ToString() {
       return _src.data.path + "." + name;
     }
+
 
   }
 }
