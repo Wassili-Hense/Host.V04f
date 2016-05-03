@@ -1,41 +1,33 @@
-﻿using JSL = NiL.JS.BaseLibrary;
-using JSC = NiL.JS.Core;
-using JSF = NiL.JS.Core.Functions;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.ComponentModel;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using JSC = NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.Data {
-  public class DTopic : INotifyPropertyChanged {
+  public class DTopic : NPC_UI {
     private const string valueString = "value";
-    private const string childrenString = "children";
+    private const string itemsString = "children";
     private const string schemaString = "schema";
-    private readonly Action<string> _ActNPC;
 
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
-    private DChildren _children;
     private JSC.JSValue _value;
     private Schema _schemaOriginal;
     private DTopic _schemaTopic;
-    private bool _schemaRequsted;
-
+    private int _schemaRequsted;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
       this._client = this.parent._client;
       this.name = name;
       this.path = this.parent == _client.root ? ("/" + name) : (this.parent.path + "/" + name);
-      _ActNPC = new Action<string>(OnPropertyChanged);
     }
     internal DTopic(A04Client cl) {
       _client = cl;
       this.name = _client.url.ToString().TrimEnd('/');
       this.path = "/";
-      _ActNPC = new Action<string>(OnPropertyChanged);
     }
     public Task<DTopic> GetAsync(string path, bool create) {
       var req = new TopicReq((!string.IsNullOrEmpty(path) && path[0] == '/') ? _client.root : this, path, create);
@@ -44,39 +36,44 @@ namespace X13.Data {
     }
     public Schema schema {
       get {
-        if(!_schemaRequsted) {
-          _schemaRequsted = true;
+        if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1)==0) {
           var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr, false);
           task.ContinueWith(ExtractSchema);
           return null;
         } else {
-          return _schemaTopic==null?null:_schemaTopic._schemaOriginal;
+          return _schemaTopic == null ? null : _schemaTopic._schemaOriginal;
         }
       }
     }
-    public string name { get; private set; }
+    public virtual string name { get; protected set; }
     public string path { get; private set; }
     public DTopic parent { get; private set; }
     public string schemaStr { get; private set; }
     public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
-    public JSC.JSValue value { 
-      get { 
-        return _value; 
-      } 
+    public JSC.JSValue value {
+      get {
+        if(_value == null && parent!=null) {
+          var req = new TopicReq(parent, this.name, false);
+          DWorkspace.This.AddMsg(req);
+          return JSC.JSValue.NotExists;
+        }
+        return _value;
+      }
     }
     public Task<bool> SetValue(JSC.JSValue val) {
-      var ds=new TopicPublish(this, val);
+      var ds = new TopicPublish(this, val);
       DWorkspace.This.AddMsg(ds);
       return ds.Task;
     }
-    public DChildren children { get { return _children; } }
+    public DChildren children { get; private set; }
+
     private void ValuePublished(JSC.JSValue val) {
       if(!JSC.JSValue.Equals(_value, val)) {
         _value = val;
         if(schemaStr == "schema" && _value != null && _value.ValueType == JSC.JSValueType.Object && _value.Value != null) {
           this._schemaOriginal = new Schema(_value);
         }
-        DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, valueString);
+        PropertyChangedReise(valueString);
       }
     }
     private void ExtractSchema(Task<DTopic> t) {
@@ -90,28 +87,22 @@ namespace X13.Data {
             }
             this._schemaTopic = t.Result;
             this._schemaTopic.PropertyChanged += _schemaTopic_PropertyChanged;
-            DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
+            PropertyChangedReise(schemaString);
+            PropertyChangedReise("view");
           }
         }
       }
     }
-
     private void _schemaTopic_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if(e.PropertyName == "value") {
-        DWorkspace.ui.BeginInvoke(this._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, schemaString);
-      }
-    }
-
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void OnPropertyChanged(string propertyName) {
-      if(PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+        PropertyChangedReise(schemaString);
       }
     }
 
     public override string ToString() {
       return this.fullPath + "<" + this.schemaStr + ">";
     }
+
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
@@ -128,7 +119,7 @@ namespace X13.Data {
 
       public void Process(DWorkspace ws) {
         int idx1 = _cur.path.Length;
-        if(idx1>1) {
+        if(idx1 > 1) {
           idx1++;
         }
         if(_path == null || _path.Length <= _cur.path.Length) {
@@ -147,12 +138,12 @@ namespace X13.Data {
         string name = _path.Substring(idx1, idx2 - idx1);
 
         if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
-          if(_cur._children == null) {
+          if(_cur.children == null) {
             _cur._client.Request(_cur.path, 2, this);
             return;
           }
 
-          if(!_cur._children.TryGetValue(name, out next)) {
+          if(!_cur.children.TryGetValue(name, out next)) {
             next = null;
           }
         }
@@ -169,7 +160,7 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
-		  bool childrenPC=false;
+          bool childrenPC = false;
           DTopic next;
           JSL.Array ca = value as JSL.Array, cc;
           if(ca == null || (int)ca.length != 1 || (cc = ca[0].Value as JSL.Array) == null) {
@@ -178,9 +169,9 @@ namespace X13.Data {
           }
           string aName, aPath;
           int aFlags;
-          if(_cur._children == null) {
-            _cur._children = new DChildren();
-			childrenPC=true;
+          if(_cur.children == null) {
+            _cur.children = new DChildren();
+            childrenPC = true;
           }
           foreach(var cb in cc.Select(z => z.Value.Value as JSL.Array)) {
             if(cb == null || (int)cb.length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
@@ -192,9 +183,9 @@ namespace X13.Data {
               if(!aPath.StartsWith(_cur.path)) {
                 continue;
               }
-              aName = aPath.Substring(_cur.path.Length==1?1:(_cur.path.Length+1));
+              aName = aPath.Substring(_cur.path.Length == 1 ? 1 : (_cur.path.Length + 1));
               next = new DTopic(_cur, aName);
-              _cur._children.AddItem(next);
+              _cur.children.AddItem(next);
             } else {
               next = _cur;
             }
@@ -204,9 +195,9 @@ namespace X13.Data {
               next.ValuePublished(cb[3]);
             }
           }
-		  if(childrenPC) {
-			DWorkspace.ui.BeginInvoke(_cur._ActNPC, System.Windows.Threading.DispatcherPriority.DataBind, DTopic.childrenString);
-		  }
+          if(childrenPC) {
+            _cur.PropertyChangedReise(DTopic.itemsString);
+          }
         } else {
           _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
         }
@@ -240,6 +231,5 @@ namespace X13.Data {
         _complete = true;
       }
     }
-
   }
 }

@@ -14,7 +14,7 @@ using System.Windows.Media.Imaging;
 using X13.Data;
 
 namespace X13.UI {
-  public class ValueControl : INotifyPropertyChanged {
+  public class ValueControl : NPC_UI{
     private InspectorForm _src;
     private ValueControl _parent;
     private string _name;
@@ -224,15 +224,6 @@ namespace X13.UI {
         throw new NotImplementedException();
       }
     }
-
-    #region INotifyPropertyChanged Members
-    public event PropertyChangedEventHandler PropertyChanged;
-    private void PropertyChangedReise(string propertyName) {
-      if(PropertyChanged != null) {
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-      }
-    }
-    #endregion INotifyPropertyChanged Members
 
     public override string ToString() {
       return _src.data.path + "." + name;

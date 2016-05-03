@@ -20,8 +20,7 @@ namespace X13.UI {
       _owner = owner;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
-      base.BorderThickness = new System.Windows.Thickness(1, 0, 0, 0);
-      base.BorderBrush = System.Windows.Media.Brushes.Black;
+      base.BorderThickness = new System.Windows.Thickness(0);
       base.Background = System.Windows.Media.Brushes.Azure;
       base.GotFocus += ve_GotFocus;
       base.LostFocus += ve_LostFocus;

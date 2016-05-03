@@ -20,7 +20,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace X13.UI {
-  public partial class InspectorForm : UserControl, INotifyPropertyChanged {
+  public partial class InspectorForm : UserControl {
     private static SortedList<string, Func<ValueControl, JSC.JSValue, IValueEditor>> _editors;
 
     static InspectorForm(){
@@ -100,18 +100,5 @@ namespace X13.UI {
     }
 
     #endregion Children
-    #region INotifyPropertyChanged Members
-    public event PropertyChangedEventHandler PropertyChanged;
-
-	internal void OnPropertyChanged(string propertyName) {
-	  if(PropertyChanged != null) {
-		PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-	  }
-	}
-	#endregion INotifyPropertyChanged Members
-
-
-
-
   }
 }

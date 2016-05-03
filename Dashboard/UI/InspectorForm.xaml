@@ -92,7 +92,9 @@
                       </Grid.ColumnDefinitions>
                       <Image            Grid.Column="0" Grid.Row="0" Source="{Binding icon}" VerticalAlignment="Top" Width="16" Height="16" Margin="0,1" />
                       <TextBlock        Grid.Column="1" Grid.Row="0" Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
-                      <ContentPresenter Grid.Column="2" Grid.Row="0" Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                      <Border Grid.Column="2" Grid.Row="0" BorderBrush="Black" BorderThickness="1,0,0,0">
+                        <ContentPresenter Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                      </Border>
                     </Grid>
                   </Border>
                   <ItemsPresenter   Grid.Column="1" Grid.Row="1" x:Name="ItemsHost" />

@@ -54,6 +54,7 @@ namespace X13 {
       LoadIcon("Date", "ty_dt.png");
       LoadIcon("Folder", "ty_topic.png");
       LoadIcon("schema", "ty_schema.png");
+      LoadIcon("children", "children.png");
     }
     private void LoadIcon(string name, string path) {
       var decoder = new PngBitmapDecoder(new Uri("pack://application:,,,/Dashboard;component/Images/" + path, UriKind.Absolute), BitmapCreateOptions.PreservePixelFormat, BitmapCacheOption.None);

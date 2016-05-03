@@ -81,6 +81,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Data\NPC_UI.cs" />
     <Compile Include="Data\Schema.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Compile Include="UI\InspectorForm.xaml.cs">
@@ -172,6 +173,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\delete.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\children.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

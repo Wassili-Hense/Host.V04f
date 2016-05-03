@@ -14,7 +14,7 @@ using X13.UI;
 using System.Windows.Media.Imaging;
 
 namespace X13.Data {
-  internal class DWorkspace : INotifyPropertyChanged {
+  internal class DWorkspace : NPC_UI {
     #region static
     private static DWorkspace _this;
     public static System.Windows.Threading.Dispatcher ui;
@@ -49,15 +49,21 @@ namespace X13.Data {
     private Thread _bw;
     private bool _runing;
     private System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
-	private UIDocument _activeDocument;
+    private UIDocument _activeDocument;
     private ObservableCollection<UIDocument> _files;
     private ReadOnlyObservableCollection<UIDocument> _readonyFiles;
+    private System.Collections.Concurrent.ConcurrentQueue<Tuple<Action<string>, string>> _uiMessages;
+    private int _uiWait;
+    private Action _uiProc;
     #endregion instance variables
 
     private DWorkspace() {
       _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _clients = new SortedList<string, A04Client>();
-	  _files = new ObservableCollection<UIDocument>();
+      _files = new ObservableCollection<UIDocument>();
+      _uiMessages = new System.Collections.Concurrent.ConcurrentQueue<Tuple<Action<string>, string>>();
+      _uiProc = new Action(ProcessUiMessages);
+      _uiWait = 0;
 
       _bw = new Thread(ThFunction);
       _runing = true;
@@ -79,7 +85,7 @@ namespace X13.Data {
       }
       return cl.root.GetAsync(url.LocalPath, create);
     }
-	public UIDocument Open(string path, string view=null) {
+    public UIDocument Open(string path, string view = null) {
       string id;
       if(string.IsNullOrEmpty(path)) {
         id = null;
@@ -93,25 +99,25 @@ namespace X13.Data {
         }
         id = path + "?view=" + view;
       }
-	  UIDocument ui;
-      ui = _files.FirstOrDefault(z => z != null && z.ContentId==id);
+      UIDocument ui;
+      ui = _files.FirstOrDefault(z => z != null && z.ContentId == id);
       if(ui == null) {
-		ui = new UI.UIDocument(path, view);
+        ui = new UI.UIDocument(path, view);
         _files.Add(ui);
       }
       ActiveDocument = ui;
       return ui;
     }
     public void Close(string path, string view) {
-	  UIDocument d;
+      UIDocument d;
       if(string.IsNullOrEmpty(view)) {
         view = "IN";
       } else if(view.StartsWith("?view=")) {
         view = view.Substring(6);
       }
-	  string id=path+"?view="+view;
-	  d = _files.FirstOrDefault(z => z != null && z.ContentId==id);
-	  if(d != null) {
+      string id = path + "?view=" + view;
+      d = _files.FirstOrDefault(z => z != null && z.ContentId == id);
+      if(d != null) {
         _files.Remove(d);
       }
     }
@@ -139,22 +145,48 @@ namespace X13.Data {
       }
     }
 
-	public UIDocument ActiveDocument {
+    public void UiMessage(Action<string> func, string p) {
+      _uiMessages.Enqueue(new Tuple<Action<string>, string>(func, p));
+      if(ui != null && Interlocked.Exchange(ref _uiWait, 1) == 0) {
+        ui.BeginInvoke(_uiProc);
+      }
+    }
+
+    public UIDocument ActiveDocument {
       get { return _activeDocument; }
       set {
         if(_activeDocument != value) {
           _activeDocument = value;
-          RaisePropertyChanged("ActiveDocument");
+          base.PropertyChangedReise("ActiveDocument");
         }
       }
     }
-	public ReadOnlyObservableCollection<UIDocument> Files {
+    public ReadOnlyObservableCollection<UIDocument> Files {
       get {
         if(_readonyFiles == null)
-		  _readonyFiles = new ReadOnlyObservableCollection<UIDocument>(_files);
+          _readonyFiles = new ReadOnlyObservableCollection<UIDocument>(_files);
 
         return _readonyFiles;
       }
+    }
+
+    private void ProcessUiMessages() {
+      Tuple<Action<string>, string> fv;
+      while(_uiMessages.TryDequeue(out fv)) {
+        try {
+          if(fv.Item1 != null) {
+            fv.Item1(fv.Item2);
+          }
+        }
+        catch(Exception ex) {
+          if(fv.Item1 != null && fv.Item1.Target != null) {
+            Log.Warning("# {0}.{1} - {2}", fv.Item1.Target, fv.Item2, ex.Message);
+          } else {
+            Log.Warning("# .{0} - {1}", fv.Item2, ex.Message);
+          }
+        }
+      }
+      _uiWait = 0;
     }
 
     #region Background worker
@@ -172,15 +204,6 @@ namespace X13.Data {
       }
     }
     #endregion Background worker
-
-    #region INotifyPropertyChanged
-    private void RaisePropertyChanged(string propertyName) {
-      if(PropertyChanged != null)
-        PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-    }
-    public event PropertyChangedEventHandler PropertyChanged;
-    #endregion INotifyPropertyChanged
-
   }
   internal interface INotMsg {
     void Process(DWorkspace ws);
