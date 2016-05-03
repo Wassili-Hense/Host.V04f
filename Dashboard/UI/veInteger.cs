@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace X13.UI {
   internal class veInteger: Xceed.Wpf.Toolkit.LongUpDown, IValueEditor {
-    public static IValueEditor Create(ValueControl owner, JSC.JSValue schema) {
+    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
       return new veInteger(owner, schema);
     }
 
-    private ValueControl _owner;
+    private InBase _owner;
     private long _oldValue;
 
-    public veInteger(ValueControl owner, JSC.JSValue schema) {
+    public veInteger(InBase owner, JSC.JSValue schema) {
       _owner = owner;
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
@@ -25,7 +25,7 @@ namespace X13.UI {
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
       base.Background = System.Windows.Media.Brushes.Azure;
-      ValueChanged(_owner.valueRaw);
+      ValueChanged(_owner.value);
       SchemaChanged(schema);
     }
     public new void ValueChanged(JSC.JSValue value) {
@@ -51,10 +51,10 @@ namespace X13.UI {
     private void Publish() {
       if(base.Value.HasValue) {
         if(_oldValue != base.Value.Value) {
-          _owner.valueRaw = new JSL.Number(base.Value.Value);
+          _owner.value = new JSL.Number(base.Value.Value);
         }
       } else {
-        _owner.valueRaw = JSC.JSValue.Null;
+        _owner.value = JSC.JSValue.Null;
       }
     }
     private void ve_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) {

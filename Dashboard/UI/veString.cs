@@ -1,6 +1,6 @@
 ﻿using JSC = NiL.JS.Core;
 using JSL = NiL.JS.BaseLibrary;
-using System;
+using System; 
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,14 +9,14 @@ using System.Windows.Controls;
 
 namespace X13.UI {
   class veString : TextBox, IValueEditor {
-    public static IValueEditor Create(ValueControl owner, JSC.JSValue schema) {
+    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
       return new veString(owner, schema);
     }
 
-    private ValueControl _owner;
+    private InBase _owner;
     private string _oldValue;
 
-    public veString(ValueControl owner, JSC.JSValue schema) {
+    public veString(InBase owner, JSC.JSValue schema) {
       _owner = owner;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
@@ -25,7 +25,7 @@ namespace X13.UI {
       base.GotFocus += ve_GotFocus;
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
-      ValueChanged(_owner.valueRaw);
+      ValueChanged(_owner.value);
       SchemaChanged(schema);
     }
 
@@ -43,7 +43,7 @@ namespace X13.UI {
 
     private void Publish() {
       if(_oldValue != base.Text) {
-        _owner.valueRaw = new JSL.String(base.Text);
+        _owner.value = new JSL.String(base.Text);
       }
     }
 

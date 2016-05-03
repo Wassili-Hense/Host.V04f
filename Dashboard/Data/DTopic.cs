@@ -14,7 +14,6 @@ namespace X13.Data {
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     private JSC.JSValue _value;
-    private Schema _schemaOriginal;
     private DTopic _schemaTopic;
     private int _schemaRequsted;
 
@@ -34,14 +33,14 @@ namespace X13.Data {
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }
-    public Schema schema {
+    public JSC.JSValue schema {
       get {
         if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1)==0) {
           var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr, false);
           task.ContinueWith(ExtractSchema);
           return null;
         } else {
-          return _schemaTopic == null ? null : _schemaTopic._schemaOriginal;
+          return _schemaTopic == null ? null : _schemaTopic._value;
         }
       }
     }
@@ -70,9 +69,6 @@ namespace X13.Data {
     private void ValuePublished(JSC.JSValue val) {
       if(!JSC.JSValue.Equals(_value, val)) {
         _value = val;
-        if(schemaStr == "schema" && _value != null && _value.ValueType == JSC.JSValueType.Object && _value.Value != null) {
-          this._schemaOriginal = new Schema(_value);
-        }
         PropertyChangedReise(valueString);
       }
     }
@@ -88,7 +84,6 @@ namespace X13.Data {
             this._schemaTopic = t.Result;
             this._schemaTopic.PropertyChanged += _schemaTopic_PropertyChanged;
             PropertyChangedReise(schemaString);
-            PropertyChangedReise("view");
           }
         }
       }

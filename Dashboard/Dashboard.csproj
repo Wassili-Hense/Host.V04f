@@ -82,16 +82,17 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Data\NPC_UI.cs" />
-    <Compile Include="Data\Schema.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
+    <Compile Include="UI\InBase.cs" />
     <Compile Include="UI\InspectorForm.xaml.cs">
       <DependentUpon>InspectorForm.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\inTopic.cs" />
+    <Compile Include="UI\InValue.cs" />
     <Compile Include="UI\IValueEditor.cs" />
     <Compile Include="UI\UIDocument.xaml.cs">
       <DependentUpon>UIDocument.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\ValueControl.cs" />
     <Compile Include="UI\veDateTimePicker.cs" />
     <Compile Include="UI\veDefault.cs" />
     <Compile Include="UI\veDouble.cs" />

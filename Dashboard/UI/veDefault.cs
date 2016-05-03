@@ -17,10 +17,10 @@ using System.Windows.Shapes;
 
 namespace X13.UI {
   internal class veDefault : TextBlock, IValueEditor {
-    public veDefault(ValueControl owner, JSC.JSValue schema) {
+    public veDefault(InBase owner, JSC.JSValue schema) {
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
-      ValueChanged(owner.valueRaw);
+      ValueChanged(owner.value);
     }
 
     public void ValueChanged(JSC.JSValue value) {

@@ -21,19 +21,19 @@ using System.ComponentModel;
 
 namespace X13.UI {
   public partial class InspectorForm : UserControl {
-    private static SortedList<string, Func<ValueControl, JSC.JSValue, IValueEditor>> _editors;
+    private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
 
     static InspectorForm(){
-      _editors=new SortedList<string,Func<ValueControl,JSC.JSValue,IValueEditor>>();
+      _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Boolean"] = veSliderBool.Create;
       _editors["Integer"] = veInteger.Create;
       _editors["Double"] = veDouble.Create;
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
     }
-    public static IValueEditor GetEdititor(string view, ValueControl owner, JSC.JSValue schema) {
+    public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue schema) {
       IValueEditor rez;
-      Func<ValueControl, JSC.JSValue, IValueEditor> ct;
+      Func<InBase, JSC.JSValue, IValueEditor> ct;
       if(_editors.TryGetValue(view, out ct) && ct!=null) {
         rez = ct(owner, schema);
       }else{
@@ -42,50 +42,19 @@ namespace X13.UI {
       return rez;
     }
 
-    public InspectorForm(DTopic data) {
-      valueVC = new ObservableCollection<ValueControl>();
-      this.data = data;
-      if(this.data!=null){
-        this.data.PropertyChanged += data_PropertyChanged;
-      }
-      var v = new ValueControl(this, null, null, data.value);
-      if(valueVC.Count == 0) {
-        valueVC.Add(v);
-      } else {
-        valueVC[0] = v;
-      }
+    private InBase[] valueVC;
 
+    public InspectorForm(DTopic data) {
+      valueVC = new InBase[2];
+      this.data = data;
+      valueVC[0] = new InValue(data);
+      valueVC[1] = new InTopic(data, true);
       InitializeComponent();
 	  this.tvValue.ItemsSource=valueVC;
-	  this.icChildren.DataContext=this;
     }
 
     #region Properies
-    public ObservableCollection<ValueControl> valueVC { get; private set; }
 	public DTopic data { get; private set; }
-    public void DataChanged(JSC.JSValue val) {
-      data.SetValue(val).Wait();
-      valueVC[0].UpdateData(data.value);
-    }
-    public void ValueControl_GotFocus(object sender, RoutedEventArgs e) {
-      DependencyObject cur;
-      TreeViewItem parent;
-      DependencyObject parentObject;
-
-      for(cur = sender as DependencyObject; cur != null; cur = parentObject) {
-        parentObject = VisualTreeHelper.GetParent(cur);
-        if((parent = parentObject as TreeViewItem) != null) {
-          parent.IsSelected = true;
-          break;
-        }
-      }
-    }
-
-    private void data_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      if(e.PropertyName == "schema") {
-        valueVC[0].UpdateSchema((data==null || data.schema==null)?null:data.schema.data);
-      }
-    }
     #endregion Properies
 
     #region Children
