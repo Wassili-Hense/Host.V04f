@@ -29,7 +29,16 @@ namespace X13.Data {
       this.path = "/";
     }
     public Task<DTopic> GetAsync(string path, bool create) {
-      var req = new TopicReq((!string.IsNullOrEmpty(path) && path[0] == '/') ? _client.root : this, path, create);
+      DTopic ts;
+      if(string.IsNullOrEmpty(path)) {
+        ts = this;
+      } else if(path[0] == '/') {
+        ts = _client.root;
+      } else {
+        ts = this;
+        path = this == _client.root ? ("/" + path) : (this.path + "/" + path);
+      }
+      var req = new TopicReq(ts, path, create);
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }
@@ -179,8 +188,10 @@ namespace X13.Data {
                 continue;
               }
               aName = aPath.Substring(_cur.path.Length == 1 ? 1 : (_cur.path.Length + 1));
-              next = new DTopic(_cur, aName);
-              _cur.children.AddItem(next);
+              if(!_cur.children.TryGetValue(aName, out next) || next == null) {
+                next = new DTopic(_cur, aName);
+                _cur.children.AddItem(next);
+              }
             } else {
               next = _cur;
             }
@@ -213,7 +224,11 @@ namespace X13.Data {
 
       public void Process(DWorkspace ws) {
         if(!_complete) {
-          _topic._client.Publish(_topic.path, _value, this);
+          if(_value==null?_topic.value!=null:_value.Equals(_topic.value)) {
+            _tcs.SetResult(true);
+          } else {
+            _topic._client.Publish(_topic.path, _value, this);
+          }
         }
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {

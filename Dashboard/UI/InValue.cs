@@ -24,6 +24,7 @@ namespace X13.UI {
       _value = _data.value;
       UpdateSchema(_data.schema);
       UpdateData(_data.value);
+      _data.PropertyChanged+=_data_PropertyChanged;
     }
 
     private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema) {
@@ -132,7 +133,13 @@ namespace X13.UI {
       }
     }
     private void _data_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
-
+      if(e.PropertyName == "schema") {
+        UpdateSchema(_data.schema);
+      } else if(e.PropertyName == "value") {
+        _value = _data.value;
+        UpdateSchema(_data.schema);
+        UpdateData(_data.value);
+      }
     }
 
     #region IDisposable Member

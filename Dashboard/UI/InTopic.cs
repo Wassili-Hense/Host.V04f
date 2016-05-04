@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
@@ -34,12 +35,16 @@ namespace X13.UI {
     public ObservableCollection<InTopic> items {
       get {
         if(_items == null) {
-          _populated=true;
+          _populated = true;
           if(_owner.children != null) {
             _owner.children.CollectionChanged += children_CollectionChanged;
             _items = new ObservableCollection<InTopic>();
             foreach(var t in _owner.children) {
-              _items.Add(new InTopic(t, false));
+              t.GetAsync(null, false).ContinueWith((tt) => {
+                if(tt.IsCompleted && tt.Result != null) {
+                  DWorkspace.ui.BeginInvoke(new Action(() => _items.Add(new InTopic(tt.Result, false))));
+                }
+              });
             }
           }
         }
@@ -48,6 +53,23 @@ namespace X13.UI {
     }
 
     private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
+      if(!_populated) {
+        return;
+      }
+      if(e.Action == NotifyCollectionChangedAction.Remove) {
+        foreach(var t in e.OldItems.Cast<DTopic>()) {
+          var n = _items.FirstOrDefault(z => z._owner == t);
+          if(n != null) {
+            _items.Remove(n);
+          }
+        }
+      } else if(e.Action == NotifyCollectionChangedAction.Add) {
+        int index = e.NewStartingIndex;
+        foreach(var t in e.NewItems.Cast<DTopic>()) {
+          _items.Insert(index++, new InTopic(t, false));
+        }
+        return;
+      }
       throw new NotImplementedException();
     }
 
@@ -66,7 +88,11 @@ namespace X13.UI {
             _owner.children.CollectionChanged += children_CollectionChanged;
             _items = new ObservableCollection<InTopic>();
             foreach(var t in _owner.children) {
-              _items.Add(new InTopic(t, false));
+              t.GetAsync(null, false).ContinueWith((tt) => {
+                if(tt.IsCompleted && tt.Result != null) {
+                  DWorkspace.ui.BeginInvoke(new Action(() => _items.Add(new InTopic(tt.Result, false))));
+                }
+              });
             }
             PropertyChangedReise("items");
           }
