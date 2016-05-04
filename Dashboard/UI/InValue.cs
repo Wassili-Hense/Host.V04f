@@ -7,6 +7,8 @@ using JSL = NiL.JS.BaseLibrary;
 using JSC = NiL.JS.Core;
 using System.Collections.ObjectModel;
 using X13.Data;
+using System.Windows.Controls;
+using System.Windows;
 
 namespace X13.UI {
   public class InValue : InBase, IDisposable {
@@ -66,7 +68,7 @@ namespace X13.UI {
         }
       }
     }
-    public void UpdateData(JSC.JSValue val) {
+    private void UpdateData(JSC.JSValue val) {
       _value = val;
       if(_value.ValueType == JSC.JSValueType.Object) {
         InValue vc;
@@ -141,6 +143,59 @@ namespace X13.UI {
         UpdateData(_data.value);
       }
     }
+
+    #region ContextMenu
+    public override List<MenuItem> MenuItems {
+      get {
+        var l = new List<MenuItem>();
+        JSC.JSValue f;
+        MenuItem mi;
+        if(_schema != null && (f = _schema["Properties"]).ValueType==JSC.JSValueType.Object) {
+          MenuItem ma = new MenuItem() { Header = "Add" };
+          foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+            if(_items.Any(z => z.name == kv.Key)) {
+              continue;
+            }
+            mi = new MenuItem();
+            mi.Header = kv.Key;
+            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+            }
+            mi.Tag = kv.Value;
+            mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
+          }
+          if(ma.HasItems) {
+            l.Add(ma);
+          }
+        }
+        mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
+        if(_parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f)) {
+          mi.Click += miDelete_Click;
+        } else {
+          mi.IsEnabled = false;
+        }
+        l.Add(mi);
+        return l;
+      }
+    }
+
+    private void miAdd_Click(object sender, RoutedEventArgs e) {
+      var mi = sender as MenuItem;
+      if(mi != null) {
+        var name = mi.Header as string;
+        var decl = mi.Tag as JSC.JSValue;
+        if(name != null && decl != null) {
+          this.ChangeValue(name, decl["default"]);
+        }
+      }
+    }
+    private void miDelete_Click(object sender, RoutedEventArgs e) {
+      if(_parent != null) {
+        _parent.ChangeValue(name, null);
+      }
+    }
+    #endregion ContextMenu
 
     #region IDisposable Member
     public void Dispose() {

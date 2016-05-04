@@ -6,12 +6,22 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using X13.Data;
 using JSC = NiL.JS.Core;
 using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.UI {
   public class InTopic : InBase, IDisposable {
+    #region default children
+    private static JSC.JSObject DEFS_String;
+    static InTopic() {
+      DEFS_String = JSC.JSObject.CreateObject();
+      DEFS_String["mask"] = @"^[^\\\x00-\x1F\x7F]+$";
+      DEFS_String["schema"] = "String";
+    }
+    #endregion default children
+
     private DTopic _owner;
     private bool _root;
     private ObservableCollection<InTopic> _items;
@@ -39,13 +49,7 @@ namespace X13.UI {
           if(_owner.children != null) {
             _owner.children.CollectionChanged += children_CollectionChanged;
             _items = new ObservableCollection<InTopic>();
-            foreach(var t in _owner.children) {
-              t.GetAsync(null, false).ContinueWith((tt) => {
-                if(tt.IsCompleted && tt.Result != null) {
-                  DWorkspace.ui.BeginInvoke(new Action(() => _items.Add(new InTopic(tt.Result, false))));
-                }
-              });
-            }
+            InsertItems(0, _owner.children.ToArray());
           }
         }
         return _items;
@@ -64,13 +68,16 @@ namespace X13.UI {
           }
         }
       } else if(e.Action == NotifyCollectionChangedAction.Add) {
-        int index = e.NewStartingIndex;
-        foreach(var t in e.NewItems.Cast<DTopic>()) {
-          _items.Insert(index++, new InTopic(t, false));
-        }
+        InsertItems(e.NewStartingIndex, e.NewItems.Cast<DTopic>().ToArray());
         return;
       }
       throw new NotImplementedException();
+    }
+    private async void InsertItems(int idx, DTopic[] its) {
+      foreach(var t in its) {
+        var tt = await t.GetAsync(null, false);
+        _items.Insert(idx++, new InTopic(tt, false));
+      }
     }
 
     private void _owner_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -87,13 +94,7 @@ namespace X13.UI {
           if(_items == null) {
             _owner.children.CollectionChanged += children_CollectionChanged;
             _items = new ObservableCollection<InTopic>();
-            foreach(var t in _owner.children) {
-              t.GetAsync(null, false).ContinueWith((tt) => {
-                if(tt.IsCompleted && tt.Result != null) {
-                  DWorkspace.ui.BeginInvoke(new Action(() => _items.Add(new InTopic(tt.Result, false))));
-                }
-              });
-            }
+            InsertItems(0, _owner.children.ToArray());
             PropertyChangedReise("items");
           }
         } else if(_items != null) {
@@ -102,6 +103,46 @@ namespace X13.UI {
         }
       }
     }
+
+    #region ContextMenu
+    public override List<MenuItem> MenuItems {
+      get {
+        var l = new List<MenuItem>();
+        JSC.JSValue f;
+        MenuItem mi, ma = new MenuItem() { Header = "Add" };
+        if(_schema != null && (f = _schema["Children"]).ValueType == JSC.JSValueType.Object) {
+
+          foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+            if(_items.Any(z => z.name == kv.Key)) {
+              continue;
+            }
+            mi = new MenuItem();
+            mi.Header = kv.Key;
+            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+            }
+            mi.Tag = kv.Value;
+            //mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
+          }
+        } else {
+
+        }
+        if(ma.HasItems) {
+          l.Add(ma);
+        }
+
+        mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
+        if(_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) {
+          //mi.Click += miDelete_Click;
+        } else {
+          mi.IsEnabled = false;
+        }
+        l.Add(mi);
+        return l;
+      }
+    }
+    #endregion ContextMenu
 
     #region IDisposable Member
     public void Dispose() {

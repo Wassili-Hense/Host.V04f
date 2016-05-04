@@ -28,6 +28,9 @@ namespace X13.UI {
       X13.Data.DWorkspace.ui = this.Dispatcher;
       InitializeComponent();
       dmMain.DataContext = DWorkspace.This;
+#if !DEBUG
+      System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
+#endif
     }
 
     private void Window_Loaded(object sender, RoutedEventArgs e) {

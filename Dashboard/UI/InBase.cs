@@ -22,6 +22,7 @@ namespace X13.UI {
     public IValueEditor editor { get; protected set; }
 
     public abstract JSC.JSValue value { get; set; }
+    public abstract List<MenuItem> MenuItems { get; }
     public void GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       TreeViewItem parent;
@@ -35,6 +36,7 @@ namespace X13.UI {
         }
       }
     }
+
     protected virtual void UpdateSchema(JSC.JSValue schema) {
       this._schema = schema;
 

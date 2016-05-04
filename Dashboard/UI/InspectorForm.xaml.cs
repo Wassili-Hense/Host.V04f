@@ -69,5 +69,19 @@ namespace X13.UI {
     }
 
     #endregion Children
+    private void Grid_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
+      var gr = sender as FrameworkElement;
+      if(gr != null) {
+        var d = gr.DataContext as InBase;
+        if(d != null) {
+          var mi = d.MenuItems;
+          if(mi != null && mi.Count() > 0) {
+            gr.ContextMenu.ItemsSource = mi;
+            return;
+          }
+        }
+      }
+      e.Handled = true;
+    }
   }
 }
