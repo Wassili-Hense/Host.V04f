@@ -42,10 +42,10 @@ namespace X13.Data {
           header = "42";
         } else {
           req.msgId = System.Threading.Interlocked.Increment(ref _respCnt);
+          lock(_reqs) {
+            _reqs.AddFirst(req);
+          }
           header = "42" + req.msgId.ToString();
-        }
-        lock(_reqs) {
-          _reqs.AddFirst(req);
         }
         this.Send(header + JSL.JSON.stringify(req.data, null, null));
       //} else if((resp = msg as Response) != null) {
@@ -184,9 +184,9 @@ namespace X13.Data {
               _st = State.Idle;
               _callback(Event.Disconnected, null);
               break;
-            //case '2':  // EVENT
-            //  _callback(Event.Event, new Request(msgId, jo));
-            //  break;
+            case '2':  // EVENT
+              _callback(Event.Event, new DTopic.Event(jo));
+              break;
             case '3':  // ACK
               {
                 Request req;

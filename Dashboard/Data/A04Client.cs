@@ -44,6 +44,12 @@ namespace X13.Data {
       arr[2] = value;
       this.Send(new SioClient.Request(0, arr, req));
     }
+    public void Delete(string path) {
+      var arr = new JSL.Array(2);
+      arr[0] = 10;
+      arr[1] = path;
+      this.Send(new SioClient.Request(-1, arr, null));
+    }
 
     public void Close() {
       if(_sio != null) {
@@ -81,6 +87,14 @@ namespace X13.Data {
       case SioClient.Event.Error:
         if(msg != null) {
           DWorkspace.This.AddMsg(msg);
+        }
+        break;
+      case SioClient.Event.Event: {
+          var ev = msg as DTopic.Event;
+          if(ev != null) {
+            ev.client = this;
+            DWorkspace.This.AddMsg(ev);
+          }
         }
         break;
       }

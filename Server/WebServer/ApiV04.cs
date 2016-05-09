@@ -9,8 +9,11 @@ using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.WebServer {
   internal sealed class ApiV04 : SIO_Connection {
+    private SortedSet<Topic> _subscriptions;
+
     public ApiV04()
       : base() {
+      _subscriptions = new SortedSet<Topic>();
       base.Register(4, Subscribe);
       base.Register(6, SetValue);
       base.Register(8, Create);
@@ -33,23 +36,49 @@ namespace X13.WebServer {
         if((req & 2) == 2) {
           resp.AddRange(parent.children);
         }
-      }
-      var arr = new JSL.Array();
-      foreach(var t in resp) {
-        JSL.Array r;
-        if((req & 1) == 1 && t == parent) {
-          r = new JSL.Array(4);
-          r[3] = t.valueRaw;
-        } else {
-          r = new JSL.Array(3);
+        var arr = new JSL.Array();
+        foreach(var t in resp) {
+          if(_subscriptions.Contains(t)) {
+            if((req & 1) != 1 || t != parent) {
+              continue;
+            }
+          } else {
+            _subscriptions.Add(t);
+            t.Subscribe(SubscriptionChanged, SubRec.SubMask.Once | SubRec.SubMask.Chldren, false);
+          }
+          JSL.Array r;
+          if((req & 1) == 1 && t == parent) {
+            r = new JSL.Array(4);
+            r[3] = t.valueRaw;
+          } else {
+            r = new JSL.Array(3);
+          }
+          r[0] = new JSL.String(t.path);
+          r[1] = new JSL.Number((t.children.Any() ? 16 : 0) | 15);
+          var pr = t.schema;
+          r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
+          arr.Add(r);
         }
-        r[0] = new JSL.String(t.path);
-        r[1] = new JSL.Number((t.children.Any() ? 16 : 0) | 15);
-        var pr = t.schema;
-        r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
-        arr.Add(r);
+        args.Response(arr);
+      } else {
+        args.Response(JSC.JSObject.Null);
       }
-      args.Response(arr);
+    }
+
+    private void SubscriptionChanged(SubRec s, Perform p) {
+      if(s.path == p.src.path) {
+        if(p.art == Perform.Art.changed) {
+          var pr = p.src.schema;
+          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+        } else if(p.art == Perform.Art.remove) {
+          base.Emit(9, p.src.path);
+        }
+      } else {
+        if(p.art == Perform.Art.create) {
+          var pr = p.src.schema;
+          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+        }
+      }
     }
     /// <summary>set topics value</summary>
     /// <param name="args">
@@ -143,6 +172,13 @@ namespace X13.WebServer {
         }
         t.Move(p, nname);
       }
+    }
+
+    protected override void OnClose(WebSocketSharp.CloseEventArgs e) {
+      foreach(var t in _subscriptions) {
+        t.Unsubscribe(SubscriptionChanged, SubRec.SubMask.Once | SubRec.SubMask.Chldren, false);
+      }
+      base.OnClose(e);
     }
   }
 }

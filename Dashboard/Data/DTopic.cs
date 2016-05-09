@@ -16,6 +16,7 @@ namespace X13.Data {
     private JSC.JSValue _value;
     private DTopic _schemaTopic;
     private int _schemaRequsted;
+    private bool _disposed;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
@@ -44,7 +45,7 @@ namespace X13.Data {
     }
     public JSC.JSValue schema {
       get {
-        if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1)==0) {
+        if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1) == 0) {
           var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr, false);
           task.ContinueWith(ExtractSchema);
           return null;
@@ -60,7 +61,7 @@ namespace X13.Data {
     public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
     public JSC.JSValue value {
       get {
-        if(_value == null && parent!=null) {
+        if(_value == null && parent != null) {
           var req = new TopicReq(parent, this.name, false);
           DWorkspace.This.AddMsg(req);
           return JSC.JSValue.NotExists;
@@ -74,6 +75,10 @@ namespace X13.Data {
       return ds.Task;
     }
     public DChildren children { get; private set; }
+
+    public void Delete() {
+      _client.Delete(this.path);
+    }
 
     private void ValuePublished(JSC.JSValue val) {
       if(!JSC.JSValue.Equals(_value, val)) {
@@ -129,6 +134,8 @@ namespace X13.Data {
         if(_path == null || _path.Length <= _cur.path.Length) {
           if(_cur._value != null) {
             _tcs.SetResult(_cur);
+          } else if(_cur._disposed) {
+            _tcs.SetResult(null);
           } else {
             _cur._client.Request(_cur.path, 3, this);
           }
@@ -167,9 +174,20 @@ namespace X13.Data {
           bool childrenPC = false;
           DTopic next;
           JSL.Array ca = value as JSL.Array, cc;
-          if(ca == null || (int)ca.length != 1 || (cc = ca[0].Value as JSL.Array) == null) {
+          if(ca == null || (int)ca.length != 1) {
             _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
             return;
+          }
+          if(ca[0].IsNull) {
+            _cur._disposed = true;
+            return;
+          }
+          if((cc = ca[0].Value as JSL.Array) == null) {
+            _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
+            return;
+          }
+          if((int)cc.length == 0) {
+            _cur._flags &= ~16;
           }
           string aName, aPath;
           int aFlags;
@@ -224,7 +242,7 @@ namespace X13.Data {
 
       public void Process(DWorkspace ws) {
         if(!_complete) {
-          if(_value==null?_topic.value!=null:_value.Equals(_topic.value)) {
+          if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
             _tcs.SetResult(true);
           } else {
             _topic._client.Publish(_topic.path, _value, this);
@@ -239,6 +257,66 @@ namespace X13.Data {
           _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));
         }
         _complete = true;
+      }
+    }
+    internal class Event : INotMsg {
+      private JSL.Array _data;
+      public A04Client client;
+
+      public Event(JSL.Array data) {
+        this._data = data;
+      }
+      public void Process(DWorkspace ws) {
+        string path;
+        if(_data == null || (int)_data.length < 2 || _data[0].ValueType != JSC.JSValueType.Double || _data[1].ValueType != JSC.JSValueType.String || string.IsNullOrEmpty(path = _data[1].Value as string)) {
+          Log.Warning("{0} BAD Event - {1}", client.url.GetLeftPart(UriPartial.Authority), _data == null ? "null" : JSL.JSON.stringify(_data, null, "  "));
+          return;
+        }
+        int cmd = (int)_data[0];
+        if(cmd != 5 && cmd != 9) {  // 5 - publish, 9 - delete
+          Log.Warning("{0} Unknown Event - {1}", client.url.GetLeftPart(UriPartial.Authority), _data == null ? "null" : JSL.JSON.stringify(_data, null, "  "));
+          return;
+        } else if(cmd == 5) {
+          if((int)_data.length != 5 || _data[2].ValueType != JSC.JSValueType.Double) {
+            Log.Warning("{0} Event: BAD format - {1}", client.url.GetLeftPart(UriPartial.Authority), _data == null ? "null" : JSL.JSON.stringify(_data, null, "  "));
+            return;
+          }
+        }
+
+        bool childrenPC = false;
+
+        DTopic cur = client.root, next;
+        var ns = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+        for(int i = 0; i < ns.Length; i++) {
+          if(cur.children == null) {
+            if(cmd == 5 && i == ns.Length - 2) {
+              cur.children = new DChildren();
+              childrenPC = true;
+            } else {
+              return; // do nothing
+            }
+          }
+          if(!cur.children.TryGetValue(ns[i], out next) || next == null) {
+            next = new DTopic(cur, ns[i]);
+            cur.children.AddItem(next);
+          }
+          if(i == ns.Length - 1) {
+            if(cmd == 5) {
+              next._flags = (int)_data[2];
+              next.schemaStr = _data[3].Value as string;
+              next.ValuePublished(_data[4]);
+            } else {
+              next._disposed = true;
+              cur.children.Remove(next);
+            }
+          }
+          if(childrenPC) {
+            cur.PropertyChangedReise(DTopic.itemsString);
+          }
+          cur = next;
+        }
+      }
+      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
       }
     }
   }

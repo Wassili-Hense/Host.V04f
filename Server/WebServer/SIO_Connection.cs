@@ -175,14 +175,16 @@ namespace X13.WebServer {
         EventArguments ea=new EventArguments(conn, msgId, jo);
         try {
           f(ea);
-          if(ea._msgId>=0 || (ea._error && ea._response!=null)) {
-            tmpS=ea._response==null?"[]":JSL.JSON.stringify(ea._response, null, null);
-            conn.Send(string.Concat("4", ea._error?"4":"3", msgId<0?string.Empty:msgId.ToString(), tmpS));
+          if(ea._msgId >= 0 || (ea._error && ea._response != null)) {
+            tmpS = ea._response == null ? "[]" : JSL.JSON.stringify(ea._response, null, null);
+            conn.Send(string.Concat("4", ea._error ? "4" : "3", msgId < 0 ? string.Empty : msgId.ToString(), tmpS));
             if(ea._error) {
               X13.Log.Warning("{0}ERROR: {1}", sb, tmpS);
             } else {
               X13.Log.Debug("{0}RESP: {1}", sb, tmpS);
             }
+          } else {
+            X13.Log.Debug("{0}", sb, tmpS);
           }
         }
         catch(Exception ex) {

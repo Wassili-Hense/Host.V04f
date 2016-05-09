@@ -52,6 +52,10 @@ namespace X13.UI {
         Log.Warning("{0}", t.Exception.Message);
       } else if(t.IsCompleted) {
 		_data = t.Result;
+        if(_data == null) {  // topic deleted
+          DWorkspace.This.Close(this);
+          return;
+        }
         _path = _data.fullPath;
 		OnPropertyChanged("data");
 

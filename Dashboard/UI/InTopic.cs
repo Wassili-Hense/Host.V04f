@@ -17,8 +17,9 @@ namespace X13.UI {
     private static JSC.JSObject DEFS_String;
     static InTopic() {
       DEFS_String = JSC.JSObject.CreateObject();
-      DEFS_String["mask"] = @"^[^\\\x00-\x1F\x7F]+$";
+      DEFS_String["mask"] = true;
       DEFS_String["schema"] = "String";
+      DEFS_String["default"] = "";
     }
     #endregion default children
 
@@ -67,6 +68,7 @@ namespace X13.UI {
             _items.Remove(n);
           }
         }
+        return;
       } else if(e.Action == NotifyCollectionChangedAction.Add) {
         InsertItems(e.NewStartingIndex, e.NewItems.Cast<DTopic>().ToArray());
         return;
@@ -76,7 +78,9 @@ namespace X13.UI {
     private async void InsertItems(int idx, DTopic[] its) {
       foreach(var t in its) {
         var tt = await t.GetAsync(null, false);
-        _items.Insert(idx++, new InTopic(tt, false));
+        if(tt != null) {
+          _items.Insert(idx++, new InTopic(tt, false));
+        }
       }
     }
 
@@ -108,12 +112,12 @@ namespace X13.UI {
     public override List<MenuItem> MenuItems {
       get {
         var l = new List<MenuItem>();
-        JSC.JSValue f;
-        MenuItem mi, ma = new MenuItem() { Header = "Add" };
+        JSC.JSValue f, tmp1;
+        MenuItem mi;
+        MenuItem ma = new MenuItem() { Header = "Add" };
         if(_schema != null && (f = _schema["Children"]).ValueType == JSC.JSValueType.Object) {
-
           foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-            if(_items.Any(z => z.name == kv.Key)) {
+            if(_items.Any(z => z.name == kv.Key && ((tmp1 = kv.Value["mask"]).ValueType != JSC.JSValueType.Boolean || (bool)tmp1 != true))) {
               continue;
             }
             mi = new MenuItem();
@@ -122,25 +126,36 @@ namespace X13.UI {
               mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
             }
             mi.Tag = kv.Value;
-            //mi.Click += miAdd_Click;
+            mi.Click += miAdd_Click;
             ma.Items.Add(mi);
           }
         } else {
-
+          mi = new MenuItem() { Header = "String", Icon = new Image() { Source = App.GetIcon("String") }, Tag = InTopic.DEFS_String };
+          mi.Click += miAdd_Click;
+          ma.Items.Add(mi);
         }
         if(ma.HasItems) {
           l.Add(ma);
         }
-
         mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
         if(_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) {
-          //mi.Click += miDelete_Click;
+          mi.Click += miDelete_Click;
         } else {
           mi.IsEnabled = false;
         }
         l.Add(mi);
         return l;
       }
+    }
+
+    private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {
+      if(!IsExpanded) {
+        IsExpanded = true;
+        base.PropertyChangedFunc("IsExpanded");
+      }
+    }
+    private void miDelete_Click(object sender, System.Windows.RoutedEventArgs e) {
+      _owner.Delete();
     }
     #endregion ContextMenu
 
