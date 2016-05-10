@@ -1,7 +1,7 @@
 <root head='/' saved='True'>
   <item name='etc' saved='True'>
     <item name='schema' saved='True'>
-      <item name='Null'    value='{"$schema":"schema","view":"Null","default":null   }' saved='True' />
+      <!--item name='Null'    value='{"$schema":"schema","view":"Null","default":null   }' saved='True' /-->
       <item name='Boolean' value='{"$schema":"schema","view":"Boolean","icon":"Boolean","default":false}' saved='True' />
       <item name='Integer' value='{"$schema":"schema","view":"Integer","icon":"Integer","default":0}' saved='True' />
       <item name='Double'  value='{"$schema":"schema","view":"Double" ,"icon":"Double","default":0.0 }' saved='True' />
@@ -9,9 +9,9 @@
       <item name='Date'    value='{"$schema":"schema","view":"Date"   ,"icon":"Date","default":"2016-04-18T13:40:36.010Z"}' saved='True' />
       <item name='schema'  value='{"$schema":"schema","view":"Object" ,"icon":"schema", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":""}, "$schema":{ "view":"String", "default":"schema", "required":true} } }' saved='True' /> 
     </item>
-    <item name='UI' saved='True'>
+    <!--item name='UI' saved='True'>
       <item name='Topic' value='{"$schema":"view","code":"{displayName:\"UI.test\",render:function(){return React.DOM.label(null,\"Hello World!!!\");}}","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjEwMPRyoQAAAQdJREFUOE+lk0EKwkAMRefAXsEruBDcFARBXImCuCgIWhARwYUrRVpBREHmFKM/8qfpdIqCi0Bp816SacY458w/Yay10Zh2jq7byiTw3JRXg5GMOO2sxGH1CbwbtPc1kRc0gZBsZ0+3Ht9dmhQiQlfsyHwDNUwBu0FHBjZUwUu2SwhVWVlXRy5ywHoB58TH5fAqoWEeZja6CRwVQIIEjgWJBvGdMOS1DjaThx+DIv03CHPEqAASjsDfGVZG9XnvXO0AoIZ5aNyF8kBzgdMkLwWooAWAQwEAgnpLZZH0oRHWAswMeNG/+PV+vxO2ssrcfcJYFIygwfBORC+SvkR8/vky6US9802CF9HRD6t4GKDQAAAAAElFTkSuQmCC"}' saved='True' />
-    </item>
+    </item-->
   </item>
   <item name='Test' saved='True'>
     <item name='Alpha' value='42' saved='True'>

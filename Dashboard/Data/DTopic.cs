@@ -29,7 +29,7 @@ namespace X13.Data {
       this.name = _client.url.ToString().TrimEnd('/');
       this.path = "/";
     }
-    public Task<DTopic> GetAsync(string path, bool create) {
+    public Task<DTopic> GetAsync(string path) {
       DTopic ts;
       if(string.IsNullOrEmpty(path)) {
         ts = this;
@@ -39,14 +39,14 @@ namespace X13.Data {
         ts = this;
         path = this == _client.root ? ("/" + path) : (this.path + "/" + path);
       }
-      var req = new TopicReq(ts, path, create);
+      var req = new TopicReq(ts, path);
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }
     public JSC.JSValue schema {
       get {
         if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1) == 0) {
-          var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr, false);
+          var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr);
           task.ContinueWith(ExtractSchema);
           return null;
         } else {
@@ -62,7 +62,7 @@ namespace X13.Data {
     public JSC.JSValue value {
       get {
         if(_value == null && parent != null) {
-          var req = new TopicReq(parent, this.name, false);
+          var req = new TopicReq(parent, this.name);
           DWorkspace.This.AddMsg(req);
           return JSC.JSValue.NotExists;
         }
@@ -76,6 +76,11 @@ namespace X13.Data {
     }
     public DChildren children { get; private set; }
 
+    public Task<DTopic> CreateAsync(string name, string schemaName, JSC.JSValue value) {
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value);
+      DWorkspace.This.AddMsg(req);
+      return req.Task;
+    }
     public void Delete() {
       _client.Delete(this.path);
     }
@@ -116,12 +121,22 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
+      private string _schemaName;
+      private JSC.JSValue _value;
       private TaskCompletionSource<DTopic> _tcs;
 
-      public TopicReq(DTopic cur, string path, bool create) {
+      public TopicReq(DTopic cur, string path) {
         this._cur = cur;
         this._path = path;
-        this._create = create;
+        this._create = false;
+        this._tcs = new TaskCompletionSource<DTopic>();
+      }
+      public TopicReq(DTopic cur, string path, string schemaName, JSC.JSValue value) {
+        this._cur = cur;
+        this._path = path;
+        this._create = true;
+        _schemaName = schemaName;
+        _value = value;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
       public Task<DTopic> Task { get { return _tcs.Task; } }
@@ -160,7 +175,11 @@ namespace X13.Data {
         }
         if(next == null) {
           if(_create) {
-            _cur._client.Create(_path.Substring(0, idx2), this);
+            if(_path.Length <= idx2) {
+              _cur._client.Create(_path.Substring(0, idx2), _schemaName, _value, this);
+            } else {
+              _cur._client.Create(_path.Substring(0, idx2), null, null, this);
+            }
           } else {
             _tcs.SetResult(null);
           }
@@ -186,13 +205,11 @@ namespace X13.Data {
             _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
             return;
           }
-          if((int)cc.length == 0) {
-            _cur._flags &= ~16;
-          }
           string aName, aPath;
           int aFlags;
           if(_cur.children == null) {
             _cur.children = new DChildren();
+            _cur._flags |= 16;
             childrenPC = true;
           }
           foreach(var cb in cc.Select(z => z.Value.Value as JSL.Array)) {
@@ -319,5 +336,6 @@ namespace X13.Data {
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
       }
     }
+
   }
 }

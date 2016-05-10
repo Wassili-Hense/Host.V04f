@@ -45,7 +45,7 @@ namespace X13.UI {
 
     private void RequestData(Uri url) {
       this.Cursor = Cursors.AppStarting;
-      DWorkspace.This.GetAsync(url, false).ContinueWith((t) => this.Dispatcher.BeginInvoke(new Action<Task<DTopic>>(this.DataUpd), t));
+      DWorkspace.This.GetAsync(url).ContinueWith((t) => this.Dispatcher.BeginInvoke(new Action<Task<DTopic>>(this.DataUpd), t));
     }
     private void DataUpd(Task<DTopic> t) {
       if(t.IsFaulted) {

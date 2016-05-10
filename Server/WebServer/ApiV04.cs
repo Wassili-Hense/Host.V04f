@@ -70,13 +70,13 @@ namespace X13.WebServer {
         if(p.art == Perform.Art.changed) {
           var pr = p.src.schema;
           base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
-        } else if(p.art == Perform.Art.remove) {
-          base.Emit(9, p.src.path);
         }
       } else {
         if(p.art == Perform.Art.create) {
           var pr = p.src.schema;
           base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+        } else if(p.art == Perform.Art.remove) {
+          base.Emit(9, p.src.path);
         }
       }
     }
@@ -107,21 +107,18 @@ namespace X13.WebServer {
     /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Create(EventArguments args) {
-      string path = args[1].ToString();
-      var t = Topic.root.Get(path, true);
+      if(args.Count != 4 || args[1].ValueType != JSC.JSValueType.String) {
+        args.Error("BAD request");
+      }
+      string path = args[1].Value as string;
+      var t = Topic.root.Create(path, _owner, args[2].Value as string, args[3]);
 
       var arr = new JSL.Array();
-      JSL.Array r;
-      if(t.valueRaw != null) {
-        r = new JSL.Array(4);
-        r[3] = t.valueRaw;
-      } else {
-        r = new JSL.Array(3);
-      }
+      JSL.Array r=new JSL.Array(4);
       r[0] = new JSL.String(t.path);
       r[1] = new JSL.Number((t.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
-      var pr = t.schema;
-      r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
+      r[2] = args[2];
+      r[3] = args[3];
       arr.Add(r);
       args.Response(arr);
     }

@@ -23,7 +23,7 @@ namespace X13.UI {
   public partial class InspectorForm : UserControl {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
 
-    static InspectorForm(){
+    static InspectorForm() {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Boolean"] = veSliderBool.Create;
       _editors["Integer"] = veInteger.Create;
@@ -34,9 +34,9 @@ namespace X13.UI {
     public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue schema) {
       IValueEditor rez;
       Func<InBase, JSC.JSValue, IValueEditor> ct;
-      if(_editors.TryGetValue(view, out ct) && ct!=null) {
+      if(_editors.TryGetValue(view, out ct) && ct != null) {
         rez = ct(owner, schema);
-      }else{
+      } else {
         rez = new veDefault(owner, schema);
       }
       return rez;
@@ -48,13 +48,13 @@ namespace X13.UI {
       valueVC = new InBase[2];
       this.data = data;
       valueVC[0] = new InValue(data);
-      valueVC[1] = new InTopic(data, true);
+      valueVC[1] = new InTopic(data, null);
       InitializeComponent();
-	  this.tvValue.ItemsSource=valueVC;
+      this.tvValue.ItemsSource = valueVC;
     }
 
     #region Properies
-	public DTopic data { get; private set; }
+    public DTopic data { get; private set; }
     #endregion Properies
 
     #region Children
@@ -74,7 +74,7 @@ namespace X13.UI {
       if(gr != null) {
         var d = gr.DataContext as InBase;
         if(d != null) {
-          var mi = d.MenuItems;
+          var mi = d.MenuItems();
           if(mi != null && mi.Count() > 0) {
             gr.ContextMenu.ItemsSource = mi;
             return;
@@ -83,5 +83,42 @@ namespace X13.UI {
       }
       e.Handled = true;
     }
+    private void Grid_ContextMenuClosing(object sender, ContextMenuEventArgs e) {
+      var gr = sender as FrameworkElement;
+      if(gr != null && gr.ContextMenu != null) {
+        gr.ContextMenu.ItemsSource = null;
+      }
+    }
+
+    private void tbItemName_Loaded(object sender, RoutedEventArgs e) {
+      (sender as TextBox).SelectAll();
+      (sender as TextBox).Focus();
+    }
+
+    private void tbItemName_PreviewKeyDown(object sender, KeyEventArgs e) {
+      TextBox tb;
+      InTopic tv;
+      if((tb = sender as TextBox) == null || (tv = tb.DataContext as InTopic) == null) {
+        return;
+      }
+      if(e.Key == Key.Escape) {
+        tv.FinishNameEdit(null);
+        e.Handled = true;
+      } else if(e.Key == Key.Enter) {
+        tv.FinishNameEdit(tb.Text);
+        e.Handled = true;
+      }
+    }
+
+    private void tbItemName_LostFocus(object sender, RoutedEventArgs e) {
+      TextBox tb;
+      InTopic tv;
+      if((tb = sender as TextBox) == null || (tv = tb.DataContext as InTopic) == null) {
+        return;
+      }
+      tv.FinishNameEdit(tb.Text);
+      e.Handled = true;
+    }
+
   }
 }

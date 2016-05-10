@@ -31,10 +31,12 @@ namespace X13.Data {
       arr[2] = mask;
       this.Send(new SioClient.Request(0, arr, req));
     }
-    public void Create(string path, INotMsg req) {
-      var arr = new JSL.Array(2);
+    internal void Create(string path, string schemaName, JSC.JSValue value, INotMsg req) {
+      var arr = new JSL.Array(4);
       arr[0] = 8;
       arr[1] = path;
+      arr[2] = schemaName;
+      arr[3] = value;
       this.Send(new SioClient.Request(0, arr, req));
     }
     public void Publish(string path, JSC.JSValue value, INotMsg req) {
@@ -140,5 +142,6 @@ namespace X13.Data {
         _value = value;
       }
     }
+
   }
 }

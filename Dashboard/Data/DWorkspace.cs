@@ -70,7 +70,7 @@ namespace X13.Data {
       _bw.Start();
       _activeDocument = null;
     }
-    public Task<DTopic> GetAsync(Uri url, bool create) {
+    public Task<DTopic> GetAsync(Uri url) {
       var up = Uri.UnescapeDataString(url.UserInfo).Split(':');
       string uName = (up.Length > 0 && !string.IsNullOrWhiteSpace(up[0])) ? (up[0] + "@") : string.Empty;
       string host = url.Scheme + "://" + uName + url.DnsSafeHost + (url.IsDefaultPort ? string.Empty : (":" + url.Port.ToString())) + "/";
@@ -83,7 +83,7 @@ namespace X13.Data {
           }
         }
       }
-      return cl.root.GetAsync(url.LocalPath, create);
+      return cl.root.GetAsync(url.LocalPath);
     }
     public UIDocument Open(string path, string view = null) {
       string id;

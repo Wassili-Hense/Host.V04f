@@ -17,12 +17,13 @@ namespace X13.UI {
     protected string _view;
 
     public bool IsExpanded { get; set; }
-    public string name { get; protected set; }
+    public bool IsEdited { get; protected set; }
+    public string name { get; set; }
     public BitmapSource icon { get; protected set; }
     public IValueEditor editor { get; protected set; }
 
     public abstract JSC.JSValue value { get; set; }
-    public abstract List<MenuItem> MenuItems { get; }
+    public abstract List<Control> MenuItems();
     public void GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       TreeViewItem parent;

@@ -26,7 +26,7 @@ namespace X13.UI {
       _value = _data.value;
       UpdateSchema(_data.schema);
       UpdateData(_data.value);
-      _data.PropertyChanged+=_data_PropertyChanged;
+      _data.PropertyChanged += _data_PropertyChanged;
     }
 
     private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema) {
@@ -145,39 +145,37 @@ namespace X13.UI {
     }
 
     #region ContextMenu
-    public override List<MenuItem> MenuItems {
-      get {
-        var l = new List<MenuItem>();
-        JSC.JSValue f;
-        MenuItem mi;
-        if(_schema != null && (f = _schema["Properties"]).ValueType==JSC.JSValueType.Object) {
-          MenuItem ma = new MenuItem() { Header = "Add" };
-          foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-            if(_items.Any(z => z.name == kv.Key)) {
-              continue;
-            }
-            mi = new MenuItem();
-            mi.Header = kv.Key;
-            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
-              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
-            }
-            mi.Tag = kv.Value;
-            mi.Click += miAdd_Click;
-            ma.Items.Add(mi);
+    public override List<Control> MenuItems() {
+      var l = new List<Control>();
+      JSC.JSValue f;
+      MenuItem mi;
+      if(_schema != null && (f = _schema["Properties"]).ValueType == JSC.JSValueType.Object) {
+        MenuItem ma = new MenuItem() { Header = "Add" };
+        foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+          if(_items.Any(z => z.name == kv.Key)) {
+            continue;
           }
-          if(ma.HasItems) {
-            l.Add(ma);
+          mi = new MenuItem();
+          mi.Header = kv.Key;
+          if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+            mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
           }
+          mi.Tag = kv.Value;
+          mi.Click += miAdd_Click;
+          ma.Items.Add(mi);
         }
-        mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
-        if(_parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f)) {
-          mi.Click += miDelete_Click;
-        } else {
-          mi.IsEnabled = false;
+        if(ma.HasItems) {
+          l.Add(ma);
         }
-        l.Add(mi);
-        return l;
       }
+      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
+      if(_parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f)) {
+        mi.Click += miDelete_Click;
+      } else {
+        mi.IsEnabled = false;
+      }
+      l.Add(mi);
+      return l;
     }
 
     private void miAdd_Click(object sender, RoutedEventArgs e) {
