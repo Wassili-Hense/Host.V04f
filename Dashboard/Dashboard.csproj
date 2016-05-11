@@ -116,7 +116,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Data\A04Client.cs" />
-    <Compile Include="Data\DChildren.cs" />
     <Compile Include="Data\DTopic.cs" />
     <Compile Include="Data\DWorkspace.cs" />
     <Compile Include="Data\SioClient.cs" />

@@ -26,7 +26,7 @@ namespace X13.UI {
       _value = _data.value;
       UpdateSchema(_data.schema);
       UpdateData(_data.value);
-      _data.PropertyChanged += _data_PropertyChanged;
+      _data.changed += _data_PropertyChanged;
     }
 
     private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema) {
@@ -134,10 +134,10 @@ namespace X13.UI {
         throw new NotImplementedException();
       }
     }
-    private void _data_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
-      if(e.PropertyName == "schema") {
+    private void _data_PropertyChanged(DTopic.Art art, int idx) {
+      if(art==DTopic.Art.schema) {
         UpdateSchema(_data.schema);
-      } else if(e.PropertyName == "value") {
+      } else if(art==DTopic.Art.value) {
         _value = _data.value;
         UpdateSchema(_data.schema);
         UpdateData(_data.value);
@@ -198,7 +198,7 @@ namespace X13.UI {
     #region IDisposable Member
     public void Dispose() {
       if(_parent == null) {
-        _data.PropertyChanged -= _data_PropertyChanged;
+        _data.changed -= _data_PropertyChanged;
       }
     }
     #endregion IDisposable Member

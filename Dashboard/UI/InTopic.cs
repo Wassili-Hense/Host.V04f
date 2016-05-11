@@ -42,14 +42,13 @@ namespace X13.UI {
     private bool _root;
     private ObservableCollection<InTopic> _items;
     private bool _populated;
-    private bool _paCC_subscribed;
     private JSC.JSValue _cStruct;
 
     public InTopic(DTopic owner, InTopic parent) {
       _owner = owner;
       _parent=parent;
       _root = _parent==null;
-      _owner.PropertyChanged += _owner_PropertyChanged;
+      _owner.changed += _owner_PropertyChanged;
       if(_root) {
         name = "children";
         icon = App.GetIcon("children");
@@ -81,35 +80,14 @@ namespace X13.UI {
         if(_owner!=null && _items == null) {
           _populated = true;
           if(_owner.children != null) {
-            if(!_paCC_subscribed) {
-              _paCC_subscribed = true;
-              _owner.children.CollectionChanged += children_CollectionChanged;
-            }
-            InsertItems(0, _owner.children.ToArray());
+            InsertItems(_owner.children);
           }
         }
         return _items;
       }
     }
-    private void children_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e) {
-      if(!_populated) {
-        return;
-      }
-      if(e.Action == NotifyCollectionChangedAction.Remove) {
-        foreach(var t in e.OldItems.Cast<DTopic>()) {
-          var n = _items.FirstOrDefault(z => z.name == t.name);
-          if(n != null) {
-            _items.Remove(n);
-          }
-        }
-        return;
-      } else if(e.Action == NotifyCollectionChangedAction.Add) {
-        InsertItems(e.NewStartingIndex, e.NewItems.Cast<DTopic>().ToArray());
-        return;
-      }
-      throw new NotImplementedException();
-    }
-    private async void InsertItems(int idx, DTopic[] its) {
+
+    private async void InsertItems(ReadOnlyCollection<DTopic> its) {
       bool pc_items = false;
       if(_items == null) {
         lock(this) {
@@ -129,7 +107,7 @@ namespace X13.UI {
           } else {
             tmp = new InTopic(tt, this);
           }
-          _items.Insert(idx++, tmp);
+          _items.Add(tmp);
         }
       }
       if(pc_items) {
@@ -174,7 +152,7 @@ namespace X13.UI {
     private void SetNameComplete(Task<DTopic> td) {
       if(td.IsCompleted && td.Result != null) {
         _owner = td.Result;
-        _owner.PropertyChanged += _owner_PropertyChanged;
+        _owner.changed += _owner_PropertyChanged;
         base.name = _owner.name;
         base.UpdateSchema(_owner.schema);
         IsEdited = false;
@@ -188,27 +166,32 @@ namespace X13.UI {
       }
     }
 
-    private void _owner_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+    private void _owner_PropertyChanged(DTopic.Art art, int idx) {
       if(!_root) {
-        if(e.PropertyName == "schema") {
+        if(art==DTopic.Art.schema) {
           this.UpdateSchema(_owner.schema);
-        } else if(e.PropertyName == "value") {
+        } else if(art==DTopic.Art.value) {
           this.UpdateSchema(_owner.schema);
           this.editor.ValueChanged(_owner.value);
         }
       }
-      if(e.PropertyName == "children" && _populated) {
-        if(_owner.children != null) {
-          if(!_paCC_subscribed) {
-            _paCC_subscribed = true;
-            _owner.children.CollectionChanged += children_CollectionChanged;
-          }
+      if(_populated) {
+        if(art == DTopic.Art.addChild) {
           if(_items == null) {
-            InsertItems(0, _owner.children.ToArray());
+            InsertItems(_owner.children);
+          } else {
+            var t=_owner.children[idx];
+            var e = _items.FirstOrDefault(z => z.name == t.name);
+            if(e != null) {
+              _items.Remove(e);
+              e.RefreshOwner(t);
+            } else {
+              e = new InTopic(t, this);
+            }
+            _items.Insert(idx, e);
           }
-        } else if(_items != null) {
-          _items = null;
-          PropertyChangedReise("items");
+        } else if(art == DTopic.Art.RemoveChild) {
+          _items.RemoveAt(idx);
         }
       }
     }
@@ -320,7 +303,7 @@ namespace X13.UI {
 
     #region IDisposable Member
     public void Dispose() {
-      _owner.PropertyChanged -= _owner_PropertyChanged;
+      _owner.changed -= _owner_PropertyChanged;
     }
     #endregion IDisposable Member
 

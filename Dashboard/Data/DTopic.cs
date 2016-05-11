@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,17 +8,14 @@ using JSC = NiL.JS.Core;
 using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.Data {
-  public class DTopic : NPC_UI {
-    private const string valueString = "value";
-    private const string itemsString = "children";
-    private const string schemaString = "schema";
-
+  public class DTopic {
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     private JSC.JSValue _value;
     private DTopic _schemaTopic;
     private int _schemaRequsted;
     private bool _disposed;
+    private List<DTopic> _children;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
@@ -29,20 +28,7 @@ namespace X13.Data {
       this.name = _client.url.ToString().TrimEnd('/');
       this.path = "/";
     }
-    public Task<DTopic> GetAsync(string path) {
-      DTopic ts;
-      if(string.IsNullOrEmpty(path)) {
-        ts = this;
-      } else if(path[0] == '/') {
-        ts = _client.root;
-      } else {
-        ts = this;
-        path = this == _client.root ? ("/" + path) : (this.path + "/" + path);
-      }
-      var req = new TopicReq(ts, path);
-      DWorkspace.This.AddMsg(req);
-      return req.Task;
-    }
+
     public JSC.JSValue schema {
       get {
         if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1) == 0) {
@@ -69,17 +55,33 @@ namespace X13.Data {
         return _value;
       }
     }
-    public Task<bool> SetValue(JSC.JSValue val) {
-      var ds = new TopicPublish(this, val);
-      DWorkspace.This.AddMsg(ds);
-      return ds.Task;
-    }
-    public DChildren children { get; private set; }
+    public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
+
+    public event Action<Art, int> changed;
 
     public Task<DTopic> CreateAsync(string name, string schemaName, JSC.JSValue value) {
       var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value);
       DWorkspace.This.AddMsg(req);
       return req.Task;
+    }
+    public Task<DTopic> GetAsync(string path) {
+      DTopic ts;
+      if(string.IsNullOrEmpty(path)) {
+        ts = this;
+      } else if(path[0] == '/') {
+        ts = _client.root;
+      } else {
+        ts = this;
+        path = this == _client.root ? ("/" + path) : (this.path + "/" + path);
+      }
+      var req = new TopicReq(ts, path);
+      DWorkspace.This.AddMsg(req);
+      return req.Task;
+    }
+    public Task<bool> SetValue(JSC.JSValue val) {
+      var ds = new TopicPublish(this, val);
+      DWorkspace.This.AddMsg(ds);
+      return ds.Task;
     }
     public void Delete() {
       _client.Delete(this.path);
@@ -88,7 +90,7 @@ namespace X13.Data {
     private void ValuePublished(JSC.JSValue val) {
       if(!JSC.JSValue.Equals(_value, val)) {
         _value = val;
-        PropertyChangedReise(valueString);
+        ChangedReise(Art.value);
       }
     }
     private void ExtractSchema(Task<DTopic> t) {
@@ -98,18 +100,81 @@ namespace X13.Data {
         } else if(t.IsCompleted) {
           if(this._schemaTopic != t.Result) {
             if(this._schemaTopic != null) {
-              this._schemaTopic.PropertyChanged -= _schemaTopic_PropertyChanged;
+              this._schemaTopic.changed -= _schemaTopic_PropertyChanged;
             }
             this._schemaTopic = t.Result;
-            this._schemaTopic.PropertyChanged += _schemaTopic_PropertyChanged;
-            PropertyChangedReise(schemaString);
+            this._schemaTopic.changed += _schemaTopic_PropertyChanged;
+            ChangedReise(Art.schema);
           }
         }
       }
     }
-    private void _schemaTopic_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      if(e.PropertyName == "value") {
-        PropertyChangedReise(schemaString);
+    private void _schemaTopic_PropertyChanged(Art art, int idx) {
+      if(art==Art.value) {
+        ChangedReise(Art.schema);
+      }
+    }
+    private void ChangedReise(Art art, int idx = 0) {
+      if(changed != null) {
+        changed(art, idx);
+      }
+    }
+    private DTopic GetChild(string name, bool create) {
+      if(_children == null) {
+        if(create) {
+          _children = new List<DTopic>();
+          _flags |= 16;
+        } else {
+          return null;
+        }
+      }
+      int min = 0, max = _children.Count - 1, cmp, mid = 0;
+
+      while(min <= max) {
+        mid = (min + max) / 2;
+        cmp = string.Compare(_children[mid].name, name);
+        if(cmp < 0) {
+          min = mid + 1;
+          mid = min;
+        } else if(cmp > 0) {
+          max = mid - 1;
+          mid = max;
+        } else {
+          return _children[mid];
+        }
+      }
+      if(create) {
+        var t = new DTopic(this, name);
+        this._children.Insert(mid, t);
+        ChangedReise(Art.addChild, mid);
+        return t;
+      }
+      return null;
+    }
+    private void RemoveChild(DTopic t) {
+      if(_children == null) {
+        return;
+      }
+      int min = 0, max = _children.Count - 1, cmp, mid = 0;
+
+      while(min <= max) {
+        mid = (min + max) / 2;
+        cmp = string.Compare(_children[mid].name, t.name);
+        if(cmp < 0) {
+          min = mid + 1;
+          mid = min;
+        } else if(cmp > 0) {
+          max = mid - 1;
+          mid = max;
+        } else {
+          _children.RemoveAt(mid);
+          ChangedReise(Art.RemoveChild, mid);
+          break;
+        }
+      }
+      if(!_children.Any()) {
+        _children = null;
+        _flags &= ~16;
       }
     }
 
@@ -164,14 +229,12 @@ namespace X13.Data {
         string name = _path.Substring(idx1, idx2 - idx1);
 
         if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
-          if(_cur.children == null) {
+          if(_cur._children == null) {
             _cur._client.Request(_cur.path, 2, this);
             return;
           }
 
-          if(!_cur.children.TryGetValue(name, out next)) {
-            next = null;
-          }
+          next=_cur.GetChild(name, false);
         }
         if(next == null) {
           if(_create) {
@@ -190,7 +253,6 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
-          bool childrenPC = false;
           DTopic next;
           JSL.Array ca = value as JSL.Array, cc;
           if(ca == null || (int)ca.length != 1) {
@@ -207,11 +269,6 @@ namespace X13.Data {
           }
           string aName, aPath;
           int aFlags;
-          if(_cur.children == null) {
-            _cur.children = new DChildren();
-            _cur._flags |= 16;
-            childrenPC = true;
-          }
           foreach(var cb in cc.Select(z => z.Value.Value as JSL.Array)) {
             if(cb == null || (int)cb.length < 3 || cb[0].ValueType != JSC.JSValueType.String || (cb[1].ValueType != JSC.JSValueType.Double && cb[1].ValueType != JSC.JSValueType.Integer)) {
               continue;
@@ -223,10 +280,7 @@ namespace X13.Data {
                 continue;
               }
               aName = aPath.Substring(_cur.path.Length == 1 ? 1 : (_cur.path.Length + 1));
-              if(!_cur.children.TryGetValue(aName, out next) || next == null) {
-                next = new DTopic(_cur, aName);
-                _cur.children.AddItem(next);
-              }
+              next = _cur.GetChild(aName, true);
             } else {
               next = _cur;
             }
@@ -235,9 +289,6 @@ namespace X13.Data {
             if((int)cb.length == 4) {
               next.ValuePublished(cb[3]);
             }
-          }
-          if(childrenPC) {
-            _cur.PropertyChangedReise(DTopic.itemsString);
           }
         } else {
           _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
@@ -300,22 +351,11 @@ namespace X13.Data {
           }
         }
 
-        bool childrenPC = false;
-
         DTopic cur = client.root, next;
         var ns = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
         for(int i = 0; i < ns.Length; i++) {
-          if(cur.children == null) {
-            if(cmd == 5 && i == ns.Length - 2) {
-              cur.children = new DChildren();
-              childrenPC = true;
-            } else {
-              return; // do nothing
-            }
-          }
-          if(!cur.children.TryGetValue(ns[i], out next) || next == null) {
-            next = new DTopic(cur, ns[i]);
-            cur.children.AddItem(next);
+          if((next = cur.GetChild(ns[i], cmd == 5)) == null) {
+            break;
           }
           if(i == ns.Length - 1) {
             if(cmd == 5) {
@@ -324,11 +364,8 @@ namespace X13.Data {
               next.ValuePublished(_data[4]);
             } else {
               next._disposed = true;
-              cur.children.Remove(next);
+              cur.RemoveChild(next);
             }
-          }
-          if(childrenPC) {
-            cur.PropertyChangedReise(DTopic.itemsString);
           }
           cur = next;
         }
@@ -337,5 +374,11 @@ namespace X13.Data {
       }
     }
 
+    public enum Art{
+      value,
+      schema,
+      addChild,
+      RemoveChild,
+    }
   }
 }

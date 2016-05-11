@@ -45,7 +45,7 @@ namespace X13 {
         if(srv.Start()) {
           Console.ForegroundColor=ConsoleColor.Green;
           var  ver=Assembly.GetExecutingAssembly().GetName().Version;
-          Console.WriteLine("X13 Home automation server v.{0}{1} {2} started;\n\rpress Enter to Exit", ver.ToString(2), (ver.MinorRevision%100)==0?(" R"+((ver.Revision/100)%10).ToString()):("."+(ver.MinorRevision%1000).ToString("000")), new DateTime(2000+ver.Build/100, ver.Build%100, ver.MinorRevision/1000).ToShortDateString());
+          Console.WriteLine("X13 Home automation server v.{0} {1} started;\n\rpress Enter to Exit", ver.ToString(4), (ver.Revision % 100) == 0 ? "Release": "beta");
           Console.ResetColor();
           Console.Read();
           srv.Stop();

@@ -173,7 +173,7 @@ namespace X13.Data {
             msg.Process(this);
           }
           catch(Exception ex) {
-            Log.Warning("TickFunction - {1}", ex.ToString());
+            Log.Warning("TickFunction - {0}", ex.ToString());
           }
         }
       }
