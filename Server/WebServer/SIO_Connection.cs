@@ -123,7 +123,7 @@ namespace X13.WebServer {
       }
       string msg=JSL.JSON.stringify(r, null, null);
       this.Send("42"+msg);
-      X13.Log.Debug("{0}.emit({1})",this.ToString(), msg);
+      X13.Log.Debug("{0}\n  Emit : {1}",this.ToString(), msg);
     }
     public override string ToString() {
       return _owner==null?"unkmown":_owner.path;

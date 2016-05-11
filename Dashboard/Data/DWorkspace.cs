@@ -17,7 +17,16 @@ namespace X13.Data {
   internal class DWorkspace : NPC_UI {
     #region static
     private static DWorkspace _this;
-    public static System.Windows.Threading.Dispatcher ui;
+    private static System.Windows.Threading.Dispatcher _ui;
+    public static System.Windows.Threading.Dispatcher ui {
+      get { return _ui; }
+      set {
+        _ui = value;
+        if(_ui != null) {
+          This._tick = new System.Windows.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(50), System.Windows.Threading.DispatcherPriority.Normal, This.TickFunction, _ui);
+        }
+      }
+    }
     public static JSF.ExternalFunction _JSON_Replacer;
 
 
@@ -45,29 +54,18 @@ namespace X13.Data {
     #endregion static
 
     #region instance variables
+    private System.Windows.Threading.DispatcherTimer _tick;
     private SortedList<string, A04Client> _clients;
-    private Thread _bw;
-    private bool _runing;
     private System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
     private UIDocument _activeDocument;
     private ObservableCollection<UIDocument> _files;
     private ReadOnlyObservableCollection<UIDocument> _readonyFiles;
-    private System.Collections.Concurrent.ConcurrentQueue<Tuple<Action<string>, string>> _uiMessages;
-    private int _uiWait;
-    private Action _uiProc;
     #endregion instance variables
 
     private DWorkspace() {
       _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _clients = new SortedList<string, A04Client>();
       _files = new ObservableCollection<UIDocument>();
-      _uiMessages = new System.Collections.Concurrent.ConcurrentQueue<Tuple<Action<string>, string>>();
-      _uiProc = new Action(ProcessUiMessages);
-      _uiWait = 0;
-
-      _bw = new Thread(ThFunction);
-      _runing = true;
-      _bw.Start();
       _activeDocument = null;
     }
     public Task<DTopic> GetAsync(Uri url) {
@@ -134,22 +132,15 @@ namespace X13.Data {
         }
         _clients.Clear();
       }
-      _runing = false;
-      lock(this) {
-        if(_bw != null) {
-          if(!_bw.Join(300)) {
-            _bw.Abort();
-          }
-          _bw = null;
-        }
-      }
-    }
-
-    public void UiMessage(Action<string> func, string p) {
-      _uiMessages.Enqueue(new Tuple<Action<string>, string>(func, p));
-      if(ui != null && Interlocked.Exchange(ref _uiWait, 1) == 0) {
-        ui.BeginInvoke(_uiProc);
-      }
+      //_runing = false;
+      //lock(this) {
+      //  if(_bw != null) {
+      //    if(!_bw.Join(300)) {
+      //      _bw.Abort();
+      //    }
+      //    _bw = null;
+      //  }
+      //}
     }
 
     public UIDocument ActiveDocument {
@@ -170,36 +161,20 @@ namespace X13.Data {
       }
     }
 
-    private void ProcessUiMessages() {
-      Tuple<Action<string>, string> fv;
-      while(_uiMessages.TryDequeue(out fv)) {
-        try {
-          if(fv.Item1 != null) {
-            fv.Item1(fv.Item2);
-          }
-        }
-        catch(Exception ex) {
-          if(fv.Item1 != null && fv.Item1.Target != null) {
-            Log.Warning("# {0}.{1} - {2}", fv.Item1.Target, fv.Item2, ex.Message);
-          } else {
-            Log.Warning("# .{0} - {1}", fv.Item2, ex.Message);
-          }
-        }
-      }
-      _uiWait = 0;
-    }
-
     #region Background worker
     public void AddMsg(INotMsg msg) {
       _msgs.Enqueue(msg);
     }
-    private void ThFunction() {
+    private void TickFunction(object sender, EventArgs e){
       INotMsg msg;
-      while(_runing || _msgs.Any()) {
+      while(_msgs.Any()) {
         if(_msgs.TryDequeue(out msg)) {
-          msg.Process(this);
-        } else {
-          Thread.Sleep(50);
+          try {
+            msg.Process(this);
+          }
+          catch(Exception ex) {
+            Log.Warning("TickFunction - {1}", ex.ToString());
+          }
         }
       }
     }

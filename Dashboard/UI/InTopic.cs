@@ -42,6 +42,7 @@ namespace X13.UI {
     private bool _root;
     private ObservableCollection<InTopic> _items;
     private bool _populated;
+    private bool _paCC_subscribed;
     private JSC.JSValue _cStruct;
 
     public InTopic(DTopic owner, InTopic parent) {
@@ -80,8 +81,10 @@ namespace X13.UI {
         if(_owner!=null && _items == null) {
           _populated = true;
           if(_owner.children != null) {
-            _owner.children.CollectionChanged += children_CollectionChanged;
-            _items = new ObservableCollection<InTopic>();
+            if(!_paCC_subscribed) {
+              _paCC_subscribed = true;
+              _owner.children.CollectionChanged += children_CollectionChanged;
+            }
             InsertItems(0, _owner.children.ToArray());
           }
         }
@@ -107,6 +110,15 @@ namespace X13.UI {
       throw new NotImplementedException();
     }
     private async void InsertItems(int idx, DTopic[] its) {
+      bool pc_items = false;
+      if(_items == null) {
+        lock(this) {
+          if(_items == null) {
+            _items = new ObservableCollection<InTopic>();
+            pc_items = true;
+          }
+        }
+      }
       InTopic tmp;
       foreach(var t in its) {
         var tt = await t.GetAsync(null);
@@ -119,6 +131,9 @@ namespace X13.UI {
           }
           _items.Insert(idx++, tmp);
         }
+      }
+      if(pc_items) {
+        PropertyChangedReise("items");
       }
     }
 
@@ -140,19 +155,7 @@ namespace X13.UI {
             def=_schema["default"];
           }
           var td = _parent._owner.CreateAsync(name, sName, def);
-          td.Wait();
-          if(td.IsCompleted && td.Result != null) {
-            _owner = td.Result;
-            _owner.PropertyChanged += _owner_PropertyChanged;
-            name = _owner.name;
-            base.UpdateSchema(_owner.schema);
-          } else {
-            if(td.IsFaulted) {
-              Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, name, td.Exception.Message);
-            }
-            FinishNameEdit(null);
-            return;
-          }
+          td.ContinueWith(SetNameComplete);
         } else {
         }
       } else {
@@ -168,6 +171,23 @@ namespace X13.UI {
       PropertyChangedReise("name");
     }
 
+    private void SetNameComplete(Task<DTopic> td) {
+      if(td.IsCompleted && td.Result != null) {
+        _owner = td.Result;
+        _owner.PropertyChanged += _owner_PropertyChanged;
+        base.name = _owner.name;
+        base.UpdateSchema(_owner.schema);
+        IsEdited = false;
+        PropertyChangedReise("IsEdited");
+        PropertyChangedReise("name");
+      } else {
+        if(td.IsFaulted) {
+          Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
+        }
+        FinishNameEdit(null);
+      }
+    }
+
     private void _owner_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if(!_root) {
         if(e.PropertyName == "schema") {
@@ -179,11 +199,12 @@ namespace X13.UI {
       }
       if(e.PropertyName == "children" && _populated) {
         if(_owner.children != null) {
-          if(_items == null) {
+          if(!_paCC_subscribed) {
+            _paCC_subscribed = true;
             _owner.children.CollectionChanged += children_CollectionChanged;
-            _items = new ObservableCollection<InTopic>();
+          }
+          if(_items == null) {
             InsertItems(0, _owner.children.ToArray());
-            PropertyChangedReise("items");
           }
         } else if(_items != null) {
           _items = null;
@@ -266,8 +287,9 @@ namespace X13.UI {
     private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {
       if(!IsExpanded) {
         IsExpanded = true;
-        base.PropertyChangedFunc("IsExpanded");
+        base.PropertyChangedReise("IsExpanded");
       }
+      bool pc_items = false;
       var mi = sender as MenuItem;
       if(mi != null) {
         var name = mi.Header as string;
@@ -275,12 +297,19 @@ namespace X13.UI {
         if(name != null && decl != null) {
           var mask = decl["mask"];
           if(_items == null) {
-            _items = new ObservableCollection<InTopic>();
-            PropertyChangedReise("items");
+            lock(this) {
+              if(_items == null) {
+                _items = new ObservableCollection<InTopic>();
+                pc_items = true;
+              }
+            }
           }
           if(mask.ValueType == JSC.JSValueType.Boolean && (bool)mask) {
             _items.Insert(0, new InTopic(decl, this));
           }
+        }
+        if(pc_items) {
+          PropertyChangedReise("items");
         }
       }
     }
@@ -294,6 +323,21 @@ namespace X13.UI {
       _owner.PropertyChanged -= _owner_PropertyChanged;
     }
     #endregion IDisposable Member
+
+    public override string ToString() {
+      StringBuilder sb= new StringBuilder();
+      if(_owner == null) {
+        if(_parent != null && _parent._owner != null) {
+          sb.Append(_parent._owner.path);
+        } else {
+          sb.Append("...");
+        }
+        sb.AppendFormat("/{0}", name);
+      } else {
+        sb.Append(_owner.path);
+      }
+      return sb.ToString();
+    }
 
   }
 }

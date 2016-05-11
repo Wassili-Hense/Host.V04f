@@ -47,7 +47,7 @@ namespace X13.Data {
       get {
         if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1) == 0) {
           var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr);
-          task.ContinueWith(ExtractSchema);
+          task.ContinueWith(td => DWorkspace.ui.BeginInvoke(new Action<Task<DTopic>>(ExtractSchema), td));
           return null;
         } else {
           return _schemaTopic == null ? null : _schemaTopic._value;

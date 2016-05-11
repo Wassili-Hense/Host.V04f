@@ -52,17 +52,5 @@ namespace X13.Data {
       }
       return false;
     }
-    protected override event PropertyChangedEventHandler PropertyChanged;
-    public override event NotifyCollectionChangedEventHandler CollectionChanged;
-    protected override void OnPropertyChanged(PropertyChangedEventArgs e) {
-      if(PropertyChanged != null) {
-        DWorkspace.ui.BeginInvoke(PropertyChanged, System.Windows.Threading.DispatcherPriority.DataBind, this, e);
-      }
-    }
-    protected override void OnCollectionChanged(NotifyCollectionChangedEventArgs e) {
-      if(CollectionChanged != null) {
-        DWorkspace.ui.BeginInvoke(CollectionChanged, System.Windows.Threading.DispatcherPriority.DataBind, this, e);
-      }
-    }
   }
 }
