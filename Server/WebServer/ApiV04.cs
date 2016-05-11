@@ -75,8 +75,13 @@ namespace X13.WebServer {
         if(p.art == Perform.Art.create) {
           var pr = p.src.schema;
           base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+          if(!_subscriptions.Contains(p.src)) {
+            _subscriptions.Add(p.src);
+            p.src.Subscribe(SubscriptionChanged, SubRec.SubMask.Once | SubRec.SubMask.Chldren, false);
+          }
         } else if(p.art == Perform.Art.remove) {
           base.Emit(9, p.src.path);
+          _subscriptions.Remove(p.src);
         }
       }
     }

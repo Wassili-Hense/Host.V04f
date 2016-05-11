@@ -237,20 +237,19 @@ namespace X13.UI {
         l.Add(new Separator());
       }
 
-      l.Add(new MenuItem() { Header = "Cut", IsEnabled = false });
-      l.Add(new MenuItem() { Header = "Copy", IsEnabled = false });
-      l.Add(new MenuItem() { Header = "Paste", IsEnabled = false });
-      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
+      l.Add(new MenuItem() { Header = "Cut", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Cut.png"), Width = 16, Height = 16 }, IsEnabled = false });
+      l.Add(new MenuItem() { Header = "Copy", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Copy.png"), Width = 16, Height = 16 }, IsEnabled = false });
+      l.Add(new MenuItem() { Header = "Paste", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Paste.png"), Width = 16, Height = 16 }, IsEnabled = false });
+      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       if(_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) {
         mi.Click += miDelete_Click;
       } else {
         mi.IsEnabled = false;
       }
       l.Add(mi);
-      l.Add(new MenuItem() { Header = "Rename", IsEnabled = false });
+      l.Add(new MenuItem() { Header = "Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 }, IsEnabled = false });
       return l;
     }
-
 
     private Image SchemaName2Icon(string sn) {
       Image img = new Image();

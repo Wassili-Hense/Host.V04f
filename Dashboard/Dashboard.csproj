@@ -147,6 +147,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Resource Include="Images\Edit_Copy.png" />
+    <Resource Include="Images\Edit_Cut.png" />
+    <Resource Include="Images\Edit_Delete.png" />
+    <Resource Include="Images\Edit_Paste.png" />
     <Resource Include="Images\ty_topic.png" />
   </ItemGroup>
   <ItemGroup>
@@ -176,7 +180,7 @@
     <Resource Include="Images\children.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\delete.png" />
+    <Resource Include="Images\Edit_Rename.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
