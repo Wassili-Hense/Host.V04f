@@ -22,7 +22,7 @@ using System.ComponentModel;
 namespace X13.UI {
   public partial class InspectorForm : UserControl {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
-
+    private static RoutedUICommand _cmdRename;
     static InspectorForm() {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Boolean"] = veSliderBool.Create;
@@ -30,6 +30,7 @@ namespace X13.UI {
       _editors["Double"] = veDouble.Create;
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
+      _cmdRename = new RoutedUICommand("Rename", "Rename", typeof(InspectorForm));
     }
     public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue schema) {
       IValueEditor rez;
@@ -41,6 +42,7 @@ namespace X13.UI {
       }
       return rez;
     }
+    public static RoutedUICommand CmdRename { get { return _cmdRename; } }
 
     private InBase[] valueVC;
 
@@ -74,7 +76,7 @@ namespace X13.UI {
       if(gr != null) {
         var d = gr.DataContext as InBase;
         if(d != null) {
-          var mi = d.MenuItems();
+          var mi = d.MenuItems(gr);
           if(mi != null && mi.Count() > 0) {
             gr.ContextMenu.ItemsSource = mi;
             return;
@@ -87,6 +89,7 @@ namespace X13.UI {
       var gr = sender as FrameworkElement;
       if(gr != null && gr.ContextMenu != null) {
         gr.ContextMenu.ItemsSource = null;
+        gr.ContextMenu.Items.Clear();
       }
     }
 
@@ -120,5 +123,26 @@ namespace X13.UI {
       e.Handled = true;
     }
 
+    private void CmdDelete_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
+      var gr = sender as FrameworkElement;
+      if(gr != null) {
+        var it = gr.DataContext as InBase;
+        if(it != null) {
+          e.CanExecute = it.CanExecute(e.Command, e.Parameter);
+          e.Handled = true;
+        }
+      }
+    }
+
+    private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e) {
+      var gr = sender as FrameworkElement;
+      if(gr != null) {
+        var it = gr.DataContext as InBase;
+        if(it != null) {
+          it.CmdExecuted(e.Command, e.Parameter);
+          e.Handled = true;
+        }
+      }
+    }
   }
 }

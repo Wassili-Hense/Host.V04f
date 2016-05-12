@@ -54,7 +54,7 @@
 				<Style TargetType="Grid">
 					<Style.Triggers>
 						<DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
-							<Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.GradientInactiveCaptionBrushKey}}" />
+              <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor16Key}}" />
 						</DataTrigger>
 					</Style.Triggers>
 				</Style>

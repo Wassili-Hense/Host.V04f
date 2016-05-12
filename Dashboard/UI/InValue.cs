@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using X13.Data;
 using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Input;
 
 namespace X13.UI {
   public class InValue : InBase, IDisposable {
@@ -66,6 +67,11 @@ namespace X13.UI {
             }
           }
         }
+      }
+      bool gh = _parent == null && editor is veDefault;
+      if(gh != IsGroupHeader) {
+        IsGroupHeader = gh;
+        PropertyChangedReise("IsGroupHeader");
       }
     }
     private void UpdateData(JSC.JSValue val) {
@@ -145,7 +151,7 @@ namespace X13.UI {
     }
 
     #region ContextMenu
-    public override List<Control> MenuItems() {
+    public override List<Control> MenuItems(System.Windows.FrameworkElement src) {
       var l = new List<Control>();
       JSC.JSValue f;
       MenuItem mi;
@@ -168,12 +174,7 @@ namespace X13.UI {
           l.Add(ma);
         }
       }
-      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/delete.png") } };
-      if(_parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f)) {
-        mi.Click += miDelete_Click;
-      } else {
-        mi.IsEnabled = false;
-      }
+      mi = new MenuItem() { Header = "Delete", Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       l.Add(mi);
       return l;
     }
@@ -188,9 +189,19 @@ namespace X13.UI {
         }
       }
     }
-    private void miDelete_Click(object sender, RoutedEventArgs e) {
-      if(_parent != null) {
-        _parent.ChangeValue(name, null);
+
+    public override bool CanExecute(System.Windows.Input.ICommand cmd, object p) {
+      JSC.JSValue f;
+      if(cmd == ApplicationCommands.Delete) {
+        return _parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      }
+      return false;
+    }
+    public override void CmdExecuted(ICommand cmd, object p) {
+      if(cmd == ApplicationCommands.Delete) {
+        if(_parent != null) {
+          _parent.ChangeValue(name, null);
+        }
       }
     }
     #endregion ContextMenu

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Input;
 using X13.Data;
 using JSC = NiL.JS.Core;
 using JSL = NiL.JS.BaseLibrary;
@@ -48,6 +49,7 @@ namespace X13.UI {
       _owner = owner;
       _parent=parent;
       _root = _parent==null;
+      IsGroupHeader = _root;
       _owner.changed += _owner_PropertyChanged;
       if(_root) {
         name = "children";
@@ -197,7 +199,7 @@ namespace X13.UI {
     }
 
     #region ContextMenu
-    public override List<Control> MenuItems() {
+    public override List<Control> MenuItems(System.Windows.FrameworkElement src) {
       var l = new List<Control>();
       JSC.JSValue f, tmp1;
       MenuItem mi;
@@ -235,24 +237,46 @@ namespace X13.UI {
         l.Add(new Separator());
       }
       if(!_root) {
-        mi = new MenuItem() { Header = "Open in new Tab" };
-        mi.Click += miOpen_Click;
-        l.Add(mi);
+        l.Add(new MenuItem() { Command = ApplicationCommands.Open, CommandTarget = src});
         l.Add(new Separator());
       }
-
-      l.Add(new MenuItem() { Header = "Cut", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Cut.png"), Width = 16, Height = 16 }, IsEnabled = false });
-      l.Add(new MenuItem() { Header = "Copy", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Copy.png"), Width = 16, Height = 16 }, IsEnabled = false });
-      l.Add(new MenuItem() { Header = "Paste", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Paste.png"), Width = 16, Height = 16 }, IsEnabled = false });
-      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      if(_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) {
-        mi.Click += miDelete_Click;
-      } else {
-        mi.IsEnabled = false;
+      //System.Windows.Clipboard. 
+      l.Add(new MenuItem() { Command = ApplicationCommands.Cut, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Cut.png"), Width = 16, Height = 16 } });
+      l.Add(new MenuItem() { Command = ApplicationCommands.Copy, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Copy.png"), Width = 16, Height = 16 } });
+      if(_owner.CheckAcl(DTopic.ACL.Create) && System.Windows.Clipboard.ContainsText()) {
+        Uri u;
+        if(Uri.TryCreate(System.Windows.Clipboard.GetText(), UriKind.Absolute, out u) && u.Scheme != null 
+          && u.Scheme.StartsWith("x13") && _owner.fullPath.StartsWith(u.GetLeftPart(UriPartial.Authority)) && !_owner.path.StartsWith(u.AbsolutePath) ) {
+          l.Add(new MenuItem() {Command=ApplicationCommands.Paste, CommandTarget=src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Paste.png"), Width = 16, Height = 16 } });
+        }
       }
+      mi = new MenuItem() {Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       l.Add(mi);
-      l.Add(new MenuItem() { Header = "Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 }, IsEnabled = false });
+      if(!_root && _owner.CheckAcl(DTopic.ACL.Delete) && _parent._owner.CheckAcl(DTopic.ACL.Create)) {
+        l.Add(new MenuItem() { Command = InspectorForm.CmdRename, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } });
+      }
       return l;
+    }
+
+    public override bool CanExecute(ICommand cmd, object p) {
+      JSC.JSValue f;
+      if(cmd == ApplicationCommands.Open || cmd == ApplicationCommands.Paste || cmd == ApplicationCommands.Copy || cmd==InspectorForm.CmdRename) {
+        return true;
+      } else if(cmd == ApplicationCommands.Delete || cmd == ApplicationCommands.Cut) {
+        return !_root && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) && _owner.CheckAcl(DTopic.ACL.Delete);
+      }
+      return false;
+    }
+    public override void CmdExecuted(ICommand cmd, object p) {
+      if(cmd == ApplicationCommands.Open) {
+        DWorkspace.This.Open(_owner.fullPath);
+      }else if(cmd == ApplicationCommands.Delete) {
+        _owner.Delete();
+      } else if(cmd == ApplicationCommands.Cut) {
+      } else if(cmd == ApplicationCommands.Copy) {
+      } else if(cmd == ApplicationCommands.Paste) {
+      } else if(cmd == InspectorForm.CmdRename) {
+      }
     }
 
     private Image SchemaName2Icon(string sn) {
@@ -263,9 +287,6 @@ namespace X13.UI {
         }
       });
       return img;
-    }
-    private void miOpen_Click(object sender, System.Windows.RoutedEventArgs e) {
-      DWorkspace.This.Open(_owner.fullPath);
     }
     private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {
       if(!IsExpanded) {
@@ -295,9 +316,6 @@ namespace X13.UI {
           PropertyChangedReise("items");
         }
       }
-    }
-    private void miDelete_Click(object sender, System.Windows.RoutedEventArgs e) {
-      _owner.Delete();
     }
     #endregion ContextMenu
 

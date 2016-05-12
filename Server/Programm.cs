@@ -44,8 +44,8 @@ namespace X13 {
         var srv=new Programm(cfgPath);
         if(srv.Start()) {
           Console.ForegroundColor=ConsoleColor.Green;
-          var  ver=Assembly.GetExecutingAssembly().GetName().Version;
-          Console.WriteLine("X13 Home automation server v.{0} {1} started;\n\rpress Enter to Exit", ver.ToString(4), (ver.Revision % 100) == 0 ? "Release": "beta");
+          Console.WriteLine("X13 Home automation server v.{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString(4));
+          Console.WriteLine("Press Enter to exit");
           Console.ResetColor();
           Console.Read();
           srv.Stop();
@@ -63,6 +63,7 @@ namespace X13 {
         catch(Exception ex) {
           Log.Error("{0}", ex.ToString());
         }
+
       } else if(flag==2) {
         try {
           HAServer.InstallService(name);

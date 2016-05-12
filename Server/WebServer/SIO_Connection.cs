@@ -123,7 +123,7 @@ namespace X13.WebServer {
       }
       string msg=JSL.JSON.stringify(r, null, null);
       this.Send("42"+msg);
-      X13.Log.Debug("{0}\n  Emit : {1}",this.ToString(), msg);
+      X13.Log.Debug("{0}\n  EMIT : {1}",this.ToString(), msg);
     }
     public override string ToString() {
       return _owner==null?"unkmown":_owner.path;
@@ -155,7 +155,7 @@ namespace X13.WebServer {
           msgId=-1;
         }
         tmpS=msg.Substring(idx);
-        sb=conn.ToString()+"\n  REQ : "+tmpS+"\n  ";
+        sb=conn.ToString()+"\n  REQ  : "+tmpS;
         var jo=JSL.JSON.parse(tmpS, _JSON_Replacer) as JSL.Array;
         if(jo==null) {
           return false;
@@ -179,9 +179,9 @@ namespace X13.WebServer {
             tmpS = ea._response == null ? "[]" : JSL.JSON.stringify(ea._response, null, null);
             conn.Send(string.Concat("4", ea._error ? "4" : "3", msgId < 0 ? string.Empty : msgId.ToString(), tmpS));
             if(ea._error) {
-              X13.Log.Warning("{0}ERROR: {1}", sb, tmpS);
+              X13.Log.Warning("{0}\n  ERROR: {1}", sb, tmpS);
             } else {
-              X13.Log.Debug("{0}RESP: {1}", sb, tmpS);
+              X13.Log.Debug("{0}\n  RESP : {1}", sb, tmpS);
             }
           } else {
             X13.Log.Debug("{0}", sb, tmpS);

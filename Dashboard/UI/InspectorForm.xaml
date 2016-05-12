@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
+             xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
              xmlns:x13ui="clr-namespace:X13.UI"
              xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock" x:Class="X13.UI.InspectorForm"
              mc:Ignorable="d" 
@@ -62,12 +63,13 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition />
     </Grid.RowDefinitions>
-    <TreeView Grid.Row="0" x:Name="tvValue" BorderThickness="0" Margin="0">
+    <TreeView Grid.Row="0" x:Name="tvValue" BorderThickness="0">
       <TreeView.ItemContainerStyle>
         <Style TargetType="{x:Type TreeViewItem}">
           <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
           <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/>
           <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}"/>
+          <Setter Property="Margin" Value="0" />
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="{x:Type TreeViewItem}">
@@ -83,8 +85,35 @@
                   <Border           Grid.Column="0" Grid.Row="0" x:Name="BTop" BorderBrush="Black" BorderThickness="0,1,0,0" Margin="-9,10,10,10" VerticalAlignment="Top" Focusable="False" />
                   <Border           Grid.Column="0" Grid.Row="0" Grid.RowSpan="2" x:Name="BLine" BorderBrush="Black" BorderThickness="1,0,0,1" Margin="10,10,5,10" Visibility="Collapsed" Focusable="False" />
                   <ToggleButton     Grid.Column="0" Grid.Row="0" x:Name="Expander" Style="{StaticResource ExpandCollapseToggleStyle}" ClickMode="Press" IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" Focusable="False" />
-                  <Border           Grid.Column="1" Grid.Row="0" x:Name="BContent" BorderBrush="LightGray" BorderThickness="1,0.5,1,0.5" Focusable="False">
+                  <Border           Grid.Column="1" Grid.Row="0" x:Name="BContent" BorderThickness="1,1,0,0">
+                    <Border.Style>
+                      <Style TargetType="Border">
+                        <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor2Key}}" />
+                        <Setter Property="BorderBrush" Value="LightGray" />
+                        <Style.Triggers>
+                          <DataTrigger Binding="{Binding IsGroupHeader}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor17Key}}" />
+                            <Setter Property="BorderBrush">
+                              <Setter.Value>
+                                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                                  <GradientStop Color="Black" Offset="0"/>
+                                  <GradientStop Color="LightGray" Offset="0.1"/>
+                                </LinearGradientBrush>
+                              </Setter.Value>
+                            </Setter>
+                          </DataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </Border.Style>
                     <Grid ContextMenuOpening="Grid_ContextMenuOpening" ContextMenuClosing="Grid_ContextMenuClosing">
+                      <Grid.CommandBindings>
+                        <CommandBinding Command="ApplicationCommands.Open" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
+                        <CommandBinding Command="ApplicationCommands.Cut" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                        <CommandBinding Command="ApplicationCommands.Copy" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                        <CommandBinding Command="ApplicationCommands.Paste" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                        <CommandBinding Command="ApplicationCommands.Delete" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                        <CommandBinding Command="x13ui:InspectorForm.CmdRename" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                      </Grid.CommandBindings>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="20"/>
                         <ColumnDefinition Width="Auto" MinWidth="80" SharedSizeGroup="vcName"/>
@@ -100,7 +129,7 @@
                             <Setter Property="ContentTemplate">
                               <Setter.Value>
                                 <DataTemplate>
-                                  <TextBlock Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />            
+                                  <TextBlock Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
                                 </DataTemplate>
                               </Setter.Value>
                             </Setter>
@@ -112,8 +141,6 @@
                           </Style>
                         </ContentPresenter.Style>
                       </ContentPresenter>
-                      
-                      
                       <Border Grid.Column="2" Grid.Row="0" BorderBrush="Black" BorderThickness="1,0,0,0">
                         <ContentPresenter Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
                       </Border>
@@ -160,7 +187,6 @@
               </Setter>
             </Trigger>
           </Style.Triggers>
-
         </Style>
       </TreeView.ItemContainerStyle>
       <TreeView.ItemTemplate>

@@ -10,7 +10,7 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.Data {
   public class DTopic {
     private A04Client _client;
-    private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.update, 8 - acl.delete, 16 - hat children
     private JSC.JSValue _value;
     private DTopic _schemaTopic;
     private int _schemaRequsted;
@@ -59,6 +59,9 @@ namespace X13.Data {
 
     public event Action<Art, int> changed;
 
+    public bool CheckAcl(ACL acl){
+      return (_flags & (int)acl) == (int)acl;
+    }
     public Task<DTopic> CreateAsync(string name, string schemaName, JSC.JSValue value) {
       var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value);
       DWorkspace.This.AddMsg(req);
@@ -379,6 +382,14 @@ namespace X13.Data {
       schema,
       addChild,
       RemoveChild,
+    }
+    [Flags]
+    public enum ACL {
+      Empty=0,
+      Subscribe=1,
+      Create=2,
+      Update=4,
+      Delete=8,
     }
   }
 }
