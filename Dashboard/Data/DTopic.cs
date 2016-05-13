@@ -63,7 +63,7 @@ namespace X13.Data {
       return (_flags & (int)acl) == (int)acl;
     }
     public Task<DTopic> CreateAsync(string name, string schemaName, JSC.JSValue value) {
-      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value);
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value.Defined?value:null);
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }

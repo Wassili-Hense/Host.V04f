@@ -91,18 +91,34 @@ namespace X13.WebServer {
     /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Create(EventArguments args) {
-      if(args.Count != 4 || args[1].ValueType != JSC.JSValueType.String) {
+      if(args.Count < 3 || args[1].ValueType != JSC.JSValueType.String) {
         args.Error("BAD request");
       }
       string path = args[1].Value as string;
-      var t = Topic.root.Create(path, _owner, args[2].Value as string, args[3]);
+      string sName = args[2].Value as string;
+      JSC.JSValue def = null;
+
+      if(args.Count > 3) {
+        def = args[3];
+      } else {
+        if(sName != null) {
+          Topic t = Topic.root.Get("/etc/schema/" + sName, false);
+          if(t != null) {
+            def = t.valueRaw["default"];
+          }
+        }
+      }
+      if(def == null || !def.Defined) {
+        def = JSC.JSValue.Null;
+      }
+      var t2 = Topic.root.Create(path, _owner, sName, def);
 
       var arr = new JSL.Array();
-      JSL.Array r=new JSL.Array(4);
-      r[0] = new JSL.String(t.path);
-      r[1] = new JSL.Number((t.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
-      r[2] = args[2];
-      r[3] = args[3];
+      JSL.Array r=new JSL.Array(1);
+      r[0] = new JSL.String(t2.path);
+      r[1] = new JSL.Number((t2.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
+      r[2] = sName;
+      r[3] = def;
       arr.Add(r);
       args.Response(arr);
     }

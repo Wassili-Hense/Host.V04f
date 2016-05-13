@@ -108,9 +108,7 @@
                     <Grid ContextMenuOpening="Grid_ContextMenuOpening" ContextMenuClosing="Grid_ContextMenuClosing">
                       <Grid.CommandBindings>
                         <CommandBinding Command="ApplicationCommands.Open" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
-                        <CommandBinding Command="ApplicationCommands.Cut" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
-                        <CommandBinding Command="ApplicationCommands.Copy" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
-                        <CommandBinding Command="ApplicationCommands.Paste" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                        <CommandBinding Command="ApplicationCommands.New" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
                         <CommandBinding Command="ApplicationCommands.Delete" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
                         <CommandBinding Command="x13ui:InspectorForm.CmdRename" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
                       </Grid.CommandBindings>

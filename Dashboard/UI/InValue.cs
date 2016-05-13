@@ -174,7 +174,7 @@ namespace X13.UI {
           l.Add(ma);
         }
       }
-      mi = new MenuItem() { Header = "Delete", Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi = new MenuItem() { Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       l.Add(mi);
       return l;
     }
