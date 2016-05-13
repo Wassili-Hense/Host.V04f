@@ -86,7 +86,10 @@ namespace X13.Data {
       DWorkspace.This.AddMsg(ds);
       return ds.Task;
     }
-    public void Delete() {
+	public void Move(DTopic nParent, string nName) {
+	  _client.Move(this.path, nParent.path, nName);
+	}
+	public void Delete() {
       _client.Delete(this.path);
     }
 
@@ -241,6 +244,7 @@ namespace X13.Data {
         }
         if(next == null) {
           if(_create) {
+			_create=false;
             if(_path.Length <= idx2) {
               _cur._client.Create(_path.Substring(0, idx2), _schemaName, _value, this);
             } else {
@@ -392,8 +396,5 @@ namespace X13.Data {
       Delete=8,
     }
 
-    internal void Move(DTopic nParent, string nName) {
-      _client.Move(this.path, nParent.path, nName);
-    }
   }
 }
