@@ -52,6 +52,14 @@ namespace X13.Data {
       arr[1] = path;
       this.Send(new SioClient.Request(-1, arr, null));
     }
+    public void Move(string pOld, string ppNew, string nName) {
+      var arr = new JSL.Array(4);
+      arr[0] = 12;
+      arr[1] = pOld;
+      arr[2] = ppNew;
+      arr[3] = nName;
+      this.Send(new SioClient.Request(-1, arr, null));
+    }
 
     public void Close() {
       if(_sio != null) {
@@ -142,6 +150,7 @@ namespace X13.Data {
         _value = value;
       }
     }
+
 
   }
 }

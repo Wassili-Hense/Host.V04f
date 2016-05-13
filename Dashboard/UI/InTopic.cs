@@ -99,31 +99,52 @@ namespace X13.UI {
           }
         }
       }
-      InTopic tmp;
-      foreach(var t in its) {
-        var tt = await t.GetAsync(null);
-        if(tt != null) {
-          if((tmp=_items.FirstOrDefault(z=>z.name==tt.name))!=null) {
-            _items.Remove(tmp);
-            tmp.RefreshOwner(tt);
-          } else {
-            tmp = new InTopic(tt, this);
-          }
-          _items.Add(tmp);
-        }
+      foreach(var t in its.ToArray()) {
+        await AddTopic(t);
       }
       if(pc_items) {
         PropertyChangedReise("items");
       }
     }
 
+    private async Task AddTopic(DTopic t) {
+      InTopic tmp;
+      var tt = await t.GetAsync(null);
+      if(tt != null) {
+        if((tmp = _items.FirstOrDefault(z => z.name == tt.name)) != null) {
+          _items.Remove(tmp);
+          tmp.RefreshOwner(tt);
+        } else {
+          tmp = new InTopic(tt, this);
+        }
+        int i;
+        for(i = 0; i < _items.Count; i++) {
+          if(string.Compare(_items[i].name, tt.name) > 0) {
+            break;
+          }
+        }
+        _items.Insert(i, tmp);
+      }
+    }
+
     private void RefreshOwner(DTopic tt) {
+      if(_owner != null) {
+        _owner.changed -= _owner_PropertyChanged;
+        if(_items != null) {
+          _items.Clear();
+          _items = null;
+        }
+      }
       _owner = tt;
+      name = tt.name;
+      if(_populated && _owner.children!=null) {
+        InsertItems(_owner.children);
+      }
     }
     public void FinishNameEdit(string name) {
       if(!string.IsNullOrEmpty(name)) {
-        base.name = name;
         if(_owner == null) {
+          base.name = name;
           JSC.JSValue def;
           string sName;
           if(_schema!=null) {
@@ -137,6 +158,7 @@ namespace X13.UI {
           var td = _parent._owner.CreateAsync(name, sName, def);
           td.ContinueWith(SetNameComplete);
         } else {
+          _owner.Move(_owner.parent, name);
         }
       } else {
         if(_owner == null) {
@@ -164,36 +186,35 @@ namespace X13.UI {
         if(td.IsFaulted) {
           Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
         }
-        FinishNameEdit(null);
+        _parent.items.Remove(this);
       }
     }
 
-    private void _owner_PropertyChanged(DTopic.Art art, int idx) {
+    private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
       if(!_root) {
         if(art==DTopic.Art.schema) {
+          Log.Debug("{0} #{1}", _owner.path, art.ToString());
           this.UpdateSchema(_owner.schema);
         } else if(art==DTopic.Art.value) {
+          Log.Debug("{0} #{1}", _owner.path, art.ToString());
           this.UpdateSchema(_owner.schema);
           this.editor.ValueChanged(_owner.value);
         }
       }
       if(_populated) {
         if(art == DTopic.Art.addChild) {
+          Log.Debug("{0} #{1}", child.path, art.ToString());
           if(_items == null) {
             InsertItems(_owner.children);
           } else {
-            var t=_owner.children[idx];
-            var e = _items.FirstOrDefault(z => z.name == t.name);
-            if(e != null) {
-              _items.Remove(e);
-              e.RefreshOwner(t);
-            } else {
-              e = new InTopic(t, this);
-            }
-            _items.Insert(idx, e);
+            var td=AddTopic(child);
           }
         } else if(art == DTopic.Art.RemoveChild) {
-          _items.RemoveAt(idx);
+          Log.Debug("{0} #{1}", child.path, art.ToString());
+          var it = _items.FirstOrDefault(z => z.name == child.name);
+          if(it != null) {
+            _items.Remove(it);
+          }
         }
       }
     }
@@ -276,6 +297,8 @@ namespace X13.UI {
       } else if(cmd == ApplicationCommands.Copy) {
       } else if(cmd == ApplicationCommands.Paste) {
       } else if(cmd == InspectorForm.CmdRename) {
+        base.IsEdited = true;
+        PropertyChangedReise("IsEdited");
       }
     }
 

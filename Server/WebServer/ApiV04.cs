@@ -64,27 +64,6 @@ namespace X13.WebServer {
         args.Response(JSC.JSObject.Null);
       }
     }
-
-    private void SubscriptionChanged(SubRec s, Perform p) {
-      if(s.path == p.src.path) {
-        if(p.art == Perform.Art.changed) {
-          var pr = p.src.schema;
-          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
-        }
-      } else {
-        if(p.art == Perform.Art.create) {
-          var pr = p.src.schema;
-          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
-          if(!_subscriptions.Contains(p.src)) {
-            _subscriptions.Add(p.src);
-            p.src.Subscribe(SubscriptionChanged, SubRec.SubMask.Once | SubRec.SubMask.Chldren, false);
-          }
-        } else if(p.art == Perform.Art.remove) {
-          base.Emit(9, p.src.path);
-          _subscriptions.Remove(p.src);
-        }
-      }
-    }
     /// <summary>set topics value</summary>
     /// <param name="args">
     /// REQUEST: [6, path, value]
@@ -173,6 +152,29 @@ namespace X13.WebServer {
           nname = args[3].ToString();
         }
         t.Move(p, nname);
+      }
+    }
+
+    private void SubscriptionChanged(SubRec s, Perform p) {
+      if(s.path == p.src.path) {
+        if(p.art == Perform.Art.changed) {
+          var pr = p.src.schema;
+          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+        }
+      } else {
+        if(p.art == Perform.Art.create) {
+          var pr = p.src.schema;
+          base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
+          if(!_subscriptions.Contains(p.src)) {
+            _subscriptions.Add(p.src);
+            p.src.Subscribe(SubscriptionChanged, SubRec.SubMask.Once | SubRec.SubMask.Chldren, false);
+          }
+        } else if(p.art == Perform.Art.remove) {
+          base.Emit(9, p.src.path);
+          _subscriptions.Remove(p.src);
+        } else if(p.art == Perform.Art.move) {
+          base.Emit(9, p.src.path);
+        }
       }
     }
 

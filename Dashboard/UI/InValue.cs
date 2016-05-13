@@ -140,7 +140,7 @@ namespace X13.UI {
         throw new NotImplementedException();
       }
     }
-    private void _data_PropertyChanged(DTopic.Art art, int idx) {
+    private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
       if(art==DTopic.Art.schema) {
         UpdateSchema(_data.schema);
       } else if(art==DTopic.Art.value) {

@@ -57,7 +57,7 @@ namespace X13.Data {
     }
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
-    public event Action<Art, int> changed;
+    public event Action<Art, DTopic> changed;
 
     public bool CheckAcl(ACL acl){
       return (_flags & (int)acl) == (int)acl;
@@ -112,14 +112,14 @@ namespace X13.Data {
         }
       }
     }
-    private void _schemaTopic_PropertyChanged(Art art, int idx) {
+    private void _schemaTopic_PropertyChanged(Art art, DTopic child) {
       if(art==Art.value) {
         ChangedReise(Art.schema);
       }
     }
-    private void ChangedReise(Art art, int idx = 0) {
+    private void ChangedReise(Art art, DTopic child=null) {
       if(changed != null) {
-        changed(art, idx);
+        changed(art, child);
       }
     }
     private DTopic GetChild(string name, bool create) {
@@ -149,7 +149,7 @@ namespace X13.Data {
       if(create) {
         var t = new DTopic(this, name);
         this._children.Insert(mid, t);
-        ChangedReise(Art.addChild, mid);
+        ChangedReise(Art.addChild, t);
         return t;
       }
       return null;
@@ -171,7 +171,7 @@ namespace X13.Data {
           mid = max;
         } else {
           _children.RemoveAt(mid);
-          ChangedReise(Art.RemoveChild, mid);
+          ChangedReise(Art.RemoveChild, t);
           break;
         }
       }
@@ -390,6 +390,10 @@ namespace X13.Data {
       Create=2,
       Update=4,
       Delete=8,
+    }
+
+    internal void Move(DTopic nParent, string nName) {
+      _client.Move(this.path, nParent.path, nName);
     }
   }
 }
