@@ -64,11 +64,7 @@ namespace X13.UI {
       IsEdited = true;
       JSC.JSValue sn;
       if(_cStruct != null && (sn = _cStruct["schema"]).ValueType == JSC.JSValueType.String) {
-        parent._owner.GetAsync("/etc/schema/" + (sn.Value as string)).ContinueWith(dt => {
-          if(dt.IsCompleted && dt.Result != null) {
-            DWorkspace.ui.BeginInvoke(new Action(() => base.UpdateSchema(dt.Result.value)));
-          }
-        });
+        parent._owner.GetAsync("/etc/schema/" + (sn.Value as string)).ContinueWith(SchemaLoaded, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
 
@@ -82,6 +78,22 @@ namespace X13.UI {
           }
         }
         return _items;
+      }
+    }
+    public void FinishNameEdit(string name) {
+      if(_owner == null) {
+        if(!string.IsNullOrEmpty(name)) {
+          //base.name = name;
+          var td = _parent._owner.CreateAsync(name, _cStruct["schema"].Value as string, _cStruct["default"]);
+          //td.ContinueWith(SetNameComplete);
+        }
+        _parent.items.Remove(this);
+      } else {
+        if(!string.IsNullOrEmpty(name)) {
+          _owner.Move(_owner.parent, name);
+        }
+        IsEdited = false;
+        PropertyChangedReise("IsEdited");
       }
     }
 
@@ -102,7 +114,6 @@ namespace X13.UI {
         PropertyChangedReise("items");
       }
     }
-
     private async Task AddTopic(DTopic t) {
       InTopic tmp;
       var tt = await t.GetAsync(null);
@@ -122,7 +133,6 @@ namespace X13.UI {
         _items.Insert(i, tmp);
       }
     }
-
     private void RefreshOwner(DTopic tt) {
       if(_owner != null) {
         _owner.changed -= _owner_PropertyChanged;
@@ -137,23 +147,6 @@ namespace X13.UI {
         InsertItems(_owner.children);
       }
     }
-    public void FinishNameEdit(string name) {
-      if(_owner == null) {
-        if(!string.IsNullOrEmpty(name)) {
-          //base.name = name;
-          var td = _parent._owner.CreateAsync(name, _cStruct["schema"].Value as string, _cStruct["default"]);
-          //td.ContinueWith(SetNameComplete);
-        }
-        _parent.items.Remove(this);
-      } else {
-        if(!string.IsNullOrEmpty(name)) {
-          _owner.Move(_owner.parent, name);
-        }
-        IsEdited = false;
-        PropertyChangedReise("IsEdited");
-      }
-    }
-
     private void SetNameComplete(Task<DTopic> td) {
       if(td.IsCompleted && td.Result != null) {
         _owner = td.Result;
@@ -170,7 +163,11 @@ namespace X13.UI {
         _parent.items.Remove(this);
       }
     }
-
+    private void SchemaLoaded(Task<DTopic> dt) {
+      if(dt.IsCompleted && dt.Result != null) {
+        base.UpdateSchema(dt.Result.value);
+      }
+    }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
       if(!_root) {
         if(art == DTopic.Art.schema) {
@@ -208,7 +205,7 @@ namespace X13.UI {
       MenuItem ma = new MenuItem() { Header = "Add" };
       if(_owner.CheckAcl(DTopic.ACL.Create) && _schema != null && (f = _schema["Children"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-          // TODO: check respurces
+          // TODO: check resources
           if(_items.Any(z => (tmp1 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == tmp1.Value as string)) {
             continue;
           }
@@ -290,18 +287,23 @@ namespace X13.UI {
 
     private Image SchemaName2Icon(string sn) {
       Image img = new Image();
-      this._owner.GetAsync("/etc/schema/" + sn).ContinueWith(td => {
-        if(td.IsCompleted && td.Result != null && td.Result.value != null && td.Result.value["icon"].ValueType == JSC.JSValueType.String) {
-          DWorkspace.ui.BeginInvoke(new Action(() => img.Source = App.GetIcon(td.Result.value["icon"].Value as string)));
-        }
-      });
+      this._owner.GetAsync("/etc/schema/" + sn).ContinueWith(IconFromSchemaLoaded, img, TaskScheduler.FromCurrentSynchronizationContext());
       return img;
+    }
+    private void IconFromSchemaLoaded(Task<DTopic> td, object o){
+      var img = o as Image;
+        if(img!=null && td.IsCompleted && td.Result != null && td.Result.value != null && td.Result.value["icon"].ValueType == JSC.JSValueType.String) {
+          img.Source = App.GetIcon(td.Result.value["icon"].Value as string);
+        }
     }
     #endregion ContextMenu
 
     #region IDisposable Member
     public void Dispose() {
-      _owner.changed -= _owner_PropertyChanged;
+      if(_owner != null) {
+        _owner.changed -= _owner_PropertyChanged;
+        _owner = null;
+      }
     }
     #endregion IDisposable Member
 

@@ -90,12 +90,11 @@ namespace X13.Data {
         path = null;
         view = null;
       } else {
-        if(view != null && view.StartsWith("?view=")) {
-          view = view.Substring(6);
+        if(view != null) {
+          id = path + "?view=" + view;
         } else {
-          view = "IN";
+          id = path;
         }
-        id = path + "?view=" + view;
       }
       UIDocument ui;
       ui = _files.FirstOrDefault(z => z != null && z.ContentId == id);

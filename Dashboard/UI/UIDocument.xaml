@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:aero="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
@@ -12,6 +13,10 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
     </Grid.RowDefinitions>
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition />
+      <ColumnDefinition Width="Auto" />
+    </Grid.ColumnDefinitions>
     <Border Padding="5,0" CornerRadius="3">
       <Border.Style>
         <Style TargetType="Border" >
@@ -84,7 +89,22 @@
         </ItemsControl>
       </Grid>
     </Border>
-    <ContentControl Name="ccMain" Grid.Row="1" Margin="0,5,0,0" Focusable="False" TabIndex="3" >
+    <Button Name="buChangeView" Grid.Column="1" ToolTip="{Binding contentForm.view}" IsEnabled="{Binding contentForm.altView}" Margin="20,0,0,0" Click="buChangeView_Click">
+      <Button.Template>
+        <ControlTemplate TargetType="{x:Type Button}">
+          <aero:ButtonChrome BorderBrush="{TemplateBinding BorderBrush}" RenderMouseOver="{TemplateBinding IsMouseOver}" RenderPressed="{TemplateBinding IsPressed}" 
+                             HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RoundCorners="False" SnapsToDevicePixels="True">
+              <ContentPresenter Margin="5" />
+            </aero:ButtonChrome>
+        </ControlTemplate>
+      </Button.Template>
+      <Button.Content>
+        <Image Source="{Binding contentForm.icon}" Width="16" Height="16" />
+      </Button.Content>
+    </Button>
+
+
+    <ContentControl Name="ccMain" Grid.Row="1" Grid.ColumnSpan="2" Margin="0,5,0,0" Focusable="False" TabIndex="3" Content="{Binding contentForm}" >
     </ContentControl>
   </Grid>
 </UserControl>

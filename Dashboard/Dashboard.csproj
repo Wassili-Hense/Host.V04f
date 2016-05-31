@@ -84,6 +84,7 @@
     </ApplicationDefinition>
     <Compile Include="Data\NPC_UI.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
+    <Compile Include="UI\IBaseForm.cs" />
     <Compile Include="UI\InBase.cs" />
     <Compile Include="UI\InspectorForm.xaml.cs">
       <DependentUpon>InspectorForm.xaml</DependentUpon>
@@ -91,6 +92,9 @@
     <Compile Include="UI\inTopic.cs" />
     <Compile Include="UI\InValue.cs" />
     <Compile Include="UI\IValueEditor.cs" />
+    <Compile Include="UI\LogramForm.xaml.cs">
+      <DependentUpon>LogramForm.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\UIDocument.xaml.cs">
       <DependentUpon>UIDocument.xaml</DependentUpon>
     </Compile>
@@ -102,6 +106,10 @@
       <DependentUpon>veSliderBool.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\veString.cs" />
+    <Page Include="UI\LogramForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="UI\MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -178,6 +186,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\Edit_Rename.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ty_logram.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

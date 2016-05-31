@@ -96,7 +96,7 @@ namespace X13.Data {
     private void ValuePublished(JSC.JSValue val) {
       if(!JSC.JSValue.Equals(_value, val)) {
         _value = val;
-        ChangedReise(Art.value);
+        ChangedReise(Art.value, this);
       }
     }
     private void ExtractSchema(Task<DTopic> t) {
@@ -110,19 +110,19 @@ namespace X13.Data {
             }
             this._schemaTopic = t.Result;
             this._schemaTopic.changed += _schemaTopic_PropertyChanged;
-            ChangedReise(Art.schema);
+            ChangedReise(Art.schema, this);
           }
         }
       }
     }
     private void _schemaTopic_PropertyChanged(Art art, DTopic child) {
       if(art==Art.value) {
-        ChangedReise(Art.schema);
+        ChangedReise(Art.schema, this);
       }
     }
-    private void ChangedReise(Art art, DTopic child=null) {
+    private void ChangedReise(Art art, DTopic src) {
       if(changed != null) {
-        changed(art, child);
+        changed(art, src);
       }
     }
     private DTopic GetChild(string name, bool create) {

@@ -84,7 +84,13 @@ namespace X13.UI {
           arg.Cancel = true;
           return;
         }
-        arg.Content = DWorkspace.This.Open(u.GetLeftPart(UriPartial.Path), u.Query);
+        string view = u.Query;
+        if(view != null && view.StartsWith("?view=")) {
+          view = view.Substring(6);
+        } else {
+          view = null;
+        }
+        arg.Content = DWorkspace.This.Open(u.GetLeftPart(UriPartial.Path), view);
         if(arg.Content == null) {
           arg.Cancel = true;
         }

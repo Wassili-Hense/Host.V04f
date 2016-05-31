@@ -53,7 +53,8 @@ namespace X13 {
       LoadIcon("String", "ty_str.png");
       LoadIcon("Date", "ty_dt.png");
       LoadIcon("Folder", "ty_topic.png");
-      LoadIcon("schema", "ty_schema.png");
+      LoadIcon("Schema", "ty_schema.png");
+      LoadIcon("Logram", "ty_logram.png");
       LoadIcon("children", "children.png");
     }
     private void LoadIcon(string name, string path) {

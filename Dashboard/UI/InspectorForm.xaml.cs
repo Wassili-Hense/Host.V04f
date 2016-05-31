@@ -20,7 +20,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 
 namespace X13.UI {
-  public partial class InspectorForm : UserControl {
+  public partial class InspectorForm : UserControl, IBaseForm {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
     private static RoutedUICommand _cmdRename;
     static InspectorForm() {
@@ -144,5 +144,15 @@ namespace X13.UI {
         }
       }
     }
+
+    #region IBaseForm Members
+    public string view {
+      get { return "Inspector"; }
+    }
+    public BitmapSource icon { get { return App.GetIcon(null); } }
+    public bool altView {
+      get { return data!=null && (data.schemaStr=="Logram"); }
+    }
+    #endregion IBaseForm Members
   }
 }

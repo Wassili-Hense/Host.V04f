@@ -22,6 +22,7 @@ namespace X13.UI {
 	private ObservableCollection<DTopic> _pathItems;
     private string _path;
     private string _view;
+    private IBaseForm _contentForm;
 
 	public UIDocument(string path, string view) {
       _path = path;
@@ -40,12 +41,22 @@ namespace X13.UI {
 
     public bool connected { get { return _data != null; } }
     public DTopic data { get { return _data; } }
-    public string view { get { return _view; } }
-    public string ContentId { get { return (_data == null ?_path:_data.fullPath) + "?view=" + _view??"IN"; } }
+    public IBaseForm contentForm {
+      get {
+        return _contentForm;
+      }
+      set {
+        if(_contentForm != value) {
+          _contentForm = value;
+          OnPropertyChanged("contentForm");
+        }
+      }
+    }
+    public string ContentId { get { return (_data == null ?_path:_data.fullPath) + (_view==null?string.Empty:("?view=" + _view)); } }
 
     private void RequestData(Uri url) {
       this.Cursor = Cursors.AppStarting;
-      DWorkspace.This.GetAsync(url).ContinueWith((t) => this.Dispatcher.BeginInvoke(new Action<Task<DTopic>>(this.DataUpd), t));
+      DWorkspace.This.GetAsync(url).ContinueWith(this.DataUpd, TaskScheduler.FromCurrentSynchronizationContext());
     }
     private void DataUpd(Task<DTopic> t) {
       if(t.IsFaulted) {
@@ -66,13 +77,21 @@ namespace X13.UI {
 		  c = c.parent;
 		}
         if(_view == null) {
-          _view = "IN";     // TODO: _data.schema => _view
+          if(_data.schemaStr == "Logram") {
+            _view = "LO";
+          } else {
+            _view = "IN";
+          }
         }
         OnPropertyChanged("ContentId");
         OnPropertyChanged("connected");
         if(_view == "IN") {
           if((ccMain.Content as InspectorForm)== null) {
-            ccMain.Content = new InspectorForm(_data);
+            contentForm = new InspectorForm(_data);
+          }
+        } else if(_view == "LO") {
+          if((ccMain.Content as LogramForm) == null) {
+            contentForm = new LogramForm(_data);
           }
         }
 	  }
@@ -118,6 +137,20 @@ namespace X13.UI {
 	}
     #endregion Address bar
 
+    private void buChangeView_Click(object sender, RoutedEventArgs e) {
+      if((ccMain.Content as InspectorForm) != null) {
+        if(_data.schemaStr == "Logram") {
+          _view = "LO";
+          contentForm = new LogramForm(_data);
+          OnPropertyChanged("ContentId");
+        }
+      } else {
+        _view = "IN";
+        contentForm = new InspectorForm(_data);
+        OnPropertyChanged("ContentId");
+      }
+    }
+
 	#region INotifyPropertyChanged Members
 	public event PropertyChangedEventHandler PropertyChanged;
 
@@ -127,5 +160,6 @@ namespace X13.UI {
 	  }
 	}
 	#endregion INotifyPropertyChanged Members
+
   }
 }
