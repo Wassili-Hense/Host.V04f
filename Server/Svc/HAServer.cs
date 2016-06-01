@@ -1,4 +1,5 @@
-﻿using CSWindowsServiceRecoveryProperty;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using CSWindowsServiceRecoveryProperty;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

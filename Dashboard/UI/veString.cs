@@ -1,4 +1,5 @@
-﻿using JSC = NiL.JS.Core;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using JSC = NiL.JS.Core;
 using JSL = NiL.JS.BaseLibrary;
 using System; 
 using System.Collections.Generic;

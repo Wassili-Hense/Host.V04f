@@ -3,35 +3,26 @@
     <item name='schema' saved='True'>
       <!--item name='Null'    value='{"$schema":"schema","view":"Null","default":null   }' saved='True' /-->
       <item name='Boolean' value='{"$schema":"Schema","view":"Boolean","icon":"Boolean","default":false}' saved='True' />
+      <item name='Brick'   value='{"$schema":"Schema","view":"Object" ,"icon":"Brick", "Properties": { "$schema":{ "view":"String", "default":"Brick", "required":true}, "view":{ "view":"String", "default":"Object"}, "info":{ "view":"String", "default":""}, "icon":{ "view":"String","default":""} } }' saved='True' />
       <item name='Date'    value='{"$schema":"Schema","view":"Date"   ,"icon":"Date","default":"2016-04-18T13:40:36.010Z"}' saved='True' />
       <item name='Double'  value='{"$schema":"Schema","view":"Double" ,"icon":"Double","default":0.0 }' saved='True' />
       <item name='Integer' value='{"$schema":"Schema","view":"Integer","icon":"Integer","default":0}' saved='True' />
       <item name='String'  value='{"$schema":"Schema","view":"String" ,"icon":"String","default":"" }' saved='True' />
       <item name='Logram'  value='{"$schema":"Schema","view":"Object" ,"icon":"Logram", "default":{"$schema":"Logram"} }' saved='True' />
-      <item name='Schema'  value='{"$schema":"Schema","view":"Object" ,"icon":"Schema", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":""}, "$schema":{ "view":"String", "default":"schema", "required":true} } }' saved='True' /> 
+      <item name='Schema'  value='{"$schema":"Schema","view":"Object" ,"icon":"Schema", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":"Object"}, "$schema":{ "view":"String", "default":"Schema", "required":true} } }' saved='True' /> 
     </item>
     <item name='brick' saved='True'>
-      <item name='Test' value='{"$schema":"Brick","view":"Object"}' saved='True' />
+      <item name='Test' value='{"$schema":"Brick","view":"Object","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADNElEQVQ4T33Tf0zUdRjA8ff95o47IUS5Zctakwi0X67GwkHY1nCrnBmluUZOpv1YWUtWLHTMyqiM/rJYiUBqdAuVdtMxishOAgL0+OXByXHdcT/kgO6O6zju15d2bDG0H89/n+fZ89qefZ5HxE2hVZOzeaP6+YcfvCd3dcZKrUzsx3PdM3Oxx9H982D4lMdH//IW0fLHfWvZVl25r6Fg6+saScpqhMhVpq0DpKfM4nVZadEbQlV1o7uHJtD93bcErNSQVfve04at+8+kQwAWepjzXqKswoZ3ys2B3WtYIY9wVveDo/K0Oy8Uwp5AloAnNkrLG5sNR9S35RLy9xKPDhMM+ql8/wxt7b+x55kNPFt0L8buK3x0/HJ59xhVNwBv7sxprD756w4kyZhNg/z0SzcqpZhtBU3IhFZmvXlcd63DYbVQ09Dxjb5P2LUcUBzet6nt4BcteaBAiEfo6uzFZjez/ckocmWQkFuGzTzC7+ZR6k8a2nRdsccBYXGEXfnKY4cOf/ZKZm4x4ZCfgG8CuUKKMjkNiSiIxz1CwO/mj0kbAz0dWM1OWjs9B/psfLoIlBatqv/yu84SkVyDc6ST+qOlqNQqXvugkbFrXdR/UoZIkJD9UA6+gEBkTkzzhYHqS2bhrUWgYL2yrOnc9x+n35qNEJ7HbRtEKg6QkfkAJuM5pq0GVqVpWVgQYR5zMGQ0U9fsKLHM8PUikKllS/neIv2jT5VK7lifD/E5EGYgKZUpeztJCxbkYjH2cRfGXhOXe0djn1/wPjI7R8/SN6ZI2VzzYYl+xxtHVYR8xOY9OJ1Ogt5h7rpThBCdxzUxSW1t6+Tp885Ddj91QPSGTXyhcM23x3Utz8k1qfid/fR16ElSRMndlEUs7GN02MKrb5+tMZiiL/9jExMJrZpC3YkjP+YX7xX7LF2YjO1IxSGysjPQqOOcqDkf31/V99ifMS7+K5BI7ixc2/TVKd325FtUEHKCMA0yP+P9V3ixtKHJcC1W/J/HlCgo4O6Klwpa3zlYcbtUNg/CFIGZccrfbTAda57YAtj+F0gUU2Xcv2Gdek9a2or0eCyKa3LWMWQN10Xg6s3n/xf1YGggYcG8+AAAAABJRU5ErkJggg=="}' saved='True' />
     </item>
-    <!--item name='UI' saved='True'>
-      <item name='Topic' value='{"$schema":"view","code":"{displayName:\"UI.test\",render:function(){return React.DOM.label(null,\"Hello World!!!\");}}","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAadEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjEwMPRyoQAAAQdJREFUOE+lk0EKwkAMRefAXsEruBDcFARBXImCuCgIWhARwYUrRVpBREHmFKM/8qfpdIqCi0Bp816SacY458w/Yay10Zh2jq7byiTw3JRXg5GMOO2sxGH1CbwbtPc1kRc0gZBsZ0+3Ht9dmhQiQlfsyHwDNUwBu0FHBjZUwUu2SwhVWVlXRy5ywHoB58TH5fAqoWEeZja6CRwVQIIEjgWJBvGdMOS1DjaThx+DIv03CHPEqAASjsDfGVZG9XnvXO0AoIZ5aNyF8kBzgdMkLwWooAWAQwEAgnpLZZH0oRHWAswMeNG/+PV+vxO2ssrcfcJYFIygwfBORC+SvkR8/vky6US9802CF9HRD6t4GKDQAAAAAElFTkSuQmCC"}' saved='True' />
-    </item-->
   </item>
   <item name='Test' saved='True'>
-    <item name='Alpha' value='42' saved='True'>
-      <!--item name='$schema' value='"zifra"' saved='True' /-->
-    </item>
-    <item name='Beta' value='"abcd"' saved='True'>
-      <!--item name='$schema' value='"str1"' saved='True' /-->
-    </item>
+    <item name='Alpha' value='42' saved='True' />
+    <item name='Beta' value='"abcd"' saved='True' />
     <item name='Gamma' value='"ABCDEFGHI"' saved='True'>
       <!--item name='$schema' value='"str2"' saved='True' /-->
     </item>
-    <item name='Delta' value='true' saved='True'>
-      <!--item name='$schema' value='"Checkbox"' saved='True' /-->
-    </item>
+    <item name='Delta' value='true' saved='True' />
     <item name='Epsilon' value='{"$schema":"Logram"}' saved='True'>
     </item>
-
   </item>
 </root>

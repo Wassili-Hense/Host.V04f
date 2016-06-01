@@ -1,4 +1,5 @@
-﻿using JSL = NiL.JS.BaseLibrary;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using JSL = NiL.JS.BaseLibrary;
 using NiL.JS.Core;
 using System;
 using System.Collections.Concurrent;

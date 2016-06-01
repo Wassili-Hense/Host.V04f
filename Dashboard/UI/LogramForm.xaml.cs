@@ -1,4 +1,5 @@
-﻿using JSL = NiL.JS.BaseLibrary;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using JSL = NiL.JS.BaseLibrary;
 using JSC = NiL.JS.Core;
 using System;
 using System.Collections.Generic;
@@ -72,29 +73,26 @@ namespace X13.UI {
       _bricks.Add(new BrickInfo(src));
     }
 
-    private class BrickInfo {
-      public readonly DTopic owner;
-
-      public BrickInfo(DTopic owner) {
-        this.owner = owner;
-        var jv = this.owner.value["info"];
-        if(jv.ValueType == JSC.JSValueType.String) {
-          info = jv.Value as string;
-        }
-        image = App.GetIcon((this.owner.value["icon"].Value as string)??"Null");
-      }
-
-      public string info { get; private set; }
-      public BitmapSource image { get; private set; }
-    }
-
-
+    #region IBaseForm Members
     public string view {
       get { return "Logram"; }
     }
     public BitmapSource icon { get { return App.GetIcon("Logram"); } }
     public bool altView {
       get { return true; }
+    }
+    #endregion IBaseForm Members
+
+    private class BrickInfo {
+      public readonly DTopic owner;
+
+      public BrickInfo(DTopic owner) {
+        this.owner = owner;
+        info = (this.owner.value["info"].Value as string) ?? owner.name;
+        image = App.GetIcon((this.owner.value["icon"].Value as string) ?? "Null");
+      }
+      public string info { get; private set; }
+      public BitmapSource image { get; private set; }
     }
   }
 }

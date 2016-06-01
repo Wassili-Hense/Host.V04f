@@ -1,13 +1,4 @@
-﻿#region license
-//Copyright (c) 2011-2015 Wassili Hense
-
-//This file is part of the X13.Home project.
-//https://github.com/X13home
-
-//BSD License
-//See LICENSE.txt file for license details.
-#endregion license
-
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
 using System;
 using System.Collections.Generic;
 using System.IO;

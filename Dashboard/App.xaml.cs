@@ -1,4 +1,5 @@
-﻿using System;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -47,6 +48,7 @@ namespace X13 {
 
       LoadIcon(string.Empty, "ty_topic.png");
       LoadIcon("Null", "ty_null.png");
+      LoadIcon("Brick", "ty_brick.png");
       LoadIcon("Boolean", "ty_bool.png");
       LoadIcon("Integer", "ty_i64.png");
       LoadIcon("Double", "ty_f02.png");

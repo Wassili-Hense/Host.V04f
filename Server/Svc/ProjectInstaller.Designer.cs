@@ -1,4 +1,5 @@
-﻿namespace X13 {
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+namespace X13 {
   partial class ProjectInstaller {
     /// <summary>
     /// Erforderliche Designervariable.

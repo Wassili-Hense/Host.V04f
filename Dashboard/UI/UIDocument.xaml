@@ -8,7 +8,7 @@
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
              FontFamily="Consolas" FontSize="12">
-  <Grid  Margin="10,5">
+  <Grid Margin="0">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
       <RowDefinition/>
@@ -17,7 +17,7 @@
       <ColumnDefinition />
       <ColumnDefinition Width="Auto" />
     </Grid.ColumnDefinitions>
-    <Border Padding="5,0" CornerRadius="3">
+    <Border Padding="5,0" CornerRadius="3" Margin="7,7">
       <Border.Style>
         <Style TargetType="Border" >
           <Setter Property="Background" Value="White" />
@@ -89,12 +89,12 @@
         </ItemsControl>
       </Grid>
     </Border>
-    <Button Name="buChangeView" Grid.Column="1" ToolTip="{Binding contentForm.view}" IsEnabled="{Binding contentForm.altView}" Margin="20,0,0,0" Click="buChangeView_Click">
+    <Button Name="buChangeView" Grid.Column="1" ToolTip="{Binding contentForm.view}" IsEnabled="{Binding contentForm.altView}" Margin="7,0,7,0" Click="buChangeView_Click" HorizontalAlignment="Center" VerticalAlignment="Center">
       <Button.Template>
         <ControlTemplate TargetType="{x:Type Button}">
-          <aero:ButtonChrome BorderBrush="{TemplateBinding BorderBrush}" RenderMouseOver="{TemplateBinding IsMouseOver}" RenderPressed="{TemplateBinding IsPressed}" 
+          <aero:ButtonChrome BorderBrush="#00000000" RenderMouseOver="{TemplateBinding IsMouseOver}" RenderPressed="{TemplateBinding IsPressed}" 
                              HorizontalAlignment="Stretch" VerticalAlignment="Stretch" RoundCorners="False" SnapsToDevicePixels="True">
-              <ContentPresenter Margin="5" />
+              <ContentPresenter Margin="2" />
             </aero:ButtonChrome>
         </ControlTemplate>
       </Button.Template>
