@@ -8,7 +8,7 @@
       <item name='Double'  value='{"$schema":"Schema","view":"Double" ,"icon":"Double","default":0.0 }' saved='True' />
       <item name='Integer' value='{"$schema":"Schema","view":"Integer","icon":"Integer","default":0}' saved='True' />
       <item name='String'  value='{"$schema":"Schema","view":"String" ,"icon":"String","default":"" }' saved='True' />
-      <item name='Logram'  value='{"$schema":"Schema","view":"Object" ,"icon":"Logram", "default":{"$schema":"Logram"} }' saved='True' />
+      <item name='Logram'  value='{"$schema":"Schema","view":"Object" ,"icon":"Logram", "default":{"$schema":"Logram","W":48,"H":48,"T":0,"L":0},"Properties": { "$schema":{ "view":"String", "default":"Brick", "required":true},"W":{ "view":"Integer","required":true,"default":48},"H":{ "view":"Integer", "required":true,"default":48},"L":{ "view":"Integer", "required":true,"default":0},"T":{ "view":"Integer", "required":true,"default":0} } }' saved='True' />
       <item name='Schema'  value='{"$schema":"Schema","view":"Object" ,"icon":"Schema", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":"Object"}, "$schema":{ "view":"String", "default":"Schema", "required":true} } }' saved='True' /> 
     </item>
     <item name='brick' saved='True'>

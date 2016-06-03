@@ -186,7 +186,8 @@ namespace X13.UI {
         var name = mi.Header as string;
         var decl = mi.Tag as JSC.JSValue;
         if(name != null && decl != null) {
-          this.ChangeValue(name, decl["default"]);
+          var def=decl["default"];
+          this.ChangeValue(name, def.Defined?def:JSC.JSValue.Null);
         }
       }
     }

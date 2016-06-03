@@ -95,6 +95,7 @@
     <Compile Include="UI\LogramForm.xaml.cs">
       <DependentUpon>LogramForm.xaml</DependentUpon>
     </Compile>
+    <Compile Include="UI\LogramView.cs" />
     <Compile Include="UI\UIDocument.xaml.cs">
       <DependentUpon>UIDocument.xaml</DependentUpon>
     </Compile>
