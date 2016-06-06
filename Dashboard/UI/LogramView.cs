@@ -23,6 +23,8 @@ namespace X13.UI {
     private TransformGroup _transformGroup;
     private TranslateTransform _translateTransform;
     private ScaleTransform _zoomTransform;
+    private double _offsetLeft;
+    private double _offsetTop;
 
     BorderHitType _mouseAction;
     private bool _borderDragInProgress;
@@ -66,28 +68,30 @@ namespace X13.UI {
         double offset_x = p.X - _startOffset.X;
         double offset_y = p.Y - _startOffset.Y;
 
-        double left = 0;
-        double top = 0;
-        double right = Width;
-        double bottom = Height;
+        double left = _offsetLeft;
+        double top = _offsetTop;
+        double right = left + 2 * Math.Round((this.Width - 10) / (CELL_SIZE * 2));
+        double bottom = top + 2 * Math.Round((this.Height - 10) / (CELL_SIZE * 2));
 
         JSC.JSObject o = CloneJSO(_owner.value.ToObject());
 
         if((_mouseAction & BorderHitType.L) == BorderHitType.L) {
-          left = 2 * Math.Round((offset_x) / (CELL_SIZE * 2));
+          left += 2 * Math.Round(offset_x / (CELL_SIZE * 2));
           o["L"] = new JSL.Number(left);
+          o["W"] = new JSL.Number(right - left);
         } else if((_mouseAction & BorderHitType.R) == BorderHitType.R) {
-          right = 2 * Math.Round((right + offset_x) / (CELL_SIZE * 2));
+          right += 2 * Math.Round(offset_x / (CELL_SIZE * 2));
           o["W"] = new JSL.Number(right - left);
         }
         if((_mouseAction & BorderHitType.T) == BorderHitType.T) {
-          top = 2 * Math.Round((top + offset_y) / (CELL_SIZE * 2));
+          top += 2 * Math.Round(offset_y / (CELL_SIZE * 2));
           o["T"] = new JSL.Number(top);
+          o["H"] = new JSL.Number(bottom - top);
         } else if((_mouseAction & BorderHitType.B) == BorderHitType.B) {
-          bottom = 2 * Math.Round((bottom + offset_y) / (CELL_SIZE * 2));
+          bottom += 2 * Math.Round(offset_y  / (CELL_SIZE * 2));
           o["H"] = new JSL.Number(bottom - top);
         }
-        if((right > left + 10 + 2 * CELL_SIZE) && (bottom > top + 10 + 2 * CELL_SIZE)) {
+        if((right > left + 2) && (bottom > top + 2)) {
           _owner.SetValue(o);
         }
       } else {
@@ -108,12 +112,12 @@ namespace X13.UI {
         if((_mouseAction & BorderHitType.L) == BorderHitType.L) {
           left = CELL_SIZE * 2 * Math.Round((left + offset_x) / (CELL_SIZE * 2));
         } else if((_mouseAction & BorderHitType.R) == BorderHitType.R) {
-          right = CELL_SIZE * 2 * Math.Round((right + offset_x) / (CELL_SIZE * 2));
+          right = CELL_SIZE * 2 * Math.Round((right + offset_x-10) / (CELL_SIZE * 2))+10;
         }
         if((_mouseAction & BorderHitType.T) == BorderHitType.T) {
           top = CELL_SIZE * 2 * Math.Round((top + offset_y) / (CELL_SIZE * 2));
         } else if((_mouseAction & BorderHitType.B) == BorderHitType.B) {
-          bottom = CELL_SIZE * 2 * Math.Round((bottom + offset_y) / (CELL_SIZE * 2));
+          bottom = CELL_SIZE * 2 * Math.Round((bottom + offset_y-10) / (CELL_SIZE * 2))+10;
         }
         if((right > left + 10 + 2 * CELL_SIZE) && (bottom > top + 10 + 2 * CELL_SIZE)) {
           RenderBackground(left, top, right, bottom);
@@ -248,14 +252,20 @@ namespace X13.UI {
       } else {
         o = CloneJSO(t.value.ToObject());
       }
+      _offsetTop = GetOrDefault(o, "T", 0, ref ch);
+      _offsetLeft = GetOrDefault(o, "L", 0, ref ch);
       this.Width = GetOrDefault(o, "W", 48, ref ch) * CELL_SIZE + 10;
-      this.Height = GetOrDefault(o, "H", 48, ref ch) * CELL_SIZE + 10;
-      double Top = GetOrDefault(o, "T", 0, ref ch);
-      double Left = GetOrDefault(o, "L", 0, ref ch);
+      this.Height = GetOrDefault(o, "H", 48, ref ch) * CELL_SIZE + 10;;
       if(ch) {
         _owner.SetValue(o);
       }
     }
+    private void _owner_changed(DTopic.Art art, DTopic src) {
+      if(art == DTopic.Art.value && src == _owner) {
+        OwnerChanged(_owner);
+      }
+    }
+
     private JSC.JSObject CloneJSO(JSC.JSObject obj) {
       var o = JSC.JSObject.CreateObject();
       foreach(var kv in obj.Where(z => obj.GetProperty(z.Key, JSC.PropertyScope.Own).Defined)) {
@@ -271,11 +281,6 @@ namespace X13.UI {
         return def;
       }
       return (double)v;
-    }
-    private void _owner_changed(DTopic.Art art, DTopic src) {
-      if(art == DTopic.Art.value && src == _owner) {
-        OwnerChanged(_owner);
-      }
     }
   }
 }
