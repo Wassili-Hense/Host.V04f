@@ -14,9 +14,18 @@ using System.Windows.Input;
 
 namespace X13.UI {
   public class LogramView : Canvas {
-    private const int CELL_SIZE = 8;
+    public const int CELL_SIZE = 8;
+    public static readonly Typeface FT_FONT;
+    public static readonly Pen PEN_NORMAL;
+
+    static LogramView() {
+      FT_FONT = new Typeface("Times New Roman");
+      PEN_NORMAL = new Pen(Brushes.Black, 1);
+    }
+
     private DrawingVisual _backgroundVisual;
     private DTopic _owner;
+    private List<Visual> _visuals;
 
     private double _zoom = 1.0;
     private Point _startOffset;
@@ -45,7 +54,19 @@ namespace X13.UI {
       RenderTransform = _transformGroup;
 
       _backgroundVisual = new DrawingVisual();
+      _visuals = new List<Visual>();
       AddVisualChild(_backgroundVisual);
+    }
+
+    public void AddVisual(Visual item) {
+      _visuals.Add(item);
+      base.AddVisualChild(item);
+      base.AddLogicalChild(item);
+    }
+    public void DeleteVisual(Visual item) {
+      _visuals.Remove(item);
+      base.RemoveVisualChild(item);
+      base.RemoveLogicalChild(item);
     }
 
     protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
@@ -193,14 +214,14 @@ namespace X13.UI {
 
     protected override int VisualChildrenCount {
       get {
-        return 1;   // _backgroundVisual, _mSelectVisual
+        return _visuals.Count+1;   // _backgroundVisual, _mSelectVisual
       }
     }
     protected override Visual GetVisualChild(int index) {
       if(index == 0) {
         return _backgroundVisual;
       }
-      return null;
+      return _visuals[index - 1];
     }
     protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo) {
       base.OnRenderSizeChanged(sizeInfo);
@@ -259,6 +280,7 @@ namespace X13.UI {
       if(ch) {
         _owner.SetValue(o);
       }
+      AddVisual(new LiBrick(this, t));
     }
     private void _owner_changed(DTopic.Art art, DTopic src) {
       if(art == DTopic.Art.value && src == _owner) {

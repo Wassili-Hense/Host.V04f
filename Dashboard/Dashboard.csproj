@@ -89,9 +89,11 @@
     <Compile Include="UI\InspectorForm.xaml.cs">
       <DependentUpon>InspectorForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="UI\inTopic.cs" />
+    <Compile Include="UI\InTopic.cs" />
     <Compile Include="UI\InValue.cs" />
     <Compile Include="UI\IValueEditor.cs" />
+    <Compile Include="UI\LiBase.cs" />
+    <Compile Include="UI\LiBrick.cs" />
     <Compile Include="UI\LogramForm.xaml.cs">
       <DependentUpon>LogramForm.xaml</DependentUpon>
     </Compile>

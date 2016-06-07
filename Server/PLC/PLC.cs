@@ -136,12 +136,12 @@ namespace X13.PLC {
       if(filename == null || head == null) {
         throw new ArgumentNullException();
       }
-      XDocument doc = new XDocument(new XElement("root", new XAttribute("head", head.path)));
+      XDocument doc = new XDocument(new XElement("xst", new XAttribute("path", head.path)));
       if(head.saved) {
         if(head.vType != null) {
-          doc.Root.Add(new XAttribute("value", head.ToJson()));
+          doc.Root.Add(new XAttribute("v", head.ToJson()));
         }
-        doc.Root.Add(new XAttribute("saved", bool.TrueString));
+        doc.Root.Add(new XAttribute("s", bool.TrueString));
       }
       foreach(Topic t in head.children) {
         Export(doc.Root, t);
@@ -160,16 +160,16 @@ namespace X13.PLC {
       if(xParent == null || tCur == null) {
         return;
       }
-      XElement xCur = new XElement("item", new XAttribute("name", tCur.name));
+      XElement xCur = new XElement("i", new XAttribute("n", tCur.name));
 
       if(tCur.saved) {
         if(tCur.vType != null) {
           string json = tCur.ToJson();
           if(json != null) {
-            xCur.Add(new XAttribute("value", json));
+            xCur.Add(new XAttribute("v", json));
           }
         }
-        xCur.Add(new XAttribute("saved", bool.TrueString));
+        xCur.Add(new XAttribute("s", bool.TrueString));
       }
 
       xParent.Add(xCur);
@@ -194,33 +194,33 @@ namespace X13.PLC {
         doc = XDocument.Load(r);
       }
 
-      if(string.IsNullOrEmpty(path) && doc.Root.Attribute("head") != null) {
-        path = doc.Root.Attribute("head").Value;
+      if(string.IsNullOrEmpty(path) && doc.Root.Attribute("path") != null) {
+        path = doc.Root.Attribute("path").Value;
       }
 
       Topic owner = Topic.root.Get(path);
-      foreach(var xNext in doc.Root.Elements("item")) {
+      foreach(var xNext in doc.Root.Elements("i")) {
         Import(xNext, owner);
       }
-      owner.SetFlagI(0, doc.Root.Attribute("saved") != null && doc.Root.Attribute("saved").Value != bool.FalseString);
-      if(doc.Root.Attribute("value") != null) {
+      owner.SetFlagI(0, doc.Root.Attribute("s") != null && doc.Root.Attribute("s").Value != bool.FalseString);
+      if(doc.Root.Attribute("v") != null) {
         try {
-          owner.SetJson(doc.Root.Attribute("value").Value);
+          owner.SetJson(doc.Root.Attribute("v").Value);
         }
         catch(Exception ex) {
-          Log.Warning("Import({0}) - {1}\n{2}", owner.path, ex.Message, doc.Root.Attribute("value").Value);
+          Log.Warning("Import({0}) - {1}\n{2}", owner.path, ex.Message, doc.Root.Attribute("v").Value);
         }
       }
     }
     private static void Import(XElement xElement, Topic owner) {
-      if(xElement == null || owner == null || xElement.Attribute("name") == null) {
+      if(xElement == null || owner == null || xElement.Attribute("n") == null) {
         return;
       }
       Version ver;
       Topic cur;
       bool setVersion = false;
-      if(xElement.Attribute("version") != null && Version.TryParse(xElement.Attribute("ver").Value, out ver)) {
-        if(owner.Exist(xElement.Attribute("name").Value, out cur)) {
+      if(xElement.Attribute("ver") != null && Version.TryParse(xElement.Attribute("ver").Value, out ver)) {
+        if(owner.Exist(xElement.Attribute("n").Value, out cur)) {
           Topic tVer;
           Version oldVer;
           if(!cur.Exist("$INF\version", out tVer) || tVer.vType != typeof(string) || !Version.TryParse(tVer.As<string>(), out oldVer) || oldVer < ver) {
@@ -235,17 +235,17 @@ namespace X13.PLC {
       } else {
         ver = default(Version);
       }
-      cur = owner.Get(xElement.Attribute("name").Value);
-      foreach(var xNext in xElement.Elements("item")) {
+      cur = owner.Get(xElement.Attribute("n").Value);
+      foreach(var xNext in xElement.Elements("i")) {
         Import(xNext, cur);
       }
-      cur.SetFlagI(0, xElement.Attribute("saved") != null && xElement.Attribute("saved").Value != bool.FalseString);
-      if(xElement.Attribute("value") != null) {
+      cur.SetFlagI(0, xElement.Attribute("s") != null && xElement.Attribute("s").Value != bool.FalseString);
+      if(xElement.Attribute("v") != null) {
         try {
-          cur.SetJson(xElement.Attribute("value").Value);
+          cur.SetJson(xElement.Attribute("v").Value);
         }
         catch(Exception ex) {
-          Log.Warning("Import({0}) - {1}\n{2}", cur.path, ex.Message, xElement.Attribute("value").Value);
+          Log.Warning("Import({0}) - {1}\n{2}", cur.path, ex.Message, xElement.Attribute("v").Value);
         }
       }
       if(setVersion) {

@@ -48,7 +48,7 @@ namespace X13 {
 
       LoadIcon(string.Empty, "ty_topic.png");
       LoadIcon("Null", "ty_null.png");
-      LoadIcon("Brick", "ty_brick.png");
+      LoadIcon("Bclass", "ty_brick.png");
       LoadIcon("Boolean", "ty_bool.png");
       LoadIcon("Integer", "ty_i64.png");
       LoadIcon("Double", "ty_f02.png");
