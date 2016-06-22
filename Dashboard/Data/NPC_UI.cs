@@ -10,7 +10,7 @@ namespace X13.Data {
   public class NPC_UI : INotifyPropertyChanged {
     #region INotifyPropertyChanged Members
     public event PropertyChangedEventHandler PropertyChanged;
-    protected void PropertyChangedReise(string propertyName) {
+    protected void PropertyChangedReise([System.Runtime.CompilerServices.CallerMemberName] string propertyName = "") {
       if(PropertyChanged != null) {
         PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
       }

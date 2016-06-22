@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Input;
 
 namespace X13.UI {
+  /*
   public class InValue : InBase, IDisposable {
     private DTopic _data;
     private InValue _parent;
@@ -24,6 +25,7 @@ namespace X13.UI {
       _parent = null;
       name = "value";
       IsExpanded = true;
+      levelPadding = 5;
       _items = new ObservableCollection<InValue>();
       _value = _data.value;
       UpdateSchema(_data.schema);
@@ -36,7 +38,8 @@ namespace X13.UI {
       _parent = parent;
       base.name = name;
       _items = new ObservableCollection<InValue>();
-      IsExpanded = false;
+      IsExpanded = true;
+      levelPadding = _parent.levelPadding + 7;
       _value = value;
       UpdateSchema(schema);
       UpdateData(value);
@@ -216,5 +219,5 @@ namespace X13.UI {
     }
     #endregion IDisposable Member
   }
-
+  */
 }

@@ -45,33 +45,40 @@ namespace X13.UI {
     }
     public static RoutedUICommand CmdRename { get { return _cmdRename; } }
 
-    private InBase[] valueVC;
+    private ObservableCollection<InBase> _valueVC;
 
     public InspectorForm(DTopic data) {
-      valueVC = new InBase[2];
+      _valueVC = new ObservableCollection<InBase>();
       this.data = data;
-      valueVC[0] = new InValue(data);
-      valueVC[1] = new InTopic(data, null);
+      //valueVC[0] = new InValue(data);
+      _valueVC.Add(new InTopic(data, null, CollectionChange));
       InitializeComponent();
-      this.tvValue.ItemsSource = valueVC;
+
+      var v = new System.Windows.Data.CollectionViewSource();
+      v.Source = _valueVC;
+      v.Filter += v_Filter;
+      v.LiveFilteringProperties.Add("IsVisible");
+      v.IsLiveFilteringRequested = true;
+      ((ListCollectionView)v.View).CustomSort = new InBase.Comparer();
+      Binding binding = new Binding();
+      binding.Source = v;
+      BindingOperations.SetBinding(lvValue, ListView.ItemsSourceProperty, binding);
     }
 
-    #region Properies
-    public DTopic data { get; private set; }
-    #endregion Properies
-
-    #region Children
-
-    private void Border_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e) {
-      FrameworkElement p;
-      DTopic t;
-      if((p = sender as FrameworkElement) != null && (t = p.DataContext as DTopic) != null) {
-        DWorkspace.This.Open(t.fullPath);
-        e.Handled = true;
+    private void v_Filter(object sender, FilterEventArgs e) {
+      var v = e.Item as InBase;
+      e.Accepted = v != null && v.IsVisible;
+    }
+    private void CollectionChange(InBase item, bool add) {
+      if(add) {
+        _valueVC.Add(item);
+      } else {
+        _valueVC.Remove(item);
       }
     }
 
-    #endregion Children
+    public DTopic data { get; private set; }
+
     private void Grid_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
       var gr = sender as FrameworkElement;
       if(gr != null) {
@@ -93,12 +100,10 @@ namespace X13.UI {
         gr.ContextMenu.Items.Clear();
       }
     }
-
     private void tbItemName_Loaded(object sender, RoutedEventArgs e) {
       (sender as TextBox).SelectAll();
       (sender as TextBox).Focus();
     }
-
     private void tbItemName_PreviewKeyDown(object sender, KeyEventArgs e) {
       TextBox tb;
       InTopic tv;
@@ -113,7 +118,6 @@ namespace X13.UI {
         e.Handled = true;
       }
     }
-
     private void tbItemName_LostFocus(object sender, RoutedEventArgs e) {
       TextBox tb;
       InTopic tv;
@@ -123,7 +127,6 @@ namespace X13.UI {
       tv.FinishNameEdit(tb.Text);
       e.Handled = true;
     }
-
     private void CmdDelete_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
       var gr = sender as FrameworkElement;
       if(gr != null) {
@@ -134,7 +137,6 @@ namespace X13.UI {
         }
       }
     }
-
     private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e) {
       var gr = sender as FrameworkElement;
       if(gr != null) {
@@ -155,5 +157,34 @@ namespace X13.UI {
       get { return data!=null && (data.schemaStr=="Logram"); }
     }
     #endregion IBaseForm Members
+
+    private void TextBlock_KeyUp(object sender, KeyEventArgs e) {
+        if(e.Key != Key.Left && e.Key!=Key.Right) {
+        return;
+      }
+      var gr = sender as FrameworkElement;
+      if(gr != null) {
+        var it = gr.DataContext as InBase;
+        if(it != null) {
+          if(e.Key == Key.Right && it.HasChildren && !it.IsExpanded) {
+            it.IsExpanded = true;
+            e.Handled = true;
+          } else if(e.Key == Key.Left && it.IsExpanded) {
+            it.IsExpanded = false;
+            e.Handled = true;
+          }
+        }
+      }
+
+    }
+  }
+  internal class GridColumnSpringConverter : IMultiValueConverter {
+    public object Convert(object[] values, System.Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+      double v=values.OfType<double>().Aggregate((x, y) => x -= y) - 26;
+      return v > 0 ? v : 100;
+    }
+    public object[] ConvertBack(object value, System.Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture) {
+      throw new System.NotImplementedException();
+    }
   }
 }

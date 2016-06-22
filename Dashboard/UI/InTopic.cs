@@ -38,13 +38,14 @@ namespace X13.UI {
     private InTopic _parent;
     private DTopic _owner;
     private bool _root;
-    private ObservableCollection<InTopic> _items;
     private bool _populated;
     private JSC.JSValue _cStruct;
+    private Action<InBase, bool> _collFunc;
 
-    public InTopic(DTopic owner, InTopic parent) {
+    public InTopic(DTopic owner, InTopic parent, Action<InBase, bool> collFunc) {
       _owner = owner;
       _parent = parent;
+      _collFunc = collFunc;
       _root = _parent == null;
       IsGroupHeader = _root;
       _owner.changed += _owner_PropertyChanged;
@@ -52,35 +53,52 @@ namespace X13.UI {
         name = "children";
         icon = App.GetIcon("children");
         editor = null;
+        levelPadding = 5;
+        _populated = true;
+        if(_owner.children != null) {
+          InsertItems(_owner.children);
+        }
       } else {
         name = _owner.name;
         base.UpdateSchema(_owner.schema);
+        levelPadding = _parent.levelPadding + 7;
       }
-      base.IsExpanded = _root;
+      base._isExpanded = _root;
+      base._isVisible = _root || (_parent._isVisible && _parent._isExpanded);
     }
-    private InTopic(JSC.JSValue cStruct, InTopic parent) {
+    private InTopic(JSC.JSValue cStruct, InTopic parent, Action<InBase, bool> collFunc) {
       _parent = parent;
       _cStruct = cStruct;
       name = string.Empty;
       IsEdited = true;
+      levelPadding = _parent == null ? 5 : _parent.levelPadding + 7;
+
       JSC.JSValue sn;
       if(_cStruct != null && (sn = _cStruct["schema"]).ValueType == JSC.JSValueType.String) {
         parent._owner.GetAsync("/etc/schema/" + (sn.Value as string)).ContinueWith(SchemaLoaded, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
 
-    public override JSC.JSValue value { get { return _owner != null ? _owner.value : JSC.JSValue.NotExists; } set { if(_owner != null) { _owner.SetValue(value); } } }
-    public ObservableCollection<InTopic> items {
+    public override bool IsExpanded {
       get {
-        if(_owner != null && _items == null) {
+        return _isExpanded;
+      }
+      set {
+        base.IsExpanded = value;
+        if(_isExpanded && _owner != null && _items == null) {
           _populated = true;
           if(_owner.children != null) {
             InsertItems(_owner.children);
           }
         }
-        return _items;
       }
     }
+    public override bool HasChildren {
+      get {
+        return _owner != null && _owner.children != null;
+      }
+    }
+    public override JSC.JSValue value { get { return _owner != null ? _owner.value : JSC.JSValue.NotExists; } set { if(_owner != null) { _owner.SetValue(value); } } }
     public void FinishNameEdit(string name) {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
@@ -88,7 +106,7 @@ namespace X13.UI {
           var td = _parent._owner.CreateAsync(name, _cStruct["schema"].Value as string, _cStruct["default"]);
           //td.ContinueWith(SetNameComplete);
         }
-        _parent.items.Remove(this);
+        _parent._items.Remove(this);
       } else {
         if(!string.IsNullOrEmpty(name)) {
           _owner.Move(_owner.parent, name);
@@ -103,7 +121,7 @@ namespace X13.UI {
       if(_items == null) {
         lock(this) {
           if(_items == null) {
-            _items = new ObservableCollection<InTopic>();
+            _items = new List<InBase>();
             pc_items = true;
           }
         }
@@ -119,11 +137,12 @@ namespace X13.UI {
       InTopic tmp;
       var tt = await t.GetAsync(null);
       if(tt != null) {
-        if((tmp = _items.FirstOrDefault(z => z.name == tt.name)) != null) {
+        if((tmp = _items.OfType<InTopic>().FirstOrDefault(z => z.name == tt.name)) != null) {
           _items.Remove(tmp);
           tmp.RefreshOwner(tt);
         } else {
-          tmp = new InTopic(tt, this);
+          tmp = new InTopic(tt, this, _collFunc);
+          _collFunc(tmp, true);
         }
         int i;
         for(i = 0; i < _items.Count; i++) {
@@ -161,7 +180,7 @@ namespace X13.UI {
         if(td.IsFaulted) {
           Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
         }
-        _parent.items.Remove(this);
+        _parent._items.Remove(this);
       }
     }
     private void SchemaLoaded(Task<DTopic> dt) {
@@ -272,12 +291,12 @@ namespace X13.UI {
             if(_items == null) {
               lock(this) {
                 if(_items == null) {
-                  _items = new ObservableCollection<InTopic>();
+                  _items = new List<InBase>();
                   pc_items = true;
                 }
               }
             }
-            _items.Insert(0, new InTopic(decl, this));
+            _items.Insert(0, new InTopic(decl, this, _collFunc));
           }
         }
         if(pc_items) {
@@ -291,13 +310,58 @@ namespace X13.UI {
       this._owner.GetAsync("/etc/schema/" + sn).ContinueWith(IconFromSchemaLoaded, img, TaskScheduler.FromCurrentSynchronizationContext());
       return img;
     }
-    private void IconFromSchemaLoaded(Task<DTopic> td, object o){
+    private void IconFromSchemaLoaded(Task<DTopic> td, object o) {
       var img = o as Image;
-        if(img!=null && td.IsCompleted && td.Result != null && td.Result.value != null && td.Result.value["icon"].ValueType == JSC.JSValueType.String) {
-          img.Source = App.GetIcon(td.Result.value["icon"].Value as string);
-        }
+      if(img != null && td.IsCompleted && td.Result != null && td.Result.value != null && td.Result.value["icon"].ValueType == JSC.JSValueType.String) {
+        img.Source = App.GetIcon(td.Result.value["icon"].Value as string);
+      }
     }
     #endregion ContextMenu
+
+    #region IComparable<InBase> Members
+    public override int CompareTo(InBase other) {
+      var o = other as InTopic;
+      if(o == null) {
+        return 1;
+      }
+      int r = 0;
+      var p1 = this.GetPathParts();
+      var p2 = o.GetPathParts();
+      int i = 0;
+      while(true) {
+        if(p1.Count <= i) {
+          return -1;
+        }
+        if(p2.Count <= i) {
+          return 1;
+        }
+        r = p1[i].CompareTo(p2[i]);
+        if(r != 0) {
+          return r;
+        }
+        i++;
+      }
+    }
+    private List<string> GetPathParts() {
+      List<string> p = new List<string>();
+      DTopic cur;
+      if(_owner != null) {
+        cur = _owner;
+      } else {
+        if(_parent == null) {
+          cur = null;
+        } else {
+          cur = _parent._owner;
+        }
+        p.Add(string.Empty);
+      }
+      while(cur != null) {
+        p.Insert(0, cur.name);
+        cur = cur.parent;
+      }
+      return p;
+    }
+    #endregion IComparable<InBase> Members
 
     #region IDisposable Member
     public void Dispose() {
