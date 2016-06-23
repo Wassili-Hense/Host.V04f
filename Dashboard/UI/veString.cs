@@ -54,18 +54,8 @@ namespace X13.UI {
         Publish();
       } else if(e.Key == System.Windows.Input.Key.Escape) {
         e.Handled = true;
-        base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up));
+        base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Previous));
         base.Text = _oldValue;
-      } else if(e.Key == System.Windows.Input.Key.PageDown) {
-        e.Handled = true;
-        if(!base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Down))) {
-          base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Next));
-        }
-      } else if(e.Key == System.Windows.Input.Key.PageUp) {
-        e.Handled = true;
-        if(!base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up))) {
-          base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Previous));
-        }
       }
     }
     private void ve_GotFocus(object sender, System.Windows.RoutedEventArgs e) {

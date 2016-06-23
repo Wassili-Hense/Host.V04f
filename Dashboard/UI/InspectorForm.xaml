@@ -19,16 +19,40 @@
       <RowDefinition Height="Auto"/>
       <RowDefinition />
     </Grid.RowDefinitions>
-    <ListView  Grid.Row="0" x:Name="lvValue" BorderThickness="0" KeyboardNavigation.TabNavigation="Continue" Focusable="False">
+    <ListView  Grid.Row="0" x:Name="lvValue" BorderThickness="0" KeyboardNavigation.TabNavigation="Continue" Focusable="False" SelectionMode="Single">
       <ListView.ItemContainerStyle>
         <Style TargetType="ListViewItem">
+          <EventSetter Event="KeyUp" Handler="ListViewItem_KeyUp" />
           <Setter Property="Margin" Value="0" />
-          <Setter Property="Focusable" Value="False" />
+          <Setter Property="Focusable" Value="True" />
           <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor2Key}}" />
+          <Setter Property="BorderBrush" Value="#00000000" />
+          <Setter Property="Template">
+            <Setter.Value>
+              <ControlTemplate TargetType="ListViewItem">
+                <Border Background="{TemplateBinding Background}" Margin="0" BorderThickness="2,0,2,0" BorderBrush="{TemplateBinding BorderBrush}" 
+                        ContextMenuOpening="Grid_ContextMenuOpening" ContextMenuClosing="Grid_ContextMenuClosing">
+                  <Border.CommandBindings>
+                      <CommandBinding Command="ApplicationCommands.Open" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
+                      <CommandBinding Command="ApplicationCommands.New" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
+                      <CommandBinding Command="ApplicationCommands.Delete" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                      <CommandBinding Command="x13ui:InspectorForm.CmdRename" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
+                  </Border.CommandBindings>
+                  <Border.ContextMenu>
+                    <ContextMenu />
+                  </Border.ContextMenu>
+                    <GridViewRowPresenter x:Name="gridrowPresenter" Content="{TemplateBinding Property=ContentControl.Content}"/>
+                </Border>
+              </ControlTemplate>
+            </Setter.Value>
+          </Setter>
           <Style.Triggers>
             <DataTrigger Binding="{Binding IsGroupHeader}" Value="True">
               <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor17Key}}" />
             </DataTrigger>
+            <Trigger Property="IsSelected" Value="True">
+              <Setter Property="BorderBrush" Value="Blue" />
+            </Trigger>
           </Style.Triggers>
         </Style>
       </ListView.ItemContainerStyle>
@@ -86,7 +110,7 @@
                         <Setter Property="ContentTemplate">
                           <Setter.Value>
                             <DataTemplate>
-                              <TextBlock Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" KeyUp="TextBlock_KeyUp" Focusable="True" />
+                              <TextBlock Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
                             </DataTemplate>
                           </Setter.Value>
                         </Setter>
@@ -102,7 +126,7 @@
               </DataTemplate>
             </GridViewColumn.CellTemplate>
           </GridViewColumn>
-          <GridViewColumn Header="value">
+          <GridViewColumn Header="value" Width="240">
             <!--GridViewColumn.Width>
               <MultiBinding Converter="{StaticResource ColumnSpringConverter}">
                 <Binding ElementName="lvValue" Path="ActualWidth" Mode="OneWay"/>

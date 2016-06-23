@@ -13,36 +13,41 @@ using System.Windows;
 using System.Windows.Input;
 
 namespace X13.UI {
-  /*
   public class InValue : InBase, IDisposable {
     private DTopic _data;
     private InValue _parent;
     private JSC.JSValue _value;
-    private ObservableCollection<InValue> _items;
+    private string _path;
 
-    public InValue(DTopic data) {
+    public InValue(DTopic data, Action<InBase, bool> collFunc) {
       _data = data;
       _parent = null;
+      _collFunc = collFunc;
       name = "value";
-      IsExpanded = true;
+      _path = string.Empty;
+      _isVisible = true;
       levelPadding = 5;
-      _items = new ObservableCollection<InValue>();
+      _items = new List<InBase>();
       _value = _data.value;
       UpdateSchema(_data.schema);
       UpdateData(_data.value);
+      _isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
     }
 
-    private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema) {
+    private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema, Action<InBase, bool> collFunc) {
       _data = data;
       _parent = parent;
+      _collFunc = collFunc;
+      _path = _parent._path + "." + name;
       base.name = name;
-      _items = new ObservableCollection<InValue>();
-      IsExpanded = true;
+      _items = new List<InBase>();
+      _isVisible = true;
       levelPadding = _parent.levelPadding + 7;
       _value = value;
       UpdateSchema(schema);
       UpdateData(value);
+      _isExpanded = this.HasChildren;
     }
 
     public override NiL.JS.Core.JSValue value {
@@ -57,7 +62,6 @@ namespace X13.UI {
         }
       }
     }
-    public ObservableCollection<InValue> items { get { return _items; } }
     protected override void UpdateSchema(JSC.JSValue schema) {
       base.UpdateSchema(schema);
       if(_schema != null) {
@@ -65,7 +69,7 @@ namespace X13.UI {
         if(pr != null) {
           InValue vc;
           foreach(var kv in pr) {
-            vc = _items.FirstOrDefault(z => z.name == kv.Key);
+            vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
             if(vc != null) {
               vc.UpdateSchema(kv.Value);
             }
@@ -84,7 +88,7 @@ namespace X13.UI {
         InValue vc;
         int i;
         foreach(var kv in _value.OrderBy(z => z.Key)) {
-          vc = _items.FirstOrDefault(z => z.name == kv.Key);
+          vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
           if(vc != null) {
             vc.UpdateData(kv.Value);
           } else {
@@ -100,12 +104,15 @@ namespace X13.UI {
                 cs = null;
               }
             }
-            _items.Insert(i + 1, new InValue(_data, this, kv.Key, kv.Value, cs));
+            var ni= new InValue(_data, this, kv.Key, kv.Value, cs, _collFunc);
+            _items.Insert(i + 1, ni);
+            _collFunc(ni, true);
           }
         }
         var keys = _value.Select(z => z.Key).ToArray();
         for(i = _items.Count - 1; i >= 0; i--) {
           if(!keys.Contains(_items[i].name)) {
+            _collFunc(_items[i], false);
             _items.RemoveAt(i);
           }
         }
@@ -218,6 +225,19 @@ namespace X13.UI {
       }
     }
     #endregion IDisposable Member
+
+    public override bool HasChildren {
+      get { return _items.Any(); }
+    }
+    #region IComparable<InBase> Members
+    public override int CompareTo(InBase other) {
+      var o = other as InValue;
+      return o == null ? -1 : this._path.CompareTo(o._path);
+    }
+    #endregion IComparable<InBase> Members
+
+    public override string ToString() {
+      return _data.fullPath+":"+_path;
+    }
   }
-  */
 }

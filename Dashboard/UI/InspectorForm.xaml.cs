@@ -50,28 +50,33 @@ namespace X13.UI {
     public InspectorForm(DTopic data) {
       _valueVC = new ObservableCollection<InBase>();
       this.data = data;
-      //valueVC[0] = new InValue(data);
-      _valueVC.Add(new InTopic(data, null, CollectionChange));
+      CollectionChange(new InValue(data, CollectionChange), true);
+      CollectionChange(new InTopic(data, null, CollectionChange), true);
       InitializeComponent();
-
-      var v = new System.Windows.Data.CollectionViewSource();
-      v.Source = _valueVC;
-      v.Filter += v_Filter;
-      v.LiveFilteringProperties.Add("IsVisible");
-      v.IsLiveFilteringRequested = true;
-      ((ListCollectionView)v.View).CustomSort = new InBase.Comparer();
-      Binding binding = new Binding();
-      binding.Source = v;
-      BindingOperations.SetBinding(lvValue, ListView.ItemsSourceProperty, binding);
+      lvValue.ItemsSource = _valueVC;
     }
+    private void CollectionChange(InBase item, bool visible) {
+      if(item == null) {
+        throw new ArgumentNullException("item");
+      }
+      if(visible) {
+        lock(_valueVC) {
+          int min = 0, mid = -1, max = _valueVC.Count - 1, cr;
 
-    private void v_Filter(object sender, FilterEventArgs e) {
-      var v = e.Item as InBase;
-      e.Accepted = v != null && v.IsVisible;
-    }
-    private void CollectionChange(InBase item, bool add) {
-      if(add) {
-        _valueVC.Add(item);
+          while(min <= max) {
+            mid = (min + max) / 2;
+            cr = item.CompareTo(_valueVC[mid]);
+            if(cr > 0) {
+              min = mid + 1;
+            } else if(cr < 0) {
+              max = mid - 1;
+              mid = max;
+            } else {
+              break;
+            }
+          }
+          _valueVC.Insert(mid + 1, item);
+        }
       } else {
         _valueVC.Remove(item);
       }
@@ -154,23 +159,27 @@ namespace X13.UI {
     }
     public BitmapSource icon { get { return App.GetIcon(null); } }
     public bool altView {
-      get { return data!=null && (data.schemaStr=="Logram"); }
+      get { return data != null && (data.schemaStr == "Logram"); }
     }
     #endregion IBaseForm Members
 
-    private void TextBlock_KeyUp(object sender, KeyEventArgs e) {
-        if(e.Key != Key.Left && e.Key!=Key.Right) {
+    private void ListViewItem_KeyUp(object sender, KeyEventArgs e) {
+      if(e.Key != Key.Left && e.Key != Key.Right) {
         return;
       }
-      var gr = sender as FrameworkElement;
+      var gr = e.OriginalSource as ListViewItem;
       if(gr != null) {
         var it = gr.DataContext as InBase;
         if(it != null) {
           if(e.Key == Key.Right && it.HasChildren && !it.IsExpanded) {
             it.IsExpanded = true;
             e.Handled = true;
-          } else if(e.Key == Key.Left && it.IsExpanded) {
-            it.IsExpanded = false;
+          } else if(e.Key == Key.Left) {
+            if(it.IsExpanded) {
+              it.IsExpanded = false;
+            } else {
+              base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up));
+            }
             e.Handled = true;
           }
         }
@@ -180,7 +189,7 @@ namespace X13.UI {
   }
   internal class GridColumnSpringConverter : IMultiValueConverter {
     public object Convert(object[] values, System.Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      double v=values.OfType<double>().Aggregate((x, y) => x -= y) - 26;
+      double v = values.OfType<double>().Aggregate((x, y) => x -= y) - 26;
       return v > 0 ? v : 100;
     }
     public object[] ConvertBack(object value, System.Type[] targetTypes, object parameter, System.Globalization.CultureInfo culture) {

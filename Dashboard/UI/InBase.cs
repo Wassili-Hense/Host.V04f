@@ -20,6 +20,7 @@ namespace X13.UI {
     protected string _view;
     protected bool _isExpanded;
     protected List<InBase> _items;
+    protected Action<InBase, bool> _collFunc;
 
 
     public double levelPadding { get; protected set; }
@@ -51,7 +52,7 @@ namespace X13.UI {
               i.IsVisible = this._isVisible && this._isExpanded;
             }
           }
-          base.PropertyChangedReise("IsVisible");
+          _collFunc(this, _isVisible);
         }
       }
     }
@@ -67,12 +68,12 @@ namespace X13.UI {
     public abstract void CmdExecuted(System.Windows.Input.ICommand cmd, object p);
     public void GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
-      TreeViewItem parent;
+      ListViewItem parent;
       DependencyObject parentObject;
 
       for(cur = sender as DependencyObject; cur != null; cur = parentObject) {
         parentObject = VisualTreeHelper.GetParent(cur);
-        if((parent = parentObject as TreeViewItem) != null) {
+        if((parent = parentObject as ListViewItem) != null) {
           parent.IsSelected = true;
           break;
         }
@@ -117,20 +118,5 @@ namespace X13.UI {
     }
 
     public abstract int CompareTo(InBase other);
-
-    internal class Comparer : System.Collections.IComparer {
-      public int Compare(object x, object y) {
-        var xb = x as InBase;
-        var yb = y as InBase;
-        if(xb == null) {
-          return yb == null ? 0 : -1;
-        }
-        if(yb == null) {
-          return 1;
-        }
-        return xb.CompareTo(yb);
-      }
-    }
-
   }
 }

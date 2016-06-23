@@ -40,7 +40,6 @@ namespace X13.UI {
     private bool _root;
     private bool _populated;
     private JSC.JSValue _cStruct;
-    private Action<InBase, bool> _collFunc;
 
     public InTopic(DTopic owner, InTopic parent, Action<InBase, bool> collFunc) {
       _owner = owner;
@@ -63,7 +62,7 @@ namespace X13.UI {
         base.UpdateSchema(_owner.schema);
         levelPadding = _parent.levelPadding + 7;
       }
-      base._isExpanded = _root;
+      base._isExpanded = _root && _owner.children!=null && _owner.children.Any();
       base._isVisible = _root || (_parent._isVisible && _parent._isExpanded);
     }
     private InTopic(JSC.JSValue cStruct, InTopic parent, Action<InBase, bool> collFunc) {
@@ -107,6 +106,7 @@ namespace X13.UI {
           //td.ContinueWith(SetNameComplete);
         }
         _parent._items.Remove(this);
+        _parent._collFunc(this, false);
       } else {
         if(!string.IsNullOrEmpty(name)) {
           _owner.Move(_owner.parent, name);
@@ -139,6 +139,7 @@ namespace X13.UI {
       if(tt != null) {
         if((tmp = _items.OfType<InTopic>().FirstOrDefault(z => z.name == tt.name)) != null) {
           _items.Remove(tmp);
+          _collFunc(tmp, false);
           tmp.RefreshOwner(tt);
         } else {
           tmp = new InTopic(tt, this, _collFunc);
@@ -181,6 +182,7 @@ namespace X13.UI {
           Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
         }
         _parent._items.Remove(this);
+        _collFunc(this, false);
       }
     }
     private void SchemaLoaded(Task<DTopic> dt) {
@@ -191,27 +193,24 @@ namespace X13.UI {
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
       if(!_root) {
         if(art == DTopic.Art.schema) {
-          Log.Debug("{0} #{1}", _owner.path, art.ToString());
           this.UpdateSchema(_owner.schema);
         } else if(art == DTopic.Art.value) {
-          Log.Debug("{0} #{1}", _owner.path, art.ToString());
           this.UpdateSchema(_owner.schema);
           this.editor.ValueChanged(_owner.value);
         }
       }
       if(_populated) {
         if(art == DTopic.Art.addChild) {
-          Log.Debug("{0} #{1}", child.path, art.ToString());
           if(_items == null) {
             InsertItems(_owner.children);
           } else {
             var td = AddTopic(child);
           }
         } else if(art == DTopic.Art.RemoveChild) {
-          Log.Debug("{0} #{1}", child.path, art.ToString());
           var it = _items.FirstOrDefault(z => z.name == child.name);
           if(it != null) {
             _items.Remove(it);
+            _collFunc(it, false);
           }
         }
       }
@@ -296,7 +295,9 @@ namespace X13.UI {
                 }
               }
             }
-            _items.Insert(0, new InTopic(decl, this, _collFunc));
+            var ni=new InTopic(decl, this, _collFunc);
+            _items.Insert(0, ni);
+            _collFunc(ni, true);
           }
         }
         if(pc_items) {
@@ -321,50 +322,23 @@ namespace X13.UI {
     #region IComparable<InBase> Members
     public override int CompareTo(InBase other) {
       var o = other as InTopic;
-      if(o == null) {
-        return 1;
-      }
-      int r = 0;
-      var p1 = this.GetPathParts();
-      var p2 = o.GetPathParts();
-      int i = 0;
-      while(true) {
-        if(p1.Count <= i) {
-          return -1;
-        }
-        if(p2.Count <= i) {
-          return 1;
-        }
-        r = p1[i].CompareTo(p2[i]);
-        if(r != 0) {
-          return r;
-        }
-        i++;
-      }
+      return o == null?1:this.path.CompareTo(o.path);
     }
-    private List<string> GetPathParts() {
-      List<string> p = new List<string>();
-      DTopic cur;
-      if(_owner != null) {
-        cur = _owner;
-      } else {
-        if(_parent == null) {
-          cur = null;
-        } else {
-          cur = _parent._owner;
+    private string path {
+      get {
+        if(_owner != null) {
+          return _owner.path;
+        } else if(_parent != null && _parent._owner != null) {
+          return _parent._owner.path;
         }
-        p.Add(string.Empty);
+        return "/";
       }
-      while(cur != null) {
-        p.Insert(0, cur.name);
-        cur = cur.parent;
-      }
-      return p;
     }
     #endregion IComparable<InBase> Members
 
     #region IDisposable Member
     public void Dispose() {
+      _collFunc(this, false);
       if(_owner != null) {
         _owner.changed -= _owner_PropertyChanged;
         _owner = null;
