@@ -264,22 +264,10 @@ namespace X13.UI {
       if(_owner == null) {
         return;
       }
-      JSC.JSObject o;
-      bool ch = false;
-      if(_owner.value.ValueType != JSC.JSValueType.Object) {
-        o = JSC.JSObject.CreateObject();
-        o["$schema"] = "Logram";
-        ch = true;
-      } else {
-        o = CloneJSO(t.value.ToObject());
-      }
-      _offsetTop = GetOrDefault(o, "T", 0, ref ch);
-      _offsetLeft = GetOrDefault(o, "L", 0, ref ch);
-      this.Width = GetOrDefault(o, "W", 48, ref ch) * CELL_SIZE + 10;
-      this.Height = GetOrDefault(o, "H", 48, ref ch) * CELL_SIZE + 10;;
-      if(ch) {
-        _owner.SetValue(o);
-      }
+      _offsetTop = _owner.GetField<double>("T");
+      _offsetLeft = _owner.GetField<double>("L");
+      this.Width = _owner.GetField<double>("W") * CELL_SIZE + 10;
+      this.Height = _owner.GetField<double>("H") * CELL_SIZE + 10;
       AddVisual(new LiBrick(this, t));
     }
     private void _owner_changed(DTopic.Art art, DTopic src) {
@@ -294,15 +282,6 @@ namespace X13.UI {
         o[kv.Key] = kv.Value;
       }
       return o;
-    }
-    private double GetOrDefault(JSC.JSValue o, string name, double def, ref bool ch) {
-      var v = o[name];
-      if(v.ValueType != JSC.JSValueType.Double && v.ValueType != JSC.JSValueType.Integer) {
-        o[name] = def;
-        ch = true;
-        return def;
-      }
-      return (double)v;
     }
   }
 }

@@ -10,6 +10,8 @@ using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.Data {
   public class DTopic {
+    private static char[] FIELDS_SEPARATOR = new char[] { '.' };
+
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.update, 8 - acl.delete, 16 - hat children
     private JSC.JSValue _value;
@@ -92,6 +94,35 @@ namespace X13.Data {
 	}
 	public void Delete() {
       _client.Delete(this.path);
+    }
+
+    public bool TryGetField<T>(string path, out T value) {
+      JSC.JSValue cur = _value;
+      if(!string.IsNullOrEmpty(path)) {
+        var pp = path.Split(FIELDS_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+        for(int i = 0; i < pp.Length; i++) {
+          cur = cur.GetProperty(pp[i]);
+          if(!cur.Defined) {
+            break;
+          }
+        }
+      }
+      if(cur != null && cur.Defined) {
+        try {
+          value = (T)(((IConvertible)cur).ToType(typeof(T), null));
+          return true;
+        }
+        catch(Exception) {
+
+        }
+      }
+      value = default(T);
+      return false;
+    }
+    public T GetField<T>(string path) {
+      T val;
+      TryGetField<T>(path, out val);
+      return val;
     }
 
     private void ValuePublished(JSC.JSValue val) {

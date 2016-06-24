@@ -320,8 +320,8 @@ namespace X13.UI {
     }
     private void IconFromSchemaLoaded(Task<DTopic> td, object o) {
       var img = o as Image;
-      if(img != null && td.IsCompleted && td.Result != null && td.Result.value != null && td.Result.value["icon"].ValueType == JSC.JSValueType.String) {
-        img.Source = App.GetIcon(td.Result.value["icon"].Value as string);
+      if(img != null && td.IsCompleted && td.Result != null) {
+        img.Source = App.GetIcon(td.Result.GetField<string>("icon"));
       }
     }
     #endregion ContextMenu

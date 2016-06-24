@@ -23,7 +23,7 @@
       <!--i n='$schema' v='"str2"' s='True' /-->
     </i>
     <i n='Delta' v='true' s='True' />
-    <i n='Epsilon' v='{"$schema":"Logram"}' s='True'>
+    <i n='Epsilon' v='{"$schema":"Logram","W":48,"H":48,"T":0,"L":0}' s='True'>
       <i n='A01' v='{"$schema":"Brick", "Bclass":"Test", "Left":7, "Top":7 }' s='True'>
         
       </i>

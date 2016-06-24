@@ -89,8 +89,8 @@ namespace X13.UI {
 
       public BrickInfo(DTopic owner) {
         this.owner = owner;
-        info = (this.owner.value["info"].Value as string) ?? owner.name;
-        image = App.GetIcon((this.owner.value["icon"].Value as string) ?? "Null");
+        info = this.owner.GetField<string>("info") ?? owner.name;
+        image = App.GetIcon(this.owner.GetField<string>("icon") ?? "Null");
       }
       public string info { get; private set; }
       public BitmapSource image { get; private set; }
