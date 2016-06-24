@@ -64,8 +64,6 @@ namespace X13.UI {
 
     public abstract JSC.JSValue value { get; set; }
     public abstract List<Control> MenuItems(FrameworkElement src);
-    public abstract bool CanExecute(System.Windows.Input.ICommand cmd, object p);
-    public abstract void CmdExecuted(System.Windows.Input.ICommand cmd, object p);
     public void GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       ListViewItem parent;
@@ -116,7 +114,16 @@ namespace X13.UI {
       }
       this.editor.SchemaChanged(_schema);
     }
-
+    public void Deleted() {
+      if(_isVisible) {
+        if(_isExpanded) {
+          foreach(var ch in _items.ToArray()) {
+            ch.Deleted();
+          }
+        }
+        _collFunc(this, false);
+      }
+    }
     public abstract int CompareTo(InBase other);
   }
 }

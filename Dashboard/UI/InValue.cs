@@ -26,6 +26,7 @@ namespace X13.UI {
       name = "value";
       _path = string.Empty;
       _isVisible = true;
+      _isExpanded = true; // fill _valueVC
       levelPadding = 5;
       _items = new List<InBase>();
       _value = _data.value;
@@ -43,6 +44,7 @@ namespace X13.UI {
       base.name = name;
       _items = new List<InBase>();
       _isVisible = true;
+      _isExpanded = true; // fill _valueVC
       levelPadding = _parent.levelPadding + 7;
       _value = value;
       UpdateSchema(schema);
@@ -106,13 +108,17 @@ namespace X13.UI {
             }
             var ni= new InValue(_data, this, kv.Key, kv.Value, cs, _collFunc);
             _items.Insert(i + 1, ni);
-            _collFunc(ni, true);
+            if(_isVisible && _isExpanded) {
+              _collFunc(ni, true);
+            }
           }
         }
         var keys = _value.Select(z => z.Key).ToArray();
         for(i = _items.Count - 1; i >= 0; i--) {
           if(!keys.Contains(_items[i].name)) {
-            _collFunc(_items[i], false);
+            if(_isVisible && _isExpanded) {
+              _items[i].Deleted();
+            }
             _items.RemoveAt(i);
           }
         }
@@ -145,7 +151,7 @@ namespace X13.UI {
         if(_parent == null) {
           _data.SetValue(jo);
         } else {
-          _parent.ChangeValue(name, jo);
+          _parent.ChangeValue(this.name, jo);
         }
       } else {
         throw new NotImplementedException();
@@ -185,7 +191,9 @@ namespace X13.UI {
           l.Add(ma);
         }
       }
-      mi = new MenuItem() { Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi.IsEnabled = _parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      mi.Click += miDelete_Click;
       l.Add(mi);
       return l;
     }
@@ -201,19 +209,9 @@ namespace X13.UI {
         }
       }
     }
-
-    public override bool CanExecute(System.Windows.Input.ICommand cmd, object p) {
-      JSC.JSValue f;
-      if(cmd == ApplicationCommands.Delete) {
-        return _parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
-      }
-      return false;
-    }
-    public override void CmdExecuted(ICommand cmd, object p) {
-      if(cmd == ApplicationCommands.Delete) {
-        if(_parent != null) {
-          _parent.ChangeValue(name, null);
-        }
+    private void miDelete_Click(object sender, RoutedEventArgs e) {
+      if(_parent != null) {
+        _parent.ChangeValue(name, null);
       }
     }
     #endregion ContextMenu

@@ -23,6 +23,14 @@
       <ListView.ItemContainerStyle>
         <Style TargetType="ListViewItem">
           <EventSetter Event="KeyUp" Handler="ListViewItem_KeyUp" />
+          <EventSetter Event="ContextMenuOpening" Handler="ListViewItem_ContextMenuOpening" />
+          <EventSetter Event="ContextMenuClosing" Handler="ListViewItem_ContextMenuClosing" />
+          <EventSetter Event="MouseDoubleClick" Handler="ListViewItem_DoubleClick" />
+          <Setter Property="ContextMenu">
+            <Setter.Value>
+              <ContextMenu />
+            </Setter.Value>
+          </Setter>          
           <Setter Property="Margin" Value="0" />
           <Setter Property="Focusable" Value="True" />
           <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor2Key}}" />
@@ -30,18 +38,8 @@
           <Setter Property="Template">
             <Setter.Value>
               <ControlTemplate TargetType="ListViewItem">
-                <Border Background="{TemplateBinding Background}" Margin="0" BorderThickness="2,0,2,0" BorderBrush="{TemplateBinding BorderBrush}" 
-                        ContextMenuOpening="Grid_ContextMenuOpening" ContextMenuClosing="Grid_ContextMenuClosing">
-                  <Border.CommandBindings>
-                      <CommandBinding Command="ApplicationCommands.Open" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
-                      <CommandBinding Command="ApplicationCommands.New" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed"  />
-                      <CommandBinding Command="ApplicationCommands.Delete" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
-                      <CommandBinding Command="x13ui:InspectorForm.CmdRename" CanExecute="CmdDelete_CanExecute" Executed="CommandBinding_Executed" />
-                  </Border.CommandBindings>
-                  <Border.ContextMenu>
-                    <ContextMenu />
-                  </Border.ContextMenu>
-                    <GridViewRowPresenter x:Name="gridrowPresenter" Content="{TemplateBinding Property=ContentControl.Content}"/>
+                <Border Background="{TemplateBinding Background}" Margin="0" BorderThickness="2,0,2,0" BorderBrush="{TemplateBinding BorderBrush}">
+                  <GridViewRowPresenter x:Name="gridrowPresenter" Content="{TemplateBinding Property=ContentControl.Content}"/>
                 </Border>
               </ControlTemplate>
             </Setter.Value>

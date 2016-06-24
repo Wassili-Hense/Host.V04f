@@ -143,7 +143,9 @@ namespace X13.UI {
           tmp.RefreshOwner(tt);
         } else {
           tmp = new InTopic(tt, this, _collFunc);
-          _collFunc(tmp, true);
+          if(_isVisible && _isExpanded) {
+            _collFunc(tmp, true);
+          }
         }
         int i;
         for(i = 0; i < _items.Count; i++) {
@@ -209,8 +211,8 @@ namespace X13.UI {
         } else if(art == DTopic.Art.RemoveChild) {
           var it = _items.FirstOrDefault(z => z.name == child.name);
           if(it != null) {
+            it.Deleted();
             _items.Remove(it);
-            _collFunc(it, false);
           }
         }
       }
@@ -228,82 +230,87 @@ namespace X13.UI {
           if(_items.Any(z => (tmp1 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == tmp1.Value as string)) {
             continue;
           }
-          mi = new MenuItem() { Header = kv.Key, Command = ApplicationCommands.New, CommandTarget = src, CommandParameter = kv.Value };
+          mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
+          mi.Click += miAdd_Click;
           if(kv.Value["schema"].ValueType == JSC.JSValueType.String) {
             mi.Icon = SchemaName2Icon(kv.Value["schema"].Value as string);
           }
           ma.Items.Add(mi);
         }
       } else {
-        ma.Items.Add(new MenuItem() { Header = "Boolean", Command = ApplicationCommands.New, CommandTarget = src, CommandParameter = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } });
-        ma.Items.Add(new MenuItem() { Header = "Double", Command = ApplicationCommands.New, CommandTarget = src, CommandParameter = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } });
-        ma.Items.Add(new MenuItem() { Header = "String", Command = ApplicationCommands.New, CommandTarget = src, CommandParameter = InTopic.DEFS_String, Icon = new Image() { Source = App.GetIcon("String") } });
-        ma.Items.Add(new MenuItem() { Header = "Date", Command = ApplicationCommands.New, CommandTarget = src, CommandParameter = InTopic.DEFS_Date, Icon = new Image() { Source = App.GetIcon("Date") } });
+        mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
+        mi.Click += miAdd_Click;
+        ma.Items.Add(mi);
+        mi = new MenuItem() { Header = "Double",  Tag = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } };
+        mi.Click += miAdd_Click;
+        ma.Items.Add(mi);
+        mi = new MenuItem() { Header = "String", Tag = InTopic.DEFS_String, Icon = new Image() { Source = App.GetIcon("String") } };
+        mi.Click += miAdd_Click;
+        ma.Items.Add(mi);
+        mi = new MenuItem() { Header = "Date", Tag = InTopic.DEFS_Date, Icon = new Image() { Source = App.GetIcon("Date") } };
+        mi.Click += miAdd_Click;
+        ma.Items.Add(mi);
       }
       if(ma.HasItems) {
         l.Add(ma);
         l.Add(new Separator());
       }
       if(!_root) {
-        l.Add(new MenuItem() { Command = ApplicationCommands.Open, CommandTarget = src });
+        mi = new MenuItem() { Header = "Open" };
+        mi.Click += miOpen_Click;
+        l.Add(mi);
         l.Add(new Separator());
       }
-      mi = new MenuItem() { Command = ApplicationCommands.Delete, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi.IsEnabled = !_root && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) && _owner.CheckAcl(DTopic.ACL.Delete);
+      mi.Click += miDelete_Click;
       l.Add(mi);
       if(!_root && _owner.CheckAcl(DTopic.ACL.Delete) && _parent._owner.CheckAcl(DTopic.ACL.Create)) {
-        l.Add(new MenuItem() { Command = InspectorForm.CmdRename, CommandTarget = src, Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } });
+        mi = new MenuItem() { Header="Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } };
+        mi.Click += miRename_Click;
+        l.Add(mi);
       }
       return l;
     }
 
-    public override bool CanExecute(ICommand cmd, object p) {
-      JSC.JSValue f;
-      if(cmd == ApplicationCommands.Open || cmd == InspectorForm.CmdRename) {
-        return true;
-      } else if(cmd == ApplicationCommands.Delete) {
-        return !_root && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) && _owner.CheckAcl(DTopic.ACL.Delete);
-      } else if(cmd == ApplicationCommands.New) {
-        return _owner.CheckAcl(DTopic.ACL.Create);
+    private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {
+      if(!IsExpanded) {
+        IsExpanded = true;
+        base.PropertyChangedReise("IsExpanded");
       }
-      return false;
-    }
-    public override void CmdExecuted(ICommand cmd, object p) {
-      if(cmd == ApplicationCommands.Open) {
-        DWorkspace.This.Open(_owner.fullPath);
-      } else if(cmd == ApplicationCommands.Delete) {
-        _owner.Delete();
-      } else if(cmd == InspectorForm.CmdRename) {
-        base.IsEdited = true;
-        PropertyChangedReise("IsEdited");
-      } else if(cmd == ApplicationCommands.New) {
-        if(!IsExpanded) {
-          IsExpanded = true;
-          base.PropertyChangedReise("IsExpanded");
-        }
-        bool pc_items = false;
-        var decl = p as JSC.JSValue;
-        if(decl != null) {
-          var mName = decl["name"];
-          if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
-            _owner.CreateAsync(mName.Value as string, decl["schema"].Value as string, decl["default"]);
-          } else {
-            if(_items == null) {
-              lock(this) {
-                if(_items == null) {
-                  _items = new List<InBase>();
-                  pc_items = true;
-                }
+      bool pc_items = false;
+      var decl = (sender as MenuItem).Tag as JSC.JSValue;
+      if(decl != null) {
+        var mName = decl["name"];
+        if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
+          _owner.CreateAsync(mName.Value as string, decl["schema"].Value as string, decl["default"]);
+        } else {
+          if(_items == null) {
+            lock(this) {
+              if(_items == null) {
+                _items = new List<InBase>();
+                pc_items = true;
               }
             }
-            var ni=new InTopic(decl, this, _collFunc);
-            _items.Insert(0, ni);
-            _collFunc(ni, true);
           }
-        }
-        if(pc_items) {
-          PropertyChangedReise("items");
+          var ni = new InTopic(decl, this, _collFunc);
+          _items.Insert(0, ni);
+          _collFunc(ni, true);
         }
       }
+      if(pc_items) {
+        PropertyChangedReise("items");
+      }
+    }
+    private void miOpen_Click(object sender, System.Windows.RoutedEventArgs e) {
+      DWorkspace.This.Open(_owner.fullPath);
+    }
+    private void miDelete_Click(object sender, System.Windows.RoutedEventArgs e) {
+      _owner.Delete();
+    }
+    private void miRename_Click(object sender, System.Windows.RoutedEventArgs e) {
+      base.IsEdited = true;
+      PropertyChangedReise("IsEdited");
     }
 
     private Image SchemaName2Icon(string sn) {

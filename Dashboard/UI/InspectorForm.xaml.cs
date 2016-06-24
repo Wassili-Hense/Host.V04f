@@ -23,7 +23,6 @@ using System.ComponentModel;
 namespace X13.UI {
   public partial class InspectorForm : UserControl, IBaseForm {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
-    private static RoutedUICommand _cmdRename;
     static InspectorForm() {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Boolean"] = veSliderBool.Create;
@@ -31,7 +30,6 @@ namespace X13.UI {
       _editors["Double"] = veDouble.Create;
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
-      _cmdRename = new RoutedUICommand("Rename", "Rename", typeof(InspectorForm));
     }
     public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue schema) {
       IValueEditor rez;
@@ -43,13 +41,13 @@ namespace X13.UI {
       }
       return rez;
     }
-    public static RoutedUICommand CmdRename { get { return _cmdRename; } }
 
+    private DTopic _data;
     private ObservableCollection<InBase> _valueVC;
 
     public InspectorForm(DTopic data) {
+      this._data = data;
       _valueVC = new ObservableCollection<InBase>();
-      this.data = data;
       CollectionChange(new InValue(data, CollectionChange), true);
       CollectionChange(new InTopic(data, null, CollectionChange), true);
       InitializeComponent();
@@ -82,27 +80,59 @@ namespace X13.UI {
       }
     }
 
-    public DTopic data { get; private set; }
-
-    private void Grid_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
-      var gr = sender as FrameworkElement;
+    private void ListViewItem_KeyUp(object sender, KeyEventArgs e) {
+      var gr = e.OriginalSource as ListViewItem;
       if(gr != null) {
-        var d = gr.DataContext as InBase;
-        if(d != null) {
-          var mi = d.MenuItems(gr);
-          if(mi != null && mi.Count() > 0) {
-            gr.ContextMenu.ItemsSource = mi;
-            return;
+        var it = gr.DataContext as InBase;
+        if(e.Key == Key.Apps || e.Key == Key.Space) {
+          if(gr.ContextMenu != null && it != null) {
+            gr.ContextMenu.ItemsSource = it.MenuItems(gr);
+            gr.ContextMenu.IsOpen = true;
+          }
+          return;
+        }
+        if(e.Key == Key.Left || e.Key == Key.Right) {
+          if(it != null) {
+            if(e.Key == Key.Right && it.HasChildren && !it.IsExpanded) {
+              it.IsExpanded = true;
+              e.Handled = true;
+            } else if(e.Key == Key.Left) {
+              if(it.IsExpanded) {
+                it.IsExpanded = false;
+              } else {
+                base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up));
+              }
+              e.Handled = true;
+            }
           }
         }
       }
+    }
+    private void ListViewItem_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
+      FrameworkElement gr;
+      InBase d;
+      if((gr = sender as FrameworkElement) != null && (d = gr.DataContext as InBase) != null) {
+        gr.ContextMenu.ItemsSource = d.MenuItems(gr);
+        return;
+      }
       e.Handled = true;
     }
-    private void Grid_ContextMenuClosing(object sender, ContextMenuEventArgs e) {
+    private void ListViewItem_ContextMenuClosing(object sender, ContextMenuEventArgs e) {
       var gr = sender as FrameworkElement;
       if(gr != null && gr.ContextMenu != null) {
         gr.ContextMenu.ItemsSource = null;
         gr.ContextMenu.Items.Clear();
+      }
+    }
+    private void ListViewItem_DoubleClick(object sender, MouseButtonEventArgs e) {
+      ListViewItem gr;
+      InBase it;
+      if((gr = sender as ListViewItem) != null && (it = gr.DataContext as InBase) != null) {
+        var mis = it.MenuItems(gr);
+        MenuItem mi;
+        if(mis != null && (mi = mis.OfType<MenuItem>().FirstOrDefault(z => z.Header as string == "Open")) != null) {
+          mi.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+        }
       }
     }
     private void tbItemName_Loaded(object sender, RoutedEventArgs e) {
@@ -132,26 +162,6 @@ namespace X13.UI {
       tv.FinishNameEdit(tb.Text);
       e.Handled = true;
     }
-    private void CmdDelete_CanExecute(object sender, CanExecuteRoutedEventArgs e) {
-      var gr = sender as FrameworkElement;
-      if(gr != null) {
-        var it = gr.DataContext as InBase;
-        if(it != null) {
-          e.CanExecute = it.CanExecute(e.Command, e.Parameter);
-          e.Handled = true;
-        }
-      }
-    }
-    private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e) {
-      var gr = sender as FrameworkElement;
-      if(gr != null) {
-        var it = gr.DataContext as InBase;
-        if(it != null) {
-          it.CmdExecuted(e.Command, e.Parameter);
-          e.Handled = true;
-        }
-      }
-    }
 
     #region IBaseForm Members
     public string view {
@@ -159,33 +169,9 @@ namespace X13.UI {
     }
     public BitmapSource icon { get { return App.GetIcon(null); } }
     public bool altView {
-      get { return data != null && (data.schemaStr == "Logram"); }
+      get { return _data != null && (_data.schemaStr == "Logram"); }
     }
     #endregion IBaseForm Members
-
-    private void ListViewItem_KeyUp(object sender, KeyEventArgs e) {
-      if(e.Key != Key.Left && e.Key != Key.Right) {
-        return;
-      }
-      var gr = e.OriginalSource as ListViewItem;
-      if(gr != null) {
-        var it = gr.DataContext as InBase;
-        if(it != null) {
-          if(e.Key == Key.Right && it.HasChildren && !it.IsExpanded) {
-            it.IsExpanded = true;
-            e.Handled = true;
-          } else if(e.Key == Key.Left) {
-            if(it.IsExpanded) {
-              it.IsExpanded = false;
-            } else {
-              base.MoveFocus(new System.Windows.Input.TraversalRequest(System.Windows.Input.FocusNavigationDirection.Up));
-            }
-            e.Handled = true;
-          }
-        }
-      }
-
-    }
   }
   internal class GridColumnSpringConverter : IMultiValueConverter {
     public object Convert(object[] values, System.Type targetType, object parameter, System.Globalization.CultureInfo culture) {
