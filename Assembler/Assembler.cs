@@ -69,7 +69,7 @@ namespace X13 {
               continue;
             }
             if(++idx < sa.Length) {
-              inst.args = sa[idx];
+              inst.args =  string.Join(" ", sa, idx, sa.Length-idx);
             }
           }
         }
@@ -99,7 +99,7 @@ namespace X13 {
         sb.Append(i.pos.ToString("X4"));
         sb.Append(" ");
         hex = i.GetBytes(true);
-        for(j = 0; j < 5; j++) {
+        for(j = 0; j < 8; j++) {
           if(j < hex.Length) {
             sb.Append(hex[j].ToString("X2"));
             sb.Append(" ");
@@ -107,7 +107,19 @@ namespace X13 {
             sb.Append("   ");
           }
         }
-        sb.AppendFormat("\t| {0:0000}\t\t{1}\t\t{2}\r\n", i.line, i.op, i.args);
+        sb.AppendFormat(" | {0:0000}\t\t{1}\t\t{2}\r\n", i.line, i.op, i.args);
+        for(; j < hex.Length;j++) {
+          if((j & 7) == 0) {
+            sb.Append((i.pos + j).ToString("X4"));
+            sb.Append(" ");
+          }
+          sb.Append(hex[j].ToString("X2"));
+          if((j & 7) == 7 || j == hex.Length - 1) {
+            sb.Append("\r\n");
+          } else {
+            sb.Append(" ");
+          }
+        }
       }
       return sb.ToString();
     }
@@ -377,8 +389,30 @@ namespace X13 {
           case OpName.RET:
             rCmd = new byte[] { (byte)OP.RET };
             break;
-
-
+          case OpName.LPM_S1:
+            rCmd = new byte[] { (byte)OP.LPM_S1 };
+            break;
+          case OpName.LPM_S2:
+            rCmd = new byte[] { (byte)OP.LPM_S2 };
+            break;
+          case OpName.LPM_S4:
+            rCmd = new byte[] { (byte)OP.LPM_S4 };
+            break;
+          case OpName.LPM_U1:
+            rCmd = new byte[] { (byte)OP.LPM_U1 };
+            break;
+          case OpName.LPM_U2:
+            rCmd = new byte[] { (byte)OP.LPM_U2 };
+            break;
+          case OpName.DB:
+            rCmd = args.Split(',', ' ').Where(z => !string.IsNullOrWhiteSpace(z)).Select(z => ParseByte(z)).ToArray();
+            break;
+          case OpName.DW:
+            rCmd = args.Split(',', ' ').Where(z => !string.IsNullOrWhiteSpace(z)).SelectMany(z => ParseShort(z)).ToArray();
+            break;
+          case OpName.DD:
+            rCmd = args.Split(',', ' ').Where(z => !string.IsNullOrWhiteSpace(z)).SelectMany(z => ParseInt(z)).ToArray();
+            break;
           case OpName.TEST_EQ:
             if(Int32.TryParse(args, out tmp_d)) {
               rCmd = new byte[] { (byte)OP.TEST_EQ, (byte)tmp_d, (byte)(tmp_d >> 8), (byte)(tmp_d >> 16), (byte)(tmp_d >> 24) };
@@ -401,6 +435,36 @@ namespace X13 {
           return rCmd;
         }
         return new byte[0];
+      }
+      private static byte ParseByte(string str) {
+        byte b;
+        if(str.StartsWith("0x") || str.StartsWith("0X")) {
+          string s = str.Substring(2);
+          byte.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b);
+        } else {
+          byte.TryParse(str, out b);
+        }
+        return b;
+      }
+      private static byte[] ParseShort(string str) {
+        int b;
+        if(str.StartsWith("0x") || str.StartsWith("0X")) {
+          string s = str.Substring(2);
+          int.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b);
+        } else {
+          int.TryParse(str, out b);
+        }
+        return BitConverter.GetBytes((ushort)b);
+      }
+      private static byte[] ParseInt(string str) {
+        int b;
+        if(str.StartsWith("0x") || str.StartsWith("0X")) {
+          string s = str.Substring(2);
+          int.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b);
+        } else {
+          int.TryParse(str, out b);
+        }
+        return BitConverter.GetBytes(b);
       }
     }
     private enum OpName {
@@ -445,6 +509,15 @@ namespace X13 {
       RET,
       JZ,
       JNZ,
+      LPM_S1,
+      LPM_S2,
+      LPM_S4,
+      LPM_U1,
+      LPM_U2,
+
+      DB,
+      DW,
+      DD,
 
       TEST_EQ,
     }
@@ -613,12 +686,20 @@ namespace X13 {
       IN = 0xC0,
       OUT = 0xC1,
 
+      LPM_S1=0xC9,
+      LPM_S2,
+      LPM_S4,
+      LPM_U1,
+      LPM_U2,
+
       SJMP = 0xF0,
       JZ = 0xF1,
       JNZ = 0xF2,
       JMP = 0xF3,
       SCALL = 0xF4,
       CALL = 0xF7,
+
+      LABEL=0xF8,
 
       TEST_EQ = 0xFE,
       RET = 0xFF,
