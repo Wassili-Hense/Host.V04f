@@ -69,7 +69,7 @@ namespace X13 {
               continue;
             }
             if(++idx < sa.Length) {
-              inst.args =  string.Join(" ", sa, idx, sa.Length-idx);
+              inst.args = string.Join(" ", sa, idx, sa.Length - idx);
             }
           }
         }
@@ -108,7 +108,7 @@ namespace X13 {
           }
         }
         sb.AppendFormat(" | {0:0000}\t\t{1}\t\t{2}\r\n", i.line, i.op, i.args);
-        for(; j < hex.Length;j++) {
+        for(; j < hex.Length; j++) {
           if((j & 7) == 0) {
             sb.Append((i.pos + j).ToString("X4"));
             sb.Append(" ");
@@ -164,7 +164,7 @@ namespace X13 {
                 rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U1 : (byte)OP.LDI_S1, (byte)tmp_d };
               } else if(tmp_d > -32768 && tmp_d < 65536) {
                 rCmd = new byte[] { tmp_d > 0 ? (byte)OP.LDI_U2 : (byte)OP.LDI_S2, (byte)tmp_d, (byte)(tmp_d >> 8) };
-              }else if(tmp_d==int.MinValue){
+              } else if(tmp_d == int.MinValue) {
                 rCmd = new byte[] { (byte)OP.LDI_MIN };
               } else {
                 rCmd = new byte[] { (byte)OP.LDI_S4, (byte)tmp_d, (byte)(tmp_d >> 8), (byte)(tmp_d >> 16), (byte)(tmp_d >> 24) };
@@ -390,19 +390,40 @@ namespace X13 {
             rCmd = new byte[] { (byte)OP.RET };
             break;
           case OpName.LPM_S1:
-            rCmd = new byte[] { (byte)OP.LPM_S1 };
-            break;
           case OpName.LPM_S2:
-            rCmd = new byte[] { (byte)OP.LPM_S2 };
-            break;
           case OpName.LPM_S4:
-            rCmd = new byte[] { (byte)OP.LPM_S4 };
-            break;
           case OpName.LPM_U1:
-            rCmd = new byte[] { (byte)OP.LPM_U1 };
-            break;
-          case OpName.LPM_U2:
-            rCmd = new byte[] { (byte)OP.LPM_U2 };
+          case OpName.LPM_U2: {
+              Inst l;
+              if(Int32.TryParse(args, out tmp_d)) {
+
+              } else if(args.Length > 1 && args[0] == 'A' && _own._labels.TryGetValue(args, out l) && l.pos != -1) {
+                tmp_d = l.pos;
+              } else {
+                tmp_d = -1;
+                save = false;
+                if(final) {
+                  Log.Error("BAD argument " + this.ToString());
+                }
+              }
+            }
+            switch(op) {
+            case OpName.LPM_S1:
+              rCmd = new byte[] { (byte)OP.LPM_S1, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              break;
+            case OpName.LPM_S2:
+              rCmd = new byte[] { (byte)OP.LPM_S2, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              break;
+            case OpName.LPM_S4:
+              rCmd = new byte[] { (byte)OP.LPM_S4, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              break;
+            case OpName.LPM_U1:
+              rCmd = new byte[] { (byte)OP.LPM_U1, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              break;
+            case OpName.LPM_U2:
+              rCmd = new byte[] { (byte)OP.LPM_U2, (byte)tmp_d, (byte)(tmp_d >> 8) };
+              break;
+            }
             break;
           case OpName.DB:
             rCmd = args.Split(',', ' ').Where(z => !string.IsNullOrWhiteSpace(z)).Select(z => ParseByte(z)).ToArray();
@@ -686,7 +707,7 @@ namespace X13 {
       IN = 0xC0,
       OUT = 0xC1,
 
-      LPM_S1=0xC9,
+      LPM_S1 = 0xC9,
       LPM_S2,
       LPM_S4,
       LPM_U1,
@@ -699,7 +720,7 @@ namespace X13 {
       SCALL = 0xF4,
       CALL = 0xF7,
 
-      LABEL=0xF8,
+      LABEL = 0xF8,
 
       TEST_EQ = 0xFE,
       RET = 0xFF,
