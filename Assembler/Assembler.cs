@@ -463,7 +463,12 @@ namespace X13 {
           string s = str.Substring(2);
           byte.TryParse(s, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out b);
         } else {
-          byte.TryParse(str, out b);
+          int i;
+          if(int.TryParse(str, out i)) {
+            b = (byte)i;
+          } else {
+            b = 0;
+          }
         }
         return b;
       }
