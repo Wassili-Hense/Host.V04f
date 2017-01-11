@@ -18,7 +18,7 @@ using System.Windows.Shapes;
 
 namespace X13.UI {
   internal class veDefault : TextBlock, IValueEditor {
-    public veDefault(InBase owner, JSC.JSValue schema) {
+    public veDefault(InBase owner, JSC.JSValue type) {
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 2, 10, 0);
       ValueChanged(owner.value);
@@ -33,7 +33,7 @@ namespace X13.UI {
           if(value.Value == null) {
             rez = "null";
           } else {
-            var sc = value["$schema"];
+            var sc = value["$type"];
             if((rez = sc.Value as string) == null) {
               rez = "Object";
             }
@@ -45,7 +45,7 @@ namespace X13.UI {
       this.Text = rez;
     }
 
-    public void SchemaChanged(JSC.JSValue schema) {
+    public void TypeChanged(JSC.JSValue type) {
     }
   }
 }

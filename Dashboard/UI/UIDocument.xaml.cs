@@ -78,7 +78,7 @@ namespace X13.UI {
 		  c = c.parent;
 		}
         if(_view == null) {
-          if(_data.schemaStr == "Logram") {
+          if(_data.typeStr == "Logram") {
             _view = "LO";
           } else {
             _view = "IN";
@@ -140,7 +140,7 @@ namespace X13.UI {
 
     private void buChangeView_Click(object sender, RoutedEventArgs e) {
       if((ccMain.Content as InspectorForm) != null) {
-        if(_data.schemaStr == "Logram") {
+        if(_data.typeStr == "Logram") {
           _view = "LO";
           contentForm = new LogramForm(_data);
           OnPropertyChanged("ContentId");

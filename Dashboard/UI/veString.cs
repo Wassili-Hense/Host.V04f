@@ -10,14 +10,14 @@ using System.Windows.Controls;
 
 namespace X13.UI {
   class veString : TextBox, IValueEditor {
-    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
-      return new veString(owner, schema);
+    public static IValueEditor Create(InBase owner, JSC.JSValue type) {
+      return new veString(owner, type);
     }
 
     private InBase _owner;
     private string _oldValue;
 
-    public veString(InBase owner, JSC.JSValue schema) {
+    public veString(InBase owner, JSC.JSValue type) {
       _owner = owner;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
@@ -27,7 +27,7 @@ namespace X13.UI {
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
       ValueChanged(_owner.value);
-      SchemaChanged(schema);
+      TypeChanged(type);
     }
 
     public void ValueChanged(JSC.JSValue value) {
@@ -39,7 +39,7 @@ namespace X13.UI {
       base.Text = _oldValue;
     }
 
-    public void SchemaChanged(JSC.JSValue schema) {
+    public void TypeChanged(JSC.JSValue type) {
     }
 
     private void Publish() {

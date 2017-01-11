@@ -16,7 +16,7 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.UI {
   public abstract class InBase : NPC_UI, IComparable<InBase> {
     protected bool _isVisible;
-    protected JSC.JSValue _schema;
+    protected JSC.JSValue _type;
     protected string _view;
     protected bool _isExpanded;
     protected List<InBase> _items;
@@ -78,18 +78,18 @@ namespace X13.UI {
       }
     }
 
-    protected virtual void UpdateSchema(JSC.JSValue schema) {
-      this._schema = schema;
+    protected virtual void UpdateType(JSC.JSValue type) {
+      this._type = type;
 
       string nv = null;
       BitmapSource ni = null;
 
-      if(_schema != null && _schema.Value != null) {
-        var vv = _schema["view"];
+      if(_type != null && _type.Value != null) {
+        var vv = _type["view"];
         if(vv.ValueType == JSC.JSValueType.String) {
           nv = vv.Value as string;
         }
-        var iv = _schema["icon"];
+        var iv = _type["icon"];
         if(iv.ValueType == JSC.JSValueType.String) {
           ni = App.GetIcon(iv.Value as string);
         }
@@ -109,10 +109,10 @@ namespace X13.UI {
       }
       if(nv != _view) {
         _view = nv;
-        editor = InspectorForm.GetEdititor(_view, this, _schema);
+        editor = InspectorForm.GetEdititor(_view, this, _type);
         PropertyChangedReise("editor");
       }
-      this.editor.SchemaChanged(_schema);
+      this.editor.TypeChanged(_type);
     }
     public void Deleted() {
       if(_isVisible) {

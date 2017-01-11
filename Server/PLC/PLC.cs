@@ -27,8 +27,11 @@ namespace X13.PLC {
     private Dictionary<Topic, PiVar> _vars;
     private List<PiVar> _rLayerVars;
 
+    internal readonly Context JsContext;
+
     public PLC() {
       instance = this;
+      JsContext = new Context();
       enabled = true;
       _blocks = new List<PiBlock>();
       _vars = new Dictionary<Topic, PiVar>();
@@ -60,10 +63,10 @@ namespace X13.PLC {
       _vars.Clear();
       _knownTypes.Clear();
 
-      _knownTypes["PiAlias"] = (j, s, p) => new PiAlias(j, s, p);
-      _knownTypes["PiLink"] = (j, s, p) => new PiLink(j, s, p);
-      _knownTypes["PiBlock"] = (j, s, p) => new PiBlock(j, s, p);
-      _knownTypes["PiDeclarer"] = PiDeclarer.Create;
+      //_knownTypes["PiAlias"] = (j, s, p) => new PiAlias(j, s, p);
+      //_knownTypes["PiLink"] = (j, s, p) => new PiLink(j, s, p);
+      _knownTypes["Brick"] = (j, s, p) => new PiBlock(j, s, p);
+      _knownTypes["Bclass"] = PiDeclarer.Create;
     }
     public void Start() {
       Import(@"../data/base.xst");

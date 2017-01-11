@@ -25,7 +25,7 @@ namespace X13.WebServer {
     /// <summary>Subscribe topics</summary>
     /// <param name="args">
     /// REQUEST: [4, path, mask] mask: 1 - data, 2 - children
-    /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// RESPONSE: array of topics, topic - [path, flags, type[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Subscribe(EventArguments args) {
       string path = args[1].ToString();
@@ -56,7 +56,7 @@ namespace X13.WebServer {
           }
           r[0] = new JSL.String(t.path);
           r[1] = new JSL.Number((t.children.Any() ? 16 : 0) | 15);
-          var pr = t.schema;
+          var pr = t.type;
           r[2] = pr == null ? JSC.JSValue.Null : new JSL.String(pr);
           arr.Add(r);
         }
@@ -89,7 +89,7 @@ namespace X13.WebServer {
     /// <summary>Create topic</summary>
     /// <param name="args">
     /// REQUEST: [8, path]
-    /// RESPONSE: array of topics, topic - [path, flags, schema[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
+    /// RESPONSE: array of topics, topic - [path, flags, type[, value]], flags: 1 - acl.subscribe, 2 - acl.create, 4 - acl.change, 8 - acl.remove, 16 - hat children
     /// </param>
     private void Create(EventArguments args) {
       if(args.Count < 3 || args[1].ValueType != JSC.JSValueType.String) {
@@ -103,7 +103,7 @@ namespace X13.WebServer {
         def = args[3];
       } else {
         if(sName != null) {
-          Topic t = Topic.root.Get("/etc/schema/" + sName, false);
+          Topic t = Topic.root.Get("/etc//" + sName, false);
           if(t != null) {
             def = t.valueRaw["default"];
           }
@@ -117,7 +117,7 @@ namespace X13.WebServer {
       var arr = new JSL.Array();
       JSL.Array r=new JSL.Array(1);
       r[0] = new JSL.String(t2.path);
-      r[1] = new JSL.Number((t2.children.Where(z => z.name != "$schema").Any() ? 16 : 0) | 15);
+      r[1] = new JSL.Number((t2.children.Where(z => z.name != "$type").Any() ? 16 : 0) | 15);
       r[2] = sName;
       r[3] = def;
       arr.Add(r);
@@ -175,12 +175,12 @@ namespace X13.WebServer {
     private void SubscriptionChanged(SubRec s, Perform p) {
       if(s.path == p.src.path) {
         if(p.art == Perform.Art.changed) {
-          var pr = p.src.schema;
+          var pr = p.src.type;
           base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
         }
       } else {
         if(p.art == Perform.Art.create) {
-          var pr = p.src.schema;
+          var pr = p.src.type;
           base.Emit(5, p.src.path, new JSL.Number((p.src.children.Any() ? 16 : 0) | 15), pr == null ? JSC.JSValue.Null : new JSL.String(pr), p.src.valueRaw);
           if(!_subscriptions.Contains(p.src)) {
             _subscriptions.Add(p.src);

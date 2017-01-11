@@ -32,12 +32,12 @@ namespace X13.Data {
       arr[2] = mask;
       this.Send(new SioClient.Request(0, arr, req));
     }
-    internal void Create(string path, string schemaName, JSC.JSValue value, INotMsg req) {
+    internal void Create(string path, string typeName, JSC.JSValue value, INotMsg req) {
       JSL.Array arr;
       arr = new JSL.Array(value == null?3:4);
       arr[0] = 8;
       arr[1] = path;
-      arr[2] = schemaName;
+      arr[2] = typeName;
       if(value != null) {
         arr[3] = value;
       }

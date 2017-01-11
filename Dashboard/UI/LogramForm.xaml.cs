@@ -40,7 +40,7 @@ namespace X13.UI {
     private void BrickLoaded(Task<DTopic> td) {
       if(td.IsCompleted && td.Result != null) {
         td.Result.changed += TBrick_changed;
-        if(td.Result.schemaStr == "Bclass") {
+        if(td.Result.typeStr == "Bclass") {
           this.TBrick_changed(DTopic.Art.addChild, td.Result);
         } else {
           foreach(var t in td.Result.children) {
@@ -53,7 +53,7 @@ namespace X13.UI {
     }
 
     private void TBrick_changed(DTopic.Art art, DTopic src) {
-      if(src == null || src.schemaStr != "Bclass" || src.value.ValueType!=JSC.JSValueType.Object || art == DTopic.Art.schema) {
+      if(src == null || src.typeStr != "Bclass" || src.value.ValueType!=JSC.JSValueType.Object || art == DTopic.Art.type) {
         return;
       }
       for(int i = 0; i < _bricks.Count; i++) {

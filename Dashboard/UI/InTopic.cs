@@ -22,16 +22,16 @@ namespace X13.UI {
     private static JSC.JSObject DEFS_Date;
     static InTopic() {
       DEFS_Bool = JSC.JSObject.CreateObject();
-      DEFS_Bool["schema"] = "Boolean";
+      DEFS_Bool["type"] = "Boolean";
 
       DEFS_Double = JSC.JSObject.CreateObject();
-      DEFS_Double["schema"] = "Double";
+      DEFS_Double["type"] = "Double";
 
       DEFS_String = JSC.JSObject.CreateObject();
-      DEFS_String["schema"] = "String";
+      DEFS_String["type"] = "String";
 
       DEFS_Date = JSC.JSObject.CreateObject();
-      DEFS_Date["schema"] = "Date";
+      DEFS_Date["type"] = "Date";
     }
     #endregion default children
 
@@ -59,7 +59,7 @@ namespace X13.UI {
         }
       } else {
         name = _owner.name;
-        base.UpdateSchema(_owner.schema);
+        base.UpdateType(_owner.type);
         levelPadding = _parent.levelPadding + 7;
       }
       base._isExpanded = _root && _owner.children!=null && _owner.children.Any();
@@ -73,8 +73,8 @@ namespace X13.UI {
       levelPadding = _parent == null ? 5 : _parent.levelPadding + 7;
 
       JSC.JSValue sn;
-      if(_cStruct != null && (sn = _cStruct["schema"]).ValueType == JSC.JSValueType.String) {
-        parent._owner.GetAsync("/etc/schema/" + (sn.Value as string)).ContinueWith(SchemaLoaded, TaskScheduler.FromCurrentSynchronizationContext());
+      if(_cStruct != null && (sn = _cStruct["type"]).ValueType == JSC.JSValueType.String) {
+        parent._owner.GetAsync("/etc/type/" + (sn.Value as string)).ContinueWith(TypeLoaded, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
 
@@ -102,7 +102,7 @@ namespace X13.UI {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
           //base.name = name;
-          var td = _parent._owner.CreateAsync(name, _cStruct["schema"].Value as string, _cStruct["default"]);
+          var td = _parent._owner.CreateAsync(name, _cStruct["type"].Value as string, _cStruct["default"]);
           //td.ContinueWith(SetNameComplete);
         }
         _parent._items.Remove(this);
@@ -175,7 +175,7 @@ namespace X13.UI {
         _owner = td.Result;
         _owner.changed += _owner_PropertyChanged;
         base.name = _owner.name;
-        base.UpdateSchema(_owner.schema);
+        base.UpdateType(_owner.type);
         IsEdited = false;
         PropertyChangedReise("IsEdited");
         PropertyChangedReise("name");
@@ -187,17 +187,17 @@ namespace X13.UI {
         _collFunc(this, false);
       }
     }
-    private void SchemaLoaded(Task<DTopic> dt) {
+    private void TypeLoaded(Task<DTopic> dt) {
       if(dt.IsCompleted && dt.Result != null) {
-        base.UpdateSchema(dt.Result.value);
+        base.UpdateType(dt.Result.value);
       }
     }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
       if(!_root) {
-        if(art == DTopic.Art.schema) {
-          this.UpdateSchema(_owner.schema);
+        if(art == DTopic.Art.type) {
+          this.UpdateType(_owner.type);
         } else if(art == DTopic.Art.value) {
-          this.UpdateSchema(_owner.schema);
+          this.UpdateType(_owner.type);
           this.editor.ValueChanged(_owner.value);
         }
       }
@@ -224,7 +224,7 @@ namespace X13.UI {
       JSC.JSValue f, tmp1;
       MenuItem mi;
       MenuItem ma = new MenuItem() { Header = "Add" };
-      if(_owner.CheckAcl(DTopic.ACL.Create) && _schema != null && (f = _schema["Children"]).ValueType == JSC.JSValueType.Object) {
+      if(_owner.CheckAcl(DTopic.ACL.Create) && _type != null && (f = _type["Children"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
           // TODO: check resources
           if(_items.Any(z => (tmp1 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == tmp1.Value as string)) {
@@ -232,8 +232,8 @@ namespace X13.UI {
           }
           mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
           mi.Click += miAdd_Click;
-          if(kv.Value["schema"].ValueType == JSC.JSValueType.String) {
-            mi.Icon = SchemaName2Icon(kv.Value["schema"].Value as string);
+          if(kv.Value["$type"].ValueType == JSC.JSValueType.String) {
+            mi.Icon = TypeName2Icon(kv.Value["$type"].Value as string);
           }
           ma.Items.Add(mi);
         }
@@ -262,7 +262,7 @@ namespace X13.UI {
         l.Add(new Separator());
       }
       mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = !_root && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) && _owner.CheckAcl(DTopic.ACL.Delete);
+      mi.IsEnabled = !_root && (_type == null || (f = _type["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f) && _owner.CheckAcl(DTopic.ACL.Delete);
       mi.Click += miDelete_Click;
       l.Add(mi);
       if(!_root && _owner.CheckAcl(DTopic.ACL.Delete) && _parent._owner.CheckAcl(DTopic.ACL.Create)) {
@@ -283,7 +283,7 @@ namespace X13.UI {
       if(decl != null) {
         var mName = decl["name"];
         if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
-          _owner.CreateAsync(mName.Value as string, decl["schema"].Value as string, decl["default"]);
+          _owner.CreateAsync(mName.Value as string, decl["type"].Value as string, decl["default"]);
         } else {
           if(_items == null) {
             lock(this) {
@@ -313,12 +313,12 @@ namespace X13.UI {
       PropertyChangedReise("IsEdited");
     }
 
-    private Image SchemaName2Icon(string sn) {
+    private Image TypeName2Icon(string sn) {
       Image img = new Image();
-      this._owner.GetAsync("/etc/schema/" + sn).ContinueWith(IconFromSchemaLoaded, img, TaskScheduler.FromCurrentSynchronizationContext());
+      this._owner.GetAsync("/etc/type/" + sn).ContinueWith(IconFromTypeLoaded, img, TaskScheduler.FromCurrentSynchronizationContext());
       return img;
     }
-    private void IconFromSchemaLoaded(Task<DTopic> td, object o) {
+    private void IconFromTypeLoaded(Task<DTopic> td, object o) {
       var img = o as Image;
       if(img != null && td.IsCompleted && td.Result != null) {
         img.Source = App.GetIcon(td.Result.GetField<string>("icon"));

@@ -331,6 +331,7 @@ namespace X13.PLC {
 
     private Topic _owner;
     private string _funcName;
+    private JST.Function _calc;
     internal PiDeclarer _decl;
 
     public PiBlock[] calcPath;
@@ -357,8 +358,10 @@ namespace X13.PLC {
         }
       } else if(p.art != Perform.Art.unsubscribe) {
         PinDeclarer pd = AddPin(p.src);
-        if(pd!=null && ((p.art == Perform.Art.changed && pd.ip) || p.art == Perform.Art.subscribe)) {
-          _decl.Calc(this);
+        if(_calc!=null && pd!=null && ((p.art == Perform.Art.changed && pd.ip) || p.art == Perform.Art.subscribe)) {
+          var a = new Arguments();
+          a.Add(new JST.String(p.src.name));
+          _calc.Call(this, a);
         }
       }
     }
@@ -443,6 +446,8 @@ namespace X13.PLC {
           if(_decl==null) {
             X13.Log.Warning("{0}[{1}] declarer not found", _owner.path, _funcName);
           } else {
+            _decl.Init(this);
+            _calc = this.GetProperty("Calc", PropertyScope.Сommon).Value as JST.Function;
             foreach(var p in _decl.pins.Where(z => z.Value.mandatory)) {
               Topic t=_owner.GetI(p.Key, true, _owner, true);
               if(p.Value.defaultValue!=null && t.vType==null) {
@@ -471,14 +476,9 @@ namespace X13.PLC {
   }
 
   internal class PiDeclarer : CustomType {
-    private static JST.Function ctor;
-    static PiDeclarer() {
-      ctor= new Module("function Construct(){ return Function.apply(null, arguments); }").Context.GetVariable("Construct").Value as JST.Function;
-    }
-
     public static PiDeclarer Get(string name) {
       Topic t;
-      if(Topic.root.Get("/etc/PLC/func", true).Exist(name, out t)) {
+      if(Topic.root.Get("/etc/brick", true).Exist(name, out t)) {
         return t.As<PiDeclarer>();
       }
       return null;
@@ -490,100 +490,38 @@ namespace X13.PLC {
       } else {
         rez=new PiDeclarer();
       }
-
+      rez._jsValue = jso;
       JSValue tmp;
-      tmp=jso["init"];
+      tmp=jso["src"];
       if(tmp.ValueType==JSValueType.String) {
-        rez._initFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
-      }
-      tmp=jso["calc"];
-      if(tmp.ValueType == JSValueType.String) {
-        rez._calcFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
-      }
-      tmp=jso["deinit"];
-      if(tmp.ValueType == JSValueType.String) {
-        rez._deinitFunc = ctor.Call(new Arguments { tmp }) as JST.Function;
+        rez._src = PLC.instance.JsContext.Eval("class "+src.name+" {" + tmp.Value as string + "}", true) as JST.Function;
       }
       rez.pins=new SortedList<string, PinDeclarer>();
-      tmp=jso["pins"];
-      if(tmp.ValueType == JSValueType.Object) {
-        foreach(var p in tmp) {
-          rez.pins[p.Key]=new PinDeclarer(p.Value);
-        }
-      }
-      if((tmp = jso["info"]).ValueType == JSValueType.String) {
-        rez.info=tmp.ToString();
-      } else {
-        rez.info=string.Empty;
-      }
-      if((tmp = jso["image"]).ValueType == JSValueType.String) {
-        rez.image=tmp.ToString();
-      } else {
-        rez.image=null;
-      }
+      //tmp=jso["pins"];
+      //if(tmp.ValueType == JSValueType.Object) {
+      //  foreach(var p in tmp) {
+      //    rez.pins[p.Key]=new PinDeclarer(p.Value);
+      //  }
+      //}
       return rez;
     }
 
-    private JST.Function _initFunc;
-    private JST.Function _calcFunc;
-    private JST.Function _deinitFunc;
-
-    public string info;
-    public string image;
+    private JST.Function _src;
+    private JSValue _jsValue;
     public SortedList<string, PinDeclarer> pins;
 
     private PiDeclarer() {
     }
 
     public void Init(PiBlock This) {
-      if(_initFunc!=null) {
-        _initFunc.Call(This, null);
-      }
-    }
-    public void Calc(PiBlock This) {
-      if(_calcFunc!=null) {
-        _calcFunc.Call(This, null);
-      }
-    }
-    public void DeInit(PiBlock This) {
-      if(_deinitFunc!=null) {
-        _deinitFunc.Call(This, null);
+      if(_src!=null) {
+        _src.Construct(This, null);
       }
     }
 
     [DoNotEnumerate]
     public JSValue toJSON(JSValue obj) {
-      var r = JSObject.CreateObject();
-      r["$type"]="PiDeclarer";
-      if(_initFunc!=null) {
-        r["init"]=GetFunctionBody(_initFunc);
-      }
-      if(_calcFunc!=null) {
-        r["calc"]=GetFunctionBody(_calcFunc);
-      }
-      if(_deinitFunc!=null) {
-        r["deinit"]=GetFunctionBody(_deinitFunc);
-      }
-      if(pins!=null && pins.Count>0) {
-        var p = JSObject.CreateObject();
-        foreach(var kv in pins) {
-          p[kv.Key]=kv.Value.toJSON(null);
-        }
-        r["pins"]=p;
-      }
-      if(!string.IsNullOrEmpty(info)) {
-        r["info"]=info;
-      }
-      if(image!=null) {
-        r["image"]=image;
-      }
-      return r;
-    }
-    private string GetFunctionBody(JST.Function f) {
-      string full=f.ToString();
-      int bi=full.IndexOf('{');
-      int ei=full.LastIndexOf('}');
-      return full.Substring(bi+3, ei-bi-5);
+      return _jsValue;
     }
   }
 

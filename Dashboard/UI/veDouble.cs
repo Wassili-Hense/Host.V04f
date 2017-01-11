@@ -9,14 +9,14 @@ using System.Threading.Tasks;
 
 namespace X13.UI {
   class veDouble : Xceed.Wpf.Toolkit.DoubleUpDown, IValueEditor {
-    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
-      return new veDouble(owner, schema);
+    public static IValueEditor Create(InBase owner, JSC.JSValue type) {
+      return new veDouble(owner, type);
     }
 
     private InBase _owner;
     private double _oldValue;
 
-    public veDouble(InBase owner, JSC.JSValue schema) {
+    public veDouble(InBase owner, JSC.JSValue type) {
       _owner = owner;
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
@@ -27,7 +27,7 @@ namespace X13.UI {
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
       ValueChanged(_owner.value);
-      SchemaChanged(schema);
+      TypeChanged(type);
     }
     public new void ValueChanged(JSC.JSValue value) {
       try {
@@ -39,7 +39,7 @@ namespace X13.UI {
       }
     }
 
-    public void SchemaChanged(JSC.JSValue schema) {
+    public void TypeChanged(JSC.JSValue type) {
     }
     protected override void OnDecrement() {
       base.OnDecrement();

@@ -1,30 +1,30 @@
 <xst path='/' s='True'>
   <i n='etc' s='True'>
-    <i n='schema' s='True'>
-      <!--i n='Null'    v='{"$schema":"schema","view":"Null","default":null   }' s='True' /-->
-      <i n='Boolean' v='{"$schema":"Schema","view":"Boolean","icon":"Boolean","default":false}' s='True' />
-      <i n='Bclass'  v='{"$schema":"Schema","view":"Object" ,"icon":"Bclass", "Properties": { "$schema":{ "view":"String", "default":"Bclass", "required":true}, "info":{ "view":"String", "default":""}, "icon":{ "view":"String","default":""}, "src":{ "view":"String","default":""} } }' s='True' />
-      <i n='Brick'   v='{"$schema":"Schema","view":"Object" ,"icon":"Bclass", "Properties": { "$schema":{ "view":"String", "default":"Brick", "required":true}, "Bclass":{ "view":"String", "default":"", "required":true}, "left":{ "view":"Integer", "default":0, "required":true}, "top":{ "view":"Integer", "default":0, "required":true}  } }' s='True' />
-      <i n='Date'    v='{"$schema":"Schema","view":"Date"   ,"icon":"Date","default":"2016-04-18T13:40:36.010Z"}' s='True' />
-      <i n='Double'  v='{"$schema":"Schema","view":"Double" ,"icon":"Double","default":0.0 }' s='True' />
-      <i n='Integer' v='{"$schema":"Schema","view":"Integer","icon":"Integer","default":0}' s='True' />
-      <i n='String'  v='{"$schema":"Schema","view":"String" ,"icon":"String","default":"" }' s='True' />
-      <i n='Logram'  v='{"$schema":"Schema","view":"Object" ,"icon":"Logram", "default":{"$schema":"Logram","W":48,"H":48,"T":0,"L":0},"Properties": { "$schema":{ "view":"String", "default":"Logram", "required":true},"W":{ "view":"Integer","required":true,"default":48},"H":{ "view":"Integer", "required":true,"default":48},"L":{ "view":"Integer", "required":true,"default":0},"T":{ "view":"Integer", "required":true,"default":0} } }' s='True' />
-      <i n='Schema'  v='{"$schema":"Schema","view":"Object" ,"icon":"Schema", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":"Object"}, "$schema":{ "view":"String", "default":"Schema", "required":true} } }' s='True' /> 
+    <i n='type' s='True'>
+      <!--i n='Null'    v='{"$type":"schema","view":"Null","default":null   }' s='True' /-->
+      <i n='Boolean' v='{"$type":"Type","view":"Boolean","icon":"Boolean","default":false}' s='True' />
+      <i n='Bclass'  v='{"$type":"Type","view":"Object" ,"icon":"Bclass", "Properties": { "$type":{ "view":"String", "default":"Bclass", "required":true}, "info":{ "view":"String", "default":""}, "icon":{ "view":"String","default":""}, "src":{ "view":"String","default":""} } }' s='True' />
+      <i n='Brick'   v='{"$type":"Type","view":"Object" ,"icon":"Bclass", "Properties": { "$type":{ "view":"String", "default":"Brick", "required":true}, "Bclass":{ "view":"String", "default":"", "required":true}, "left":{ "view":"Integer", "default":0, "required":true}, "top":{ "view":"Integer", "default":0, "required":true}  } }' s='True' />
+      <i n='Date'    v='{"$type":"Type","view":"Date"   ,"icon":"Date","default":"2016-04-18T13:40:36.010Z"}' s='True' />
+      <i n='Double'  v='{"$type":"Type","view":"Double" ,"icon":"Double","default":0.0 }' s='True' />
+      <i n='Integer' v='{"$type":"Type","view":"Integer","icon":"Integer","default":0}' s='True' />
+      <i n='String'  v='{"$type":"Type","view":"String" ,"icon":"String","default":"" }' s='True' />
+      <i n='Logram'  v='{"$type":"Type","view":"Object" ,"icon":"Logram", "default":{"$type":"Logram","W":48,"H":48,"T":0,"L":0},"Properties": { "$type":{ "view":"String", "default":"Logram", "required":true},"W":{ "view":"Integer","required":true,"default":48},"H":{ "view":"Integer", "required":true,"default":48},"L":{ "view":"Integer", "required":true,"default":0},"T":{ "view":"Integer", "required":true,"default":0} } }' s='True' />
+      <i n='Type'  v='{"$type":"Type","view":"Object" ,"icon":"Type", "Properties": { "icon":{ "view":"String","default":""}, "view":{ "view":"String", "default":"Object"}, "$type":{ "view":"String", "default":"Type", "required":true} } }' s='True' /> 
     </i>
     <i n='brick' s='True'>
-      <i n='Test' v='{"$schema":"Bclass","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADNElEQVQ4T33Tf0zUdRjA8ff95o47IUS5Zctakwi0X67GwkHY1nCrnBmluUZOpv1YWUtWLHTMyqiM/rJYiUBqdAuVdtMxishOAgL0+OXByXHdcT/kgO6O6zju15d2bDG0H89/n+fZ89qefZ5HxE2hVZOzeaP6+YcfvCd3dcZKrUzsx3PdM3Oxx9H982D4lMdH//IW0fLHfWvZVl25r6Fg6+saScpqhMhVpq0DpKfM4nVZadEbQlV1o7uHJtD93bcErNSQVfve04at+8+kQwAWepjzXqKswoZ3ys2B3WtYIY9wVveDo/K0Oy8Uwp5AloAnNkrLG5sNR9S35RLy9xKPDhMM+ql8/wxt7b+x55kNPFt0L8buK3x0/HJ59xhVNwBv7sxprD756w4kyZhNg/z0SzcqpZhtBU3IhFZmvXlcd63DYbVQ09Dxjb5P2LUcUBzet6nt4BcteaBAiEfo6uzFZjez/ckocmWQkFuGzTzC7+ZR6k8a2nRdsccBYXGEXfnKY4cOf/ZKZm4x4ZCfgG8CuUKKMjkNiSiIxz1CwO/mj0kbAz0dWM1OWjs9B/psfLoIlBatqv/yu84SkVyDc6ST+qOlqNQqXvugkbFrXdR/UoZIkJD9UA6+gEBkTkzzhYHqS2bhrUWgYL2yrOnc9x+n35qNEJ7HbRtEKg6QkfkAJuM5pq0GVqVpWVgQYR5zMGQ0U9fsKLHM8PUikKllS/neIv2jT5VK7lifD/E5EGYgKZUpeztJCxbkYjH2cRfGXhOXe0djn1/wPjI7R8/SN6ZI2VzzYYl+xxtHVYR8xOY9OJ1Ogt5h7rpThBCdxzUxSW1t6+Tp885Ddj91QPSGTXyhcM23x3Utz8k1qfid/fR16ElSRMndlEUs7GN02MKrb5+tMZiiL/9jExMJrZpC3YkjP+YX7xX7LF2YjO1IxSGysjPQqOOcqDkf31/V99ifMS7+K5BI7ixc2/TVKd325FtUEHKCMA0yP+P9V3ixtKHJcC1W/J/HlCgo4O6Klwpa3zlYcbtUNg/CFIGZccrfbTAda57YAtj+F0gUU2Xcv2Gdek9a2or0eCyKa3LWMWQN10Xg6s3n/xf1YGggYcG8+AAAAABJRU5ErkJggg=="}' s='True' />
+      <i n='Test' v='{"$type":"Bclass","icon":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAADNElEQVQ4T33Tf0zUdRjA8ff95o47IUS5Zctakwi0X67GwkHY1nCrnBmluUZOpv1YWUtWLHTMyqiM/rJYiUBqdAuVdtMxishOAgL0+OXByXHdcT/kgO6O6zju15d2bDG0H89/n+fZ89qefZ5HxE2hVZOzeaP6+YcfvCd3dcZKrUzsx3PdM3Oxx9H982D4lMdH//IW0fLHfWvZVl25r6Fg6+saScpqhMhVpq0DpKfM4nVZadEbQlV1o7uHJtD93bcErNSQVfve04at+8+kQwAWepjzXqKswoZ3ys2B3WtYIY9wVveDo/K0Oy8Uwp5AloAnNkrLG5sNR9S35RLy9xKPDhMM+ql8/wxt7b+x55kNPFt0L8buK3x0/HJ59xhVNwBv7sxprD756w4kyZhNg/z0SzcqpZhtBU3IhFZmvXlcd63DYbVQ09Dxjb5P2LUcUBzet6nt4BcteaBAiEfo6uzFZjez/ckocmWQkFuGzTzC7+ZR6k8a2nRdsccBYXGEXfnKY4cOf/ZKZm4x4ZCfgG8CuUKKMjkNiSiIxz1CwO/mj0kbAz0dWM1OWjs9B/psfLoIlBatqv/yu84SkVyDc6ST+qOlqNQqXvugkbFrXdR/UoZIkJD9UA6+gEBkTkzzhYHqS2bhrUWgYL2yrOnc9x+n35qNEJ7HbRtEKg6QkfkAJuM5pq0GVqVpWVgQYR5zMGQ0U9fsKLHM8PUikKllS/neIv2jT5VK7lifD/E5EGYgKZUpeztJCxbkYjH2cRfGXhOXe0djn1/wPjI7R8/SN6ZI2VzzYYl+xxtHVYR8xOY9OJ1Ogt5h7rpThBCdxzUxSW1t6+Tp885Ddj91QPSGTXyhcM23x3Utz8k1qfid/fR16ElSRMndlEUs7GN02MKrb5+tMZiiL/9jExMJrZpC3YkjP+YX7xX7LF2YjO1IxSGysjPQqOOcqDkf31/V99ifMS7+K5BI7ixc2/TVKd325FtUEHKCMA0yP+P9V3ixtKHJcC1W/J/HlCgo4O6Klwpa3zlYcbtUNg/CFIGZccrfbTAda57YAtj+F0gUU2Xcv2Gdek9a2or0eCyKa3LWMWQN10Xg6s3n/xf1YGggYcG8+AAAAABJRU5ErkJggg=="}' s='True' />
     </i>
   </i>
   <i n='Test' s='True'>
     <i n='Alpha' v='42' s='True' />
     <i n='Beta' v='"abcd"' s='True' />
     <i n='Gamma' v='"ABCDEFGHI"' s='True'>
-      <!--i n='$schema' v='"str2"' s='True' /-->
+      <!--i n='$type' v='"str2"' s='True' /-->
     </i>
     <i n='Delta' v='true' s='True' />
-    <i n='Epsilon' v='{"$schema":"Logram","W":48,"H":48,"T":0,"L":0}' s='True'>
-      <i n='A01' v='{"$schema":"Brick", "Bclass":"Test", "Left":7, "Top":7 }' s='True'>
+    <i n='Epsilon' v='{"$type":"Logram","W":48,"H":48,"T":0,"L":0}' s='True'>
+      <i n='A01' v='{"$type":"Brick", "Bclass":"Test", "Left":7, "Top":7 }' s='True'>
         
       </i>
     </i>

@@ -82,11 +82,11 @@ namespace X13.PLC {
         return null;
       }
     }
-    public string schema {
+    public string type {
       get {
         Topic dr;
         string sh;
-        if(this.Exist("$schema", out dr) && !string.IsNullOrWhiteSpace(sh = dr.As<string>())) {
+        if(this.Exist("$type", out dr) && !string.IsNullOrWhiteSpace(sh = dr.As<string>())) {
           return sh;
         }
         switch(_value.ValueType) {
@@ -108,7 +108,7 @@ namespace X13.PLC {
           if(_value == null) {
             return "Null";
           }
-          JSValue drf = _value.GetProperty("$schema", PropertyScope.Сommon);
+          JSValue drf = _value.GetProperty("$type", PropertyScope.Сommon);
           if(drf == null || !drf.Exists || string.IsNullOrWhiteSpace(sh = drf.ToString())) {
             return "Object";
           }
@@ -205,7 +205,7 @@ namespace X13.PLC {
       }
       return home;
     }
-    internal Topic Create(string path, Topic prim, string schemaName, JSValue value) {
+    internal Topic Create(string path, Topic prim, string typeName, JSValue value) {
       if(string.IsNullOrEmpty(path)) {
         return this;
       }
@@ -249,14 +249,14 @@ namespace X13.PLC {
             if(i + 1 == pt.Length) {
               next._value = value;
               c.o = value;
-              if(!string.IsNullOrEmpty(schemaName) && next.schema != schemaName) {
+              if(!string.IsNullOrEmpty(typeName) && next.type != typeName) {
                 next._children = new ConcurrentDictionary<string, Topic>();
-                Topic sh = new Topic(next, "$schema");
-                next._children["$schema"] = sh;
-                sh._value = schemaName;
+                Topic sh = new Topic(next, "$type");
+                next._children["$type"] = sh;
+                sh._value = typeName;
                 PLC.instance.DoCmd(c, false);
                 c = Perform.Create(sh, Perform.Art.create, prim);
-                c.o = schemaName;
+                c.o = typeName;
               }
             }
             PLC.instance.DoCmd(c, false);

@@ -10,6 +10,6 @@ using System.Threading.Tasks;
 namespace X13.UI {
   public interface IValueEditor {
     void ValueChanged(JSC.JSValue value);
-    void SchemaChanged(JSC.JSValue schema);
+    void TypeChanged(JSC.JSValue type);
   }
 }

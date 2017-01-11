@@ -15,8 +15,8 @@ namespace X13.Data {
     private A04Client _client;
     private int _flags;  //  1 - acl.subscribe, 2 - acl.create, 4 - acl.update, 8 - acl.delete, 16 - hat children
     private JSC.JSValue _value;
-    private DTopic _schemaTopic;
-    private int _schemaRequsted;
+    private DTopic _typeTopic;
+    private int _typeRequsted;
     private bool _disposed;
     private List<DTopic> _children;
 
@@ -32,21 +32,21 @@ namespace X13.Data {
       this.path = "/";
     }
 
-    public JSC.JSValue schema {
+    public JSC.JSValue type {
       get {
-        if(System.Threading.Interlocked.Exchange(ref _schemaRequsted, 1) == 0) {
-          var task = _client.root.GetAsync("/etc/schema/" + this.schemaStr);
-          task.ContinueWith(td => DWorkspace.ui.BeginInvoke(new Action<Task<DTopic>>(ExtractSchema), td));
+        if(System.Threading.Interlocked.Exchange(ref _typeRequsted, 1) == 0) {
+          var task = _client.root.GetAsync("/etc/type/" + this.typeStr);
+          task.ContinueWith(td => DWorkspace.ui.BeginInvoke(new Action<Task<DTopic>>(ExtractType), td));
           return null;
         } else {
-          return _schemaTopic == null ? null : _schemaTopic._value;
+          return _typeTopic == null ? null : _typeTopic._value;
         }
       }
     }
     public virtual string name { get; protected set; }
     public string path { get; private set; }
     public DTopic parent { get; private set; }
-    public string schemaStr { get; private set; }
+    public string typeStr { get; private set; }
     public string fullPath { get { return _client.url.GetLeftPart(UriPartial.Authority) + this.path; } }
     public JSC.JSValue value {
       get {
@@ -65,8 +65,8 @@ namespace X13.Data {
     public bool CheckAcl(ACL acl){
       return (_flags & (int)acl) == (int)acl;
     }
-    public Task<DTopic> CreateAsync(string name, string schemaName, JSC.JSValue value) {
-      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), schemaName, value.Defined?value:null);
+    public Task<DTopic> CreateAsync(string name, string typeName, JSC.JSValue value) {
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), typeName, value.Defined?value:null);
       DWorkspace.This.AddMsg(req);
       return req.Task;
     }
@@ -131,25 +131,25 @@ namespace X13.Data {
         ChangedReise(Art.value, this);
       }
     }
-    private void ExtractSchema(Task<DTopic> t) {
+    private void ExtractType(Task<DTopic> t) {
       if(t != null) {
         if(t.IsFaulted) {
-          Log.Warning("ExtractSchema({0}) - {1}", schemaStr, t.Exception.Message);
+          Log.Warning("ExtractType({0}) - {1}", typeStr, t.Exception.Message);
         } else if(t.IsCompleted) {
-          if(this._schemaTopic != t.Result) {
-            if(this._schemaTopic != null) {
-              this._schemaTopic.changed -= _schemaTopic_PropertyChanged;
+          if(this._typeTopic != t.Result) {
+            if(this._typeTopic != null) {
+              this._typeTopic.changed -= _typeTopic_PropertyChanged;
             }
-            this._schemaTopic = t.Result;
-            this._schemaTopic.changed += _schemaTopic_PropertyChanged;
-            ChangedReise(Art.schema, this);
+            this._typeTopic = t.Result;
+            this._typeTopic.changed += _typeTopic_PropertyChanged;
+            ChangedReise(Art.type, this);
           }
         }
       }
     }
-    private void _schemaTopic_PropertyChanged(Art art, DTopic child) {
+    private void _typeTopic_PropertyChanged(Art art, DTopic child) {
       if(art==Art.value) {
-        ChangedReise(Art.schema, this);
+        ChangedReise(Art.type, this);
       }
     }
     private void ChangedReise(Art art, DTopic src) {
@@ -217,14 +217,14 @@ namespace X13.Data {
     }
 
     public override string ToString() {
-      return this.fullPath + "<" + this.schemaStr + ">";
+      return this.fullPath + "<" + this.typeStr + ">";
     }
 
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
       private bool _create;
-      private string _schemaName;
+      private string _typeName;
       private JSC.JSValue _value;
       private TaskCompletionSource<DTopic> _tcs;
 
@@ -234,11 +234,11 @@ namespace X13.Data {
         this._create = false;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
-      public TopicReq(DTopic cur, string path, string schemaName, JSC.JSValue value) {
+      public TopicReq(DTopic cur, string path, string typeName, JSC.JSValue value) {
         this._cur = cur;
         this._path = path;
         this._create = true;
-        _schemaName = schemaName;
+        _typeName = typeName;
         _value = value;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
@@ -278,7 +278,7 @@ namespace X13.Data {
           if(_create) {
 			_create=false;
             if(_path.Length <= idx2) {
-              _cur._client.Create(_path.Substring(0, idx2), _schemaName, _value, this);
+              _cur._client.Create(_path.Substring(0, idx2), _typeName, _value, this);
             } else {
               _cur._client.Create(_path.Substring(0, idx2), null, null, this);
             }
@@ -324,7 +324,7 @@ namespace X13.Data {
               next = _cur;
             }
             next._flags = aFlags;
-            next.schemaStr = cb[2].Value as string;
+            next.typeStr = cb[2].Value as string;
             if((int)cb.length == 4) {
               next.ValuePublished(cb[3]);
             }
@@ -399,7 +399,7 @@ namespace X13.Data {
           if(i == ns.Length - 1) {
             if(cmd == 5) {
               next._flags = (int)_data[2];
-              next.schemaStr = _data[3].Value as string;
+              next.typeStr = _data[3].Value as string;
               next.ValuePublished(_data[4]);
             } else {
               next._disposed = true;
@@ -415,7 +415,7 @@ namespace X13.Data {
 
     public enum Art{
       value,
-      schema,
+      type,
       addChild,
       RemoveChild,
     }

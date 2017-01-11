@@ -31,13 +31,13 @@ namespace X13.UI {
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
     }
-    public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue schema) {
+    public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue type) {
       IValueEditor rez;
       Func<InBase, JSC.JSValue, IValueEditor> ct;
       if(_editors.TryGetValue(view, out ct) && ct != null) {
-        rez = ct(owner, schema);
+        rez = ct(owner, type);
       } else {
-        rez = new veDefault(owner, schema);
+        rez = new veDefault(owner, type);
       }
       return rez;
     }
@@ -169,7 +169,7 @@ namespace X13.UI {
     }
     public BitmapSource icon { get { return App.GetIcon(null); } }
     public bool altView {
-      get { return _data != null && (_data.schemaStr == "Logram"); }
+      get { return _data != null && (_data.typeStr == "Logram"); }
     }
     #endregion IBaseForm Members
   }

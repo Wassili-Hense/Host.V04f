@@ -55,7 +55,7 @@ namespace X13 {
       LoadIcon("String", "ty_str.png");
       LoadIcon("Date", "ty_dt.png");
       LoadIcon("Folder", "ty_topic.png");
-      LoadIcon("Schema", "ty_schema.png");
+      LoadIcon("Type", "ty_type.png");
       LoadIcon("Logram", "ty_logram.png");
       LoadIcon("children", "children.png");
     }

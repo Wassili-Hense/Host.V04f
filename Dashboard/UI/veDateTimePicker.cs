@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace X13.UI {
   class veDateTimePicker : Xceed.Wpf.Toolkit.DateTimePicker, IValueEditor {
-    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
-      return new veDateTimePicker(owner, schema);
+    public static IValueEditor Create(InBase owner, JSC.JSValue type) {
+      return new veDateTimePicker(owner, type);
     }
 
     private InBase _owner;
     private DateTime _oldValue;
-    public veDateTimePicker(InBase owner, JSC.JSValue schema) {
+    public veDateTimePicker(InBase owner, JSC.JSValue type) {
       _owner = owner;
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
@@ -26,7 +26,7 @@ namespace X13.UI {
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
       ValueChanged(_owner.value);
-      SchemaChanged(schema);
+      TypeChanged(type);
     }
     public new void ValueChanged(JSC.JSValue value) {
       if(value.ValueType == JSC.JSValueType.Date) {
@@ -37,7 +37,7 @@ namespace X13.UI {
       }
     }
 
-    public void SchemaChanged(JSC.JSValue schema) {
+    public void TypeChanged(JSC.JSValue type) {
     }
 
     private void Publish() {

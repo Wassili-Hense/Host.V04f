@@ -21,12 +21,12 @@ namespace X13.UI {
   /// Interaction logic for veSliderBool.xaml
   /// </summary>
   public partial class veSliderBool : UserControl, IValueEditor {
-    public static IValueEditor Create(InBase owner, JSC.JSValue schema) {
-      return new veSliderBool(owner, schema);
+    public static IValueEditor Create(InBase owner, JSC.JSValue type) {
+      return new veSliderBool(owner, type);
     }
 
     private InBase _owner;
-    public veSliderBool(InBase owner, JSC.JSValue schema) {
+    public veSliderBool(InBase owner, JSC.JSValue type) {
       _owner = owner;
       InitializeComponent();
       ValueChanged(_owner.value);
@@ -38,7 +38,7 @@ namespace X13.UI {
       this.cbBool.IsChecked= value.ValueType == JSC.JSValueType.Boolean && (bool)value;
     }
 
-    public void SchemaChanged(NiL.JS.Core.JSValue schema) {
+    public void TypeChanged(NiL.JS.Core.JSValue type) {
     }
 
     private void cbBool_Checked(object sender, RoutedEventArgs e) {

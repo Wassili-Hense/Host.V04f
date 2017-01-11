@@ -30,13 +30,13 @@ namespace X13.UI {
       levelPadding = 5;
       _items = new List<InBase>();
       _value = _data.value;
-      UpdateSchema(_data.schema);
+      UpdateType(_data.type);
       UpdateData(_data.value);
       _isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
     }
 
-    private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue schema, Action<InBase, bool> collFunc) {
+    private InValue(DTopic data, InValue parent, string name, JSC.JSValue value, JSC.JSValue type, Action<InBase, bool> collFunc) {
       _data = data;
       _parent = parent;
       _collFunc = collFunc;
@@ -47,7 +47,7 @@ namespace X13.UI {
       _isExpanded = true; // fill _valueVC
       levelPadding = _parent.levelPadding + 7;
       _value = value;
-      UpdateSchema(schema);
+      UpdateType(type);
       UpdateData(value);
       _isExpanded = this.HasChildren;
     }
@@ -64,16 +64,16 @@ namespace X13.UI {
         }
       }
     }
-    protected override void UpdateSchema(JSC.JSValue schema) {
-      base.UpdateSchema(schema);
-      if(_schema != null) {
-        var pr = _schema["Properties"] as JSC.JSValue;
+    protected override void UpdateType(JSC.JSValue type) {
+      base.UpdateType(type);
+      if(_type != null) {
+        var pr = _type["Properties"] as JSC.JSValue;
         if(pr != null) {
           InValue vc;
           foreach(var kv in pr) {
             vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
             if(vc != null) {
-              vc.UpdateSchema(kv.Value);
+              vc.UpdateType(kv.Value);
             }
           }
         }
@@ -102,7 +102,7 @@ namespace X13.UI {
             JSC.JSValue cs;
             {
               JSC.JSValue pr;
-              if(_schema == null || (pr = _schema["Properties"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object) {
+              if(_type == null || (pr = _type["Properties"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object) {
                 cs = null;
               }
             }
@@ -124,7 +124,7 @@ namespace X13.UI {
         }
       }
       if(editor == null) {
-        editor = InspectorForm.GetEdititor(_view, this, _schema);
+        editor = InspectorForm.GetEdititor(_view, this, _type);
         PropertyChangedReise("editor");
       } else {
         editor.ValueChanged(_value);
@@ -158,11 +158,11 @@ namespace X13.UI {
       }
     }
     private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
-      if(art==DTopic.Art.schema) {
-        UpdateSchema(_data.schema);
+      if(art==DTopic.Art.type) {
+        UpdateType(_data.type);
       } else if(art==DTopic.Art.value) {
         _value = _data.value;
-        UpdateSchema(_data.schema);
+        UpdateType(_data.type);
         UpdateData(_data.value);
       }
     }
@@ -172,7 +172,7 @@ namespace X13.UI {
       var l = new List<Control>();
       JSC.JSValue f;
       MenuItem mi;
-      if(_schema != null && (f = _schema["Properties"]).ValueType == JSC.JSValueType.Object) {
+      if(_type != null && (f = _type["Properties"]).ValueType == JSC.JSValueType.Object) {
         MenuItem ma = new MenuItem() { Header = "Add" };
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
           if(_items.Any(z => z.name == kv.Key)) {
@@ -192,7 +192,7 @@ namespace X13.UI {
         }
       }
       mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = _parent != null && (_schema == null || (f = _schema["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      mi.IsEnabled = _parent != null && (_type == null || (f = _type["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
       mi.Click += miDelete_Click;
       l.Add(mi);
       return l;
