@@ -12,52 +12,52 @@ using System.Threading;
 namespace X13 {
   internal class Programm {
     private static void Main(string[] args) {
-      string name=Assembly.GetExecutingAssembly().Location;
-      string path=Path.GetDirectoryName(name);
-      string cfgPath=Path.Combine(path, "../data/Server.xst");
-      int flag=Environment.UserInteractive?0:1;
-      for(int i=0; i<args.Length; i++) {
+      string name = Assembly.GetExecutingAssembly().Location;
+      string path = Path.GetDirectoryName(name);
+      string cfgPath = Path.Combine(path, "../data/Server.xst");
+      int flag = Environment.UserInteractive ? 0 : 1;
+      for(int i = 0; i < args.Length; i++) {
         if(string.IsNullOrWhiteSpace(args[i])) {
           continue;
         }
-        if(args[i].Length>1 && (args[i][0]=='/' || args[i][0]=='-')) {
+        if(args[i].Length > 1 && (args[i][0] == '/' || args[i][0] == '-')) {
           switch(args[i][1]) {
           case 's':
-            flag=1;
+            flag = 1;
             break;
           case 'i':
-            flag=2;
+            flag = 2;
             break;
           case 'u':
-            flag=3;
+            flag = 3;
             break;
           }
         } else if(File.Exists(args[i])) {
-          cfgPath=Path.GetFullPath(args[i]);
+          cfgPath = Path.GetFullPath(args[i]);
         }
       }
       Directory.SetCurrentDirectory(path);
-      if(flag!=1) {
+      if(flag != 1) {
         if(!CSWindowsServiceRecoveryProperty.Win32.AttachConsole(-1))  // Attach to a parent process console
           CSWindowsServiceRecoveryProperty.Win32.AllocConsole(); // Alloc a new console if none available
       }
-      if(flag==0) {
-        var srv=new Programm(cfgPath);
+      if(flag == 0) {
+        var srv = new Programm(cfgPath);
         if(srv.Start()) {
-          Console.ForegroundColor=ConsoleColor.Green;
+          Console.ForegroundColor = ConsoleColor.Green;
           Console.WriteLine("X13 Home automation server v.{0}", Assembly.GetExecutingAssembly().GetName().Version.ToString(4));
           Console.WriteLine("Press Enter to exit");
           Console.ResetColor();
           Console.Read();
           srv.Stop();
         } else {
-          Console.ForegroundColor=ConsoleColor.Magenta;
+          Console.ForegroundColor = ConsoleColor.Magenta;
           Console.WriteLine("X13 Home automation server start FAILED; press Enter to Exit");
           Console.ResetColor();
           Console.Read();
         }
-        Console.ForegroundColor=ConsoleColor.Gray;
-      } else if(flag==1) {
+        Console.ForegroundColor = ConsoleColor.Gray;
+      } else if(flag == 1) {
         try {
           HAServer.Run(cfgPath);
         }
@@ -65,14 +65,14 @@ namespace X13 {
           Log.Error("{0}", ex.ToString());
         }
 
-      } else if(flag==2) {
+      } else if(flag == 2) {
         try {
           HAServer.InstallService(name);
         }
         catch(Exception ex) {
           Log.Error("{0}", ex.ToString());
         }
-      } else if(flag==3) {
+      } else if(flag == 3) {
         try {
           HAServer.UninstallService(name);
         }
@@ -95,17 +95,20 @@ namespace X13 {
     private bool _terminate;
     private Timer _tickTimer;
 
+    private Repository.Repo _repository;
+
     internal Programm(string cfgPath) {
-      _cfgPath=cfgPath;
+      _cfgPath = cfgPath;
     }
     internal bool Start() {
-      string siName=string.Format("Global\\X13.HAServer@{0}", Path.GetFullPath(_cfgPath).Replace('\\', '$'));
-      _singleInstance=new Mutex(true, siName);
+      string siName = string.Format("Global\\X13.HAServer@{0}", Path.GetFullPath(_cfgPath).Replace('\\', '$'));
+      _singleInstance = new Mutex(true, siName);
 
-      AppDomain.CurrentDomain.UnhandledException+=new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+      AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
+      AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
       if(!_singleInstance.WaitOne(TimeSpan.Zero, true)) {
         Log.Error("only one instance at a time");
-        _singleInstance=null;
+        _singleInstance = null;
         return false;
       }
       if(!Directory.Exists("../data")) {
@@ -114,43 +117,53 @@ namespace X13 {
       if(!LoadPlugins()) {
         return false;
       }
-      _tick=new AutoResetEvent(false);
-      _terminate=false;
-      _thread=new Thread(new ThreadStart(PrThread));
-      _thread.Priority=ThreadPriority.AboveNormal;
-      _thread.IsBackground=false;
+      _tick = new AutoResetEvent(false);
+      _terminate = false;
+      _thread = new Thread(new ThreadStart(PrThread));
+      _thread.Priority = ThreadPriority.AboveNormal;
+      _thread.IsBackground = false;
       _thread.Start();
 
       return true;
     }
 
     internal void Stop() {
-      _terminate=true;
+      _terminate = true;
       _tick.Set();
       if(!_thread.Join(3500)) {
         _thread.Abort();
       }
-      if(_singleInstance!=null) {
+      if(_singleInstance != null) {
         _singleInstance.ReleaseMutex();
       }
       Log.Finish();
     }
     private void PrThread() {
       {
-        int cpuCnt=System.Environment.ProcessorCount;
-        if(cpuCnt>1){
-          int r = CSWindowsServiceRecoveryProperty.Win32.SetThreadAffinityMask(CSWindowsServiceRecoveryProperty.Win32.GetCurrentThread(), 1 << (cpuCnt-1));
+        int cpuCnt = System.Environment.ProcessorCount;
+        if(cpuCnt > 1) {
+          int r = CSWindowsServiceRecoveryProperty.Win32.SetThreadAffinityMask(CSWindowsServiceRecoveryProperty.Win32.GetCurrentThread(), 1 << (cpuCnt - 1));
         }
       }
       InitPlugins();
       StartPlugins();
-      _tickTimer=new Timer(Tick, null, 200, 80);
+
+      _tickTimer = new Timer(Tick, null, 200, 80);
+      int i;
       do {
         _tick.WaitOne();
-        TickPlugins();
+        for(i = 0; i < _modules.Length; i++) {
+          try {
+            _modules[i].Tick();
+          }
+          catch(Exception ex) {
+            Log.Error("{0}.Tick() - {1}", _modules[i].GetType().FullName, ex.ToString());
+          }
+        }
       } while(!_terminate);
       _tickTimer.Change(-1, -1);
       StopPlugins();
+      _repository.Stop();
     }
     private void Tick(object o) {
       _tick.Set();
@@ -167,15 +180,20 @@ namespace X13 {
       catch {
       }
     }
+    private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
+      Log.Error("[{0}] Resolve failed: {1}", args.RequestingAssembly.FullName, args.Name);
+      return null;
+    }
 
     #region Plugins
 #pragma warning disable 649
-    [ImportMany(typeof(IPlugModul), RequiredCreationPolicy=CreationPolicy.Shared)]
-    private IEnumerable<Lazy<IPlugModul, IPlugModulData>> _modules;
+    [ImportMany(typeof(IPlugModul), RequiredCreationPolicy = CreationPolicy.Shared)]
+    private IEnumerable<Lazy<IPlugModul, IPlugModulData>> _impModules;
 #pragma warning restore 649
+    private IPlugModul[] _modules;
 
     private bool LoadPlugins() {
-      string path=Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+      string path = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
       var catalog = new AggregateCatalog();
       catalog.Catalogs.Add(new AssemblyCatalog(Assembly.GetExecutingAssembly()));
@@ -188,16 +206,16 @@ namespace X13 {
         Log.Error("Load plugins - {0}", ex.ToString());
         return false;
       }
-      _modules=_modules.OrderBy(z => z.Metadata.priority).ToArray();
+      _impModules = _impModules.OrderBy(z => z.Metadata.priority).ToArray();
       return true;
     }
     private void InitPlugins() {
       string pName;
-      foreach(var i in _modules) {
+      foreach(var i in _impModules) {
         if(!i.Value.enabled) {
           continue;
         }
-        pName=i.Metadata.name??i.Value.GetType().FullName;
+        pName = i.Metadata.name ?? i.Value.GetType().FullName;
         try {
           i.Value.Init();
           Log.Debug("plugin {0} Loaded", pName);
@@ -206,14 +224,15 @@ namespace X13 {
           Log.Error("Load plugin {0} failure - {1}", pName, ex.ToString());
         }
       }
+      _modules = _impModules.Where(z => z.Value.enabled).Select(z => z.Value).ToArray();
     }
     private void StartPlugins() {
       string pName;
-      foreach(var i in _modules) {
+      foreach(var i in _impModules) {
         if(!i.Value.enabled) {
           continue;
         }
-        pName=i.Metadata.name??i.Value.GetType().FullName;
+        pName = i.Metadata.name ?? i.Value.GetType().FullName;
         try {
           i.Value.Start();
           Log.Debug("plugin {0} Started", pName);
@@ -223,29 +242,13 @@ namespace X13 {
         }
       }
     }
-    private void TickPlugins() {
-      foreach(var i in _modules) {
-        if(!i.Value.enabled) {
-          continue;
-        }
-        try {
-          i.Value.Tick();
-        }
-        catch(Exception ex) {
-          Log.Error("{0}.Tick() - {1}", i.Metadata.name??i.Value.GetType().FullName, ex.ToString());
-        }
-      }
-    }
     private void StopPlugins() {
       foreach(var i in _modules.Reverse()) {
-        if(!i.Value.enabled) {
-          continue;
-        }
         try {
-          i.Value.Stop();
+          i.Stop();
         }
         catch(Exception ex) {
-          Log.Error("Stop plugin {0} failure - {1}", i.Metadata.name??i.Value.GetType().FullName, ex.ToString());
+          Log.Error("Stop plugin {0} failure - {1}", i.GetType().FullName, ex.ToString());
         }
       }
     }

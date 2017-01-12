@@ -41,8 +41,12 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NiL.JS, Version=2.2.914.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
-      <HintPath>..\packages\NiL.JS.2.2.914.0\lib\net40\NiL.JS.dll</HintPath>
+    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteDB.3.0.0-beta3\lib\net35\LiteDB.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="NiL.JS, Version=2.4.1011.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
+      <HintPath>..\packages\NiL.JS.2.4.1011.0\lib\net40\NiL.JS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -62,10 +66,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IPlugModul.cs" />
-    <Compile Include="PLC\Perform.cs" />
-    <Compile Include="PLC\PLC.cs" />
-    <Compile Include="PLC\PlcItems.cs" />
-    <Compile Include="PLC\Topic.cs" />
+    <Compile Include="Repository\Perform.cs" />
+    <Compile Include="Repository\Repo.cs" />
+    <Compile Include="Repository\Topic.cs" />
     <Compile Include="Svc\HAServer.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -84,10 +87,6 @@
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="Svc\ServiceRecoveryProperty.cs" />
     <Compile Include="Svc\Win32.cs" />
-    <Compile Include="WebServer\ApiV04.cs" />
-    <Compile Include="WebServer\HttpStaticServer.cs" />
-    <Compile Include="WebServer\Server.cs" />
-    <Compile Include="WebServer\SIO_Connection.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.manifest" />
