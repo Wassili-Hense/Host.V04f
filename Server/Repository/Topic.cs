@@ -9,16 +9,10 @@ using System.Collections.Concurrent;
 
 namespace X13.Repository {
   public sealed class Topic {
-    #region static internal
     private static Repo _repo;
-    internal static void Init(Repo repo) {
-      _repo = repo;
-      root = new Topic(null, "/");
-    }
-    #endregion static internal
     public static Topic root { get; private set; }
 
-    #region exemplar internal
+    #region Fields
     private Topic _parent;
     private string _name;
     private string _path;
@@ -27,11 +21,13 @@ namespace X13.Repository {
     private BsonDocument _meta;
     private JSValue _value;
 
+    #endregion Fields
+
     private Topic(Topic parent, string name) {
       _name = name;
       _parent = parent;
       _value = JSValue.Undefined;
-
+      disposed = false;
       if(parent == null) {
         _path = "/";
       } else if(parent == root) {
@@ -40,65 +36,6 @@ namespace X13.Repository {
         _path = parent._path + "/" + name;
       }
     }
-    internal void Load(BsonDocument state, BsonDocument meta) {
-      _state = state;
-      _meta = meta;
-    }
-
-    internal Topic GetI(string path, bool create, Topic prim, bool inter) {
-      if(string.IsNullOrEmpty(path)) {
-        return this;
-      }
-      Topic home = this, next;
-      if(path[0] == Bill.delmiter) {
-        if(path.StartsWith(this._path)) {
-          path = path.Substring(this._path.Length);
-        } else {
-          home = Topic.root;
-        }
-      }
-      var pt = path.Split(Bill.delmiterArr, StringSplitOptions.RemoveEmptyEntries);
-      for(int i = 0; i < pt.Length; i++) {
-        if(pt[i] == Bill.maskAll || pt[i] == Bill.maskChildren) {
-          throw new ArgumentException(string.Format("{0}[{1}] dont allow wildcard", this._path, path));
-        }
-        if(pt[i] == Bill.maskParent) {
-          home = home.parent;
-          if(home == null) {
-            throw new ArgumentException(string.Format("{0}[{1}] BAD path: excessive nesting", this._path, path));
-          }
-          continue;
-        }
-        next = null;
-        if(home._children == null) {
-          lock(home) {
-            if(home._children == null) {
-              home._children = new ConcurrentDictionary<string, Topic>();
-            }
-          }
-        } else if(home._children.TryGetValue(pt[i], out next)) {
-          home = next;
-        }
-        if(next == null) {
-          if(create) {
-            if(home._children.TryGetValue(pt[i], out next)) {
-              home = next;
-            } else {
-              next = new Topic(home, pt[i]);
-              home._children[pt[i]] = next;
-              var c = Perform.Create(next, Perform.Art.create, prim);
-              _repo.DoCmd(c, inter);
-            }
-          } else {
-            return null;
-          }
-        }
-        home = next;
-      }
-      return home;
-    }
-
-    #endregion exemplar internal
 
     public Topic parent {
       get { return _parent; }
@@ -108,6 +45,7 @@ namespace X13.Repository {
       get { return _name; }
     }
     public string path { get { return _meta != null ? _meta["path"].AsString : _path; } }
+    public bool disposed { get; private set; }
     public Bill all { get { return new Bill(this, true); } }
     public Bill children { get { return new Bill(this, false); } }
 
@@ -116,7 +54,34 @@ namespace X13.Repository {
     /// <param name="create">true - create, false - check</param>
     /// <returns>item or null</returns>
     public Topic Get(string path, bool create = true, Topic prim = null) {
-      return GetI(path, create, prim, false);
+      return Topic.I.Get(this, path, create, prim, false);
+    }
+    public bool Exist(string path) {
+      return Topic.I.Get(this, path, false, null, false) != null;
+    }
+    public bool Exist(string path, out Topic topic) {
+      return (topic = Topic.I.Get(this, path, false, null, false)) != null;
+    }
+    public void Remove(Topic prim = null) {
+      this.disposed = true;
+      var c = Perform.Create(this, Perform.Art.remove, prim);
+      _repo.DoCmd(c, false);
+    }
+
+    public JSValue GetValue() {
+      return _value;
+    }
+    public void SetValue(JSValue val, Topic prim = null) {
+      var c = Perform.Create(this, val, prim);
+      _repo.DoCmd(c, false);
+    }
+
+    public BsonValue GetField(string fPath) {
+      return _meta == null ? BsonValue.Null : _meta.Get(fPath);
+    }
+    public void SetField(string fPath, BsonValue value, Topic prim = null) {
+      var c = Perform.Create(this, fPath, value, prim);
+      _repo.DoCmd(c, false);
     }
 
     #region nested types
@@ -173,11 +138,85 @@ namespace X13.Repository {
         return GetEnumerator();
       }
     }
+    internal static class I {
+      public static void Init(Repo repo) {
+        Topic._repo = repo;
+        Topic.root = new Topic(null, "/");
+      }
 
+      public static void Load(Topic t, BsonDocument state, BsonDocument meta) {
+        t._state = state;
+        t._meta = meta;
+      }
+      public static Topic Get(Topic home, string path, bool create, Topic prim, bool inter) {
+        if(string.IsNullOrEmpty(path)) {
+          return home;
+        }
+        Topic next;
+        if(path[0] == Bill.delmiter) {
+          if(path.StartsWith(home._path)) {
+            path = path.Substring(home._path.Length);
+          } else {
+            home = Topic.root;
+          }
+        }
+        var pt = path.Split(Bill.delmiterArr, StringSplitOptions.RemoveEmptyEntries);
+        for(int i = 0; i < pt.Length; i++) {
+          if(pt[i] == Bill.maskAll || pt[i] == Bill.maskChildren) {
+            throw new ArgumentException(string.Format("{0}[{1}] dont allow wildcard", home._path, path));
+          }
+          if(pt[i] == Bill.maskParent) {
+            home = home.parent;
+            if(home == null) {
+              throw new ArgumentException(string.Format("{0}[{1}] BAD path: excessive nesting", home._path, path));
+            }
+            continue;
+          }
+          next = null;
+          if(home._children == null) {
+            lock(home) {
+              if(home._children == null) {
+                home._children = new ConcurrentDictionary<string, Topic>();
+              }
+            }
+          } else if(home._children.TryGetValue(pt[i], out next) && next.disposed) {
+            next = null;
+          }
+          if(next == null) {
+            if(create) {
+              if(home._children.TryGetValue(pt[i], out next)) {
+                home = next;
+              } else {
+                next = new Topic(home, pt[i]);
+                home._children[pt[i]] = next;
+                var c = Perform.Create(next, Perform.Art.create, prim);
+                _repo.DoCmd(c, inter);
+              }
+            } else {
+              return null;
+            }
+          }
+          home = next;
+        }
+        return home;
+      }
+      public static void SetValue(Topic t, JSValue val) {
+        t._value = val;
+      }
+      public static void Remove(Topic t) {
+        t.disposed = true;
+        if(t._parent != null) {
+          Topic tmp;
+          t._parent._children.TryRemove(t._name, out tmp);
+        }
+      }
+    }
     #endregion nested types
 
     public override string ToString() {
       return _path;
     }
+
+
   }
 }

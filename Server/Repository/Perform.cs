@@ -1,4 +1,6 @@
-﻿using System;
+﻿using LiteDB;
+using NiL.JS.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,22 +8,33 @@ using System.Text;
 namespace X13.Repository {
   internal class Perform : IComparable<Perform> {
 
-    internal static Perform Create(Topic src, object val, Topic prim) {
+    internal static Perform Create(Topic src, Art art, Topic prim) {
       Perform r;
-      if(val != null && val.GetType() == typeof(Art)) {
-        r = new Perform((Art)(object)val, src, prim);
-        r.o = null;
-        r.i = 0;
-      } else {
-        r = new Perform(Art.set, src, prim);
-        r.o = val;
-        r.i = 0;
-      }
+      r = new Perform(art, src, prim);
+      r.o = null;
+      r.i = 0;
+      return r;
+    }
+    
+    internal static Perform Create(Topic src, JSValue val, Topic prim) {
+      Perform r;
+      r = new Perform(Art.set, src, prim);
+      r.o = val;
+      r.i = 0;
+      return r;
+    }
+    internal static Perform Create(Topic src, string fName, BsonValue val, Topic prim) {
+      Perform r;
+      r = new Perform(Art.set, src, prim);
+      r.o = fName;
+      r.f_v = val;
+      r.i = 0;
       return r;
     }
     internal object o;
     internal int i;
     internal object old_o;
+    BsonValue f_v;
 
     public readonly Topic src;
     public Topic prim { get; internal set; }
@@ -61,8 +74,9 @@ namespace X13.Repository {
       subscribe = 4,
       unsubscribe = 8,
       set = 12,
-      setJson = 13,
+      setField = 13,
       changed = 14,
+      changedField = 15,
       remove = 16,
       subAck = 20,
       unsubAck = 24,

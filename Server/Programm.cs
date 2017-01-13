@@ -95,8 +95,6 @@ namespace X13 {
     private bool _terminate;
     private Timer _tickTimer;
 
-    private Repository.Repo _repository;
-
     internal Programm(string cfgPath) {
       _cfgPath = cfgPath;
     }
@@ -163,7 +161,6 @@ namespace X13 {
       } while(!_terminate);
       _tickTimer.Change(-1, -1);
       StopPlugins();
-      _repository.Stop();
     }
     private void Tick(object o) {
       _tick.Set();
