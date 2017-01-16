@@ -109,9 +109,6 @@ namespace X13 {
         _singleInstance = null;
         return false;
       }
-      if(!Directory.Exists("../data")) {
-        Directory.CreateDirectory("../data");
-      }
       if(!LoadPlugins()) {
         return false;
       }

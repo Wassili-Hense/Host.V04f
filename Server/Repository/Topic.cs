@@ -23,7 +23,7 @@ namespace X13.Repository {
 
     #endregion Fields
 
-    private Topic(Topic parent, string name) {
+    private Topic(Topic parent, string name, bool fill) {
       _name = name;
       _parent = parent;
       _value = JSValue.Undefined;
@@ -35,6 +35,14 @@ namespace X13.Repository {
       } else {
         _path = parent._path + "/" + name;
       }
+      if(fill) {
+        _meta = new BsonDocument();
+        var id = ObjectId.NewObjectId();
+        _meta["_id"] = id;
+        _meta["path"] = new BsonValue(_path);
+        _state = new BsonDocument();
+        _state["_id"] = id;
+      }
     }
 
     public Topic parent {
@@ -44,7 +52,7 @@ namespace X13.Repository {
     public string name {
       get { return _name; }
     }
-    public string path { get { return _meta != null ? _meta["path"].AsString : _path; } }
+    public string path { get { return _path; } }
     public bool disposed { get; private set; }
     public Bill all { get { return new Bill(this, true); } }
     public Bill children { get { return new Bill(this, false); } }
@@ -54,13 +62,13 @@ namespace X13.Repository {
     /// <param name="create">true - create, false - check</param>
     /// <returns>item or null</returns>
     public Topic Get(string path, bool create = true, Topic prim = null) {
-      return Topic.I.Get(this, path, create, prim, false);
+      return Topic.I.Get(this, path, create, prim, false, true);
     }
     public bool Exist(string path) {
-      return Topic.I.Get(this, path, false, null, false) != null;
+      return Topic.I.Get(this, path, false, null, false, false) != null;
     }
     public bool Exist(string path, out Topic topic) {
-      return (topic = Topic.I.Get(this, path, false, null, false)) != null;
+      return (topic = Topic.I.Get(this, path, false, null, false, false)) != null;
     }
     public void Remove(Topic prim = null) {
       this.disposed = true;
@@ -141,14 +149,19 @@ namespace X13.Repository {
     internal static class I {
       public static void Init(Repo repo) {
         Topic._repo = repo;
-        Topic.root = new Topic(null, "/");
+        Topic.root = new Topic(null, "/", false);
       }
 
-      public static void Load(Topic t, BsonDocument state, BsonDocument meta) {
-        t._state = state;
-        t._meta = meta;
+      public static void Create(BsonDocument obj, BsonDocument state) {
+        Topic t = I.Get(Topic.root, obj["path"].AsString, true, null, false, false);
+        t._meta = obj;
+        if(state != null) {
+          t._state = state;
+          t._value = Bs2Js(state["v"]);
+        }
       }
-      public static Topic Get(Topic home, string path, bool create, Topic prim, bool inter) {
+
+      public static Topic Get(Topic home, string path, bool create, Topic prim, bool inter, bool fill) {
         if(string.IsNullOrEmpty(path)) {
           return home;
         }
@@ -187,7 +200,7 @@ namespace X13.Repository {
               if(home._children.TryGetValue(pt[i], out next)) {
                 home = next;
               } else {
-                next = new Topic(home, pt[i]);
+                next = new Topic(home, pt[i], fill);
                 home._children[pt[i]] = next;
                 var c = Perform.Create(next, Perform.Art.create, prim);
                 _repo.DoCmd(c, inter);
@@ -202,6 +215,7 @@ namespace X13.Repository {
       }
       public static void SetValue(Topic t, JSValue val) {
         t._value = val;
+        t._state["v"] = Js2Bs(val);
       }
       public static void Remove(Topic t) {
         t.disposed = true;
@@ -209,6 +223,100 @@ namespace X13.Repository {
           Topic tmp;
           t._parent._children.TryRemove(t._name, out tmp);
         }
+      }
+      public static void ReqData(Topic t, out BsonDocument obj, out BsonDocument state) {
+        obj = t._meta;
+        state = t._state;
+      }
+
+      private static BsonValue Js2Bs(JSValue val) {
+        if(val == null) {
+          return BsonValue.Null;
+        }
+        switch(val.ValueType) {
+        case JSValueType.Boolean:
+          return new BsonValue((bool)val);
+        case JSValueType.Date: {
+            var jsd = val.Value as JST.Date;
+            if(jsd != null) {
+              return new BsonValue(jsd.ToDateTime().ToUniversalTime());
+            }
+            return BsonValue.Null;
+          }
+        case JSValueType.Double:
+          return new BsonValue((double)val);
+        case JSValueType.Integer:
+          return new BsonValue((int)val);
+        case JSValueType.String:
+          return new BsonValue(val.ToString());
+        case JSValueType.Object:
+          if(val.IsNull) {
+            return BsonValue.Null;
+          }
+          var arr = val as JST.Array;
+          if(arr != null) {
+            var r = new BsonArray();
+            int i;
+            foreach(var f in arr) {
+              if(int.TryParse(f.Key, out i)) {
+                while(i >= r.Count()) { r.Add(BsonValue.Null); }
+                r[i] = Js2Bs(f.Value);
+              }
+            }
+            return r;
+          }
+          var obj = val as JSObject;
+          if(obj != null) {
+            var r = new BsonDocument();
+            foreach(var f in obj) {
+              r[f.Key] = Js2Bs(f.Value);
+            }
+            return r;
+          }
+          throw new NotImplementedException("js2Bs(" + val.ToString() + ")");
+        default:
+          throw new NotImplementedException("js2Bs(" + val.ValueType.ToString() + ")");
+        }
+      }
+      private static JSValue Bs2Js(BsonValue val) {
+        if(val == null) {
+          return JSValue.Undefined;
+        }
+        switch(val.Type) {
+        case BsonType.Array: {
+            var arr = val.AsArray;
+            var r = new JST.Array(arr.Count);
+            for(int i = 0; i < arr.Count; i++) {
+              if(!arr[i].IsNull) {
+                r[i] = Bs2Js(arr[i]);
+              }
+            }
+            return r;
+          }
+        case BsonType.Boolean:
+          return new JST.Boolean(val.AsBoolean);
+        case BsonType.DateTime:
+          return JSValue.Marshal(val.AsDateTime.ToLocalTime());
+        case BsonType.Document: {
+          var r = JSObject.CreateObject();
+            var o = val.AsDocument;
+            foreach(var i in o) {
+              r[i.Key] = Bs2Js(i.Value);
+            }
+            return r;
+          }
+        case BsonType.Double:
+          return new JST.Number(val.AsDouble);
+        case BsonType.Int32:
+          return new JST.Number(val.AsInt32);
+        case BsonType.Int64:
+          return new JST.Number(val.AsInt64);
+        case BsonType.Null:
+          return JSValue.Null;
+        case BsonType.String:
+          return new JST.String(val.AsString);
+        }
+        throw new NotImplementedException("Bs2Js(" + val.Type.ToString() + ")");
       }
     }
     #endregion nested types

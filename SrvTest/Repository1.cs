@@ -4,15 +4,22 @@ using JST = NiL.JS.BaseLibrary;
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using X13.Repository;
+using System.IO;
 
 namespace SrvTest {
   [TestClass]
   public class Repository1 {
-    Repo _repo;
+    private static string dbPath;
+    private Repo _repo;
+
 
     [ClassInitialize()]
     public static void MyClassInitialize(TestContext testContext) {
+      dbPath = "../data/persist.ldb";
       var val = JSValue.Marshal(41);  // Load NiL.JS
+      //using(var db = new LiteDatabase(dbPath)) {
+      //  db.GetCollectionNames();
+      //}
     }
     [TestInitialize()]
     public void TestInitialize() {
@@ -70,6 +77,39 @@ namespace SrvTest {
       Topic a1 = Topic.root.Get("A1");
       var id=a1.GetField("_id");
       Assert.IsTrue(id.IsObjectId);
+      var path = a1.GetField("path");
+      Assert.IsTrue(path.IsString);
+      Assert.AreEqual(path.AsString, "/A1");
+    }
+    [TestMethod]
+    public void T07() {
+      Topic a4 = Topic.root.Get("A4");
+      var val = JSValue.Marshal(new DateTime(2017, 1, 16, 10, 48, 15, 19, DateTimeKind.Local) );
+      a4.SetValue(val);
+      _repo.Tick();
+      Assert.AreEqual(val, a4.GetValue());
+    }
+
+    [TestMethod]
+    public void T08() {
+      if(File.Exists(dbPath)) {
+        File.Delete(dbPath);
+      }
+      _repo.Start();
+
+      Topic a1 = Topic.root.Get("A1");
+      var val = JSValue.Marshal(43);
+      a1.SetValue(val);
+      _repo.Tick();
+      a1 = null;
+      _repo.Stop();
+
+      _repo = new Repo();
+      _repo.Init();
+      _repo.Start();
+      Assert.IsTrue(Topic.root.Exist("A1", out a1));
+      Assert.AreEqual(43, (int)a1.GetValue());
+      _repo.Stop();
     }
   }
 }
