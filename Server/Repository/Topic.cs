@@ -12,7 +12,7 @@ namespace X13.Repository {
     private static Repo _repo;
     public static Topic root { get; private set; }
 
-    #region Fields
+    #region Member variables
     private Topic _parent;
     private string _name;
     private string _path;
@@ -20,8 +20,9 @@ namespace X13.Repository {
     private BsonDocument _state;
     private BsonDocument _meta;
     private JSValue _value;
+    private bool _saved;
 
-    #endregion Fields
+    #endregion Member variables
 
     private Topic(Topic parent, string name, bool fill) {
       _name = name;
@@ -39,9 +40,7 @@ namespace X13.Repository {
         _meta = new BsonDocument();
         var id = ObjectId.NewObjectId();
         _meta["_id"] = id;
-        _meta["path"] = new BsonValue(_path);
-        _state = new BsonDocument();
-        _state["_id"] = id;
+        _meta["p"] = new BsonValue(_path);
       }
     }
 
@@ -54,6 +53,22 @@ namespace X13.Repository {
     }
     public string path { get { return _path; } }
     public bool disposed { get; private set; }
+    public bool saved {
+      get {
+        return _saved;
+      }
+      set {
+        if(_saved != value) {
+          _saved = value;
+          Perform c;
+          if(!_saved) {
+            _state = null;
+          }
+          c = Perform.Create(this, "s", _saved ? new BsonValue(true) : null, null);
+          _repo.DoCmd(c, false);
+        }
+      }
+    }
     public Bill all { get { return new Bill(this, true); } }
     public Bill children { get { return new Bill(this, false); } }
 
@@ -70,6 +85,36 @@ namespace X13.Repository {
     public bool Exist(string path, out Topic topic) {
       return (topic = Topic.I.Get(this, path, false, null, false, false)) != null;
     }
+    public void Move(Topic nParent, string nName, Topic prim = null) {
+      if(this._parent == null) {
+        return;
+      }
+      if(nParent == null) {
+        nParent = this.parent;
+      }
+      if(string.IsNullOrEmpty(nName)) {
+        nName = this.name;
+      }
+      Topic tmp;
+      if(nParent._children == null) {
+        lock(nParent) {
+          if(nParent._children == null) {
+            nParent._children = new ConcurrentDictionary<string, Topic>();
+          }
+        }
+      }
+      if(!nParent._children.TryAdd(nName, this)) {
+        throw new ArgumentException(this._path + ".Move(" + nParent._path + ", " + nName + ") FAILED");
+      }
+      if(!_parent._children.TryRemove(this._name, out tmp)) {
+        Log.Warning("{0}.Move({1}, {2}) remove FAILED", this._path, nParent._path, nName);
+        return;
+      }
+      _parent = nParent;
+      this._name = nName;
+      I.UpdatePath(this);
+    }
+
     public void Remove(Topic prim = null) {
       this.disposed = true;
       var c = Perform.Create(this, Perform.Art.remove, prim);
@@ -88,6 +133,9 @@ namespace X13.Repository {
       return _meta == null ? BsonValue.Null : _meta.Get(fPath);
     }
     public void SetField(string fPath, BsonValue value, Topic prim = null) {
+      if(fPath == "_id" || fPath == "p" || fPath == "s") {
+        throw new FieldAccessException(fPath);
+      }
       var c = Perform.Create(this, fPath, value, prim);
       _repo.DoCmd(c, false);
     }
@@ -153,10 +201,13 @@ namespace X13.Repository {
       }
 
       public static void Create(BsonDocument obj, BsonDocument state) {
-        Topic t = I.Get(Topic.root, obj["path"].AsString, true, null, false, false);
+        Topic t = I.Get(Topic.root, obj["p"].AsString, true, null, false, false);
         t._meta = obj;
+        t._saved = obj["s"].AsBoolean;
         if(state != null) {
-          t._state = state;
+          if(t._saved) {
+            t._state = state;
+          }
           t._value = Bs2Js(state["v"]);
         }
       }
@@ -215,8 +266,28 @@ namespace X13.Repository {
       }
       public static void SetValue(Topic t, JSValue val) {
         t._value = val;
-        t._state["v"] = Js2Bs(val);
+        if(t._saved) {
+          if(t._state == null) {
+            t._state = new BsonDocument();
+            t._state["_id"] = t._meta["_id"];
+          }
+          t._state["v"] = Js2Bs(val);
+        }
       }
+      public static void SetField(Topic t, string fPath, BsonValue bsonValue) {
+        t._meta.Set(fPath, bsonValue);
+      }
+      public static void UpdatePath(Topic t) {
+        t._path = t.parent == root ? "/" + t._name : t.parent._path + "/" + t._name;
+        var c = Perform.Create(t, "p", new BsonValue(t._path), null);
+        _repo.DoCmd(c, false);
+        if(t._children != null) {
+          foreach(var ch in t._children) {
+            UpdatePath(ch.Value);
+          }
+        }
+      }
+
       public static void Remove(Topic t) {
         t.disposed = true;
         if(t._parent != null) {
@@ -298,7 +369,7 @@ namespace X13.Repository {
         case BsonType.DateTime:
           return JSValue.Marshal(val.AsDateTime.ToLocalTime());
         case BsonType.Document: {
-          var r = JSObject.CreateObject();
+            var r = JSObject.CreateObject();
             var o = val.AsDocument;
             foreach(var i in o) {
               r[i.Key] = Bs2Js(i.Value);
@@ -318,12 +389,15 @@ namespace X13.Repository {
         }
         throw new NotImplementedException("Bs2Js(" + val.Type.ToString() + ")");
       }
+
+
     }
     #endregion nested types
 
     public override string ToString() {
       return _path;
     }
+
 
 
   }

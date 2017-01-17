@@ -13,7 +13,7 @@ namespace X13.Repository {
   [System.ComponentModel.Composition.ExportMetadata("priority", 1)]
   [System.ComponentModel.Composition.ExportMetadata("name", "Repository")]
   public class Repo : IPlugModul {
-    #region exemplar internal
+    #region internal Members
     private ConcurrentQueue<Perform> _tcQueue;
     private List<Perform> _prOp;
     private int _busyFlag;
@@ -34,9 +34,6 @@ namespace X13.Repository {
       int i;
       for(i = 0; i < _prOp.Count; i++) {
         if(_prOp[i].EqualsGr(cmd)) {
-          if(_prOp[i].EqualsEx(cmd)) {
-            return i;
-          }
           if(_prOp[i].art == Perform.Art.changed) {
             cmd.old_o = _prOp[i].old_o;
           }
@@ -81,6 +78,8 @@ namespace X13.Repository {
 
       case Perform.Art.changed:
       case Perform.Art.set:
+      case Perform.Art.setField:
+      case Perform.Art.changedField:
         EnquePerf(c);
         break;
       case Perform.Art.remove:
@@ -98,31 +97,53 @@ namespace X13.Repository {
           cmd.art = Perform.Art.changed;
         }
       }
+      if(cmd.art == Perform.Art.setField) {
+        string fPath = cmd.o as string;
+        cmd.old_o = cmd.src.GetField(fPath);
+        Topic.I.SetField(cmd.src, fPath, cmd.f_v);
+        cmd.art = Perform.Art.changedField;
+      }
       if(cmd.art == Perform.Art.remove) {
         Topic.I.Remove(cmd.src);
       }
     }
     private void Store(Perform cmd) {
-      
-      BsonDocument obj, state;
       if(_objects == null) {
         return;
       }
+      BsonDocument obj, state;
       Topic.I.ReqData(cmd.src, out obj, out state);
-      if(cmd.art == Perform.Art.create) {
-        _objects.Insert(obj);
-      } else if(cmd.art == Perform.Art.remove) {
-        _states.Delete(state);
-        _objects.Delete(state["_id"]);
-      } else {
-        _objects.Update(obj);
+      switch(cmd.art) {
+      case Perform.Art.changed:
         if(state != null) {
           _states.Upsert(state);
         }
+        break;
+      case Perform.Art.changedField:
+      case Perform.Art.move:
+        _objects.Update(obj);
+        if((cmd.o as string) == "s") {
+          if(cmd.src.saved) {
+            Topic.I.SetValue(cmd.src, cmd.src.GetValue());
+            if(state != null) {
+              _states.Upsert(state);
+            }
+          } else {
+            _states.Delete(obj["_id"]);
+          }
+        }
+        break;
+      case Perform.Art.create:
+        _objects.Insert(obj);
+        break;
+      case Perform.Art.remove:
+        _states.Delete(obj["_id"]);
+        _objects.Delete(obj["_id"]);
+        break;
       }
     }
 
-    #endregion exemplar internal
+    #endregion internal Members
 
     public Repo() {
       _tcQueue = new ConcurrentQueue<Perform>();
@@ -149,13 +170,13 @@ namespace X13.Repository {
       _objects = _db.GetCollection<BsonDocument>("objects");
       _states = _db.GetCollection<BsonDocument>("states");
       if(!exist) {
-        _objects.EnsureIndex("path", true);
+        _objects.EnsureIndex("p", true);
       } else {
-        foreach(var obj in _objects.FindAll().OrderBy(z=>z["path"])){
+        foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
           Topic.I.Create(obj, _states.FindById(obj["_id"]));
         }
       }
-      
+
     }
 
     public void Tick() {
@@ -183,7 +204,7 @@ namespace X13.Repository {
       //    cmd.src.Publish(cmd);
       //  }
       //}
-      if(_db!=null){
+      if(_db != null) {
         using(var tr = _db.BeginTrans()) {
           for(int i = 0; i < _prOp.Count; i++) {
             Store(_prOp[i]);
@@ -193,6 +214,7 @@ namespace X13.Repository {
       }
 
       //X13.lib.Log.Debug("PLC.Tick QC={0}, PC={1}", qc, _prOp.Count);
+      _prOp.Clear();
       _busyFlag = 1;
     }
 
@@ -203,7 +225,7 @@ namespace X13.Repository {
       }
     }
 
-    public bool enabled { get { return true; } set {  } }
+    public bool enabled { get { return true; } set { } }
     #endregion IPlugModul Members
   }
 }
