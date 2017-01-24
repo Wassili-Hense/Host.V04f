@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 
 namespace X13.Repository {
-  internal class Perform : IComparable<Perform> {
+  public class Perform : IComparable<Perform> {
 
     internal static Perform Create(Topic src, Art art, Topic prim) {
       Perform r;
@@ -15,7 +15,6 @@ namespace X13.Repository {
       r.i = 0;
       return r;
     }
-    
     internal static Perform Create(Topic src, JSValue val, Topic prim) {
       Perform r;
       r = new Perform(Art.set, src, prim);
@@ -31,6 +30,7 @@ namespace X13.Repository {
       r.i = 0;
       return r;
     }
+
     internal object o;
     internal int i;
     internal object old_o;
@@ -47,7 +47,12 @@ namespace X13.Repository {
       this.prim = prim;
       this.layer = -1;  // TODO: layer
     }
-
+    internal bool EqualsGr(Perform other) {
+      return (this.art == Art.set || this.art == Art.changed)
+        && other != null
+        && this.src == other.src
+        && (((int)this.art) >> 2) == (((int)other.art) >> 2);
+    }
     public int CompareTo(Perform other) {
       if(other == null) {
         return -1;
@@ -68,6 +73,7 @@ namespace X13.Repository {
     public override string ToString() {
       return string.Concat(src.path, "[", art.ToString(), ", ", layer.ToString(), "]=", o == null ? "null" : o.ToString());
     }
+
     public enum Art {
       move = 1,
       create = 2,
@@ -79,14 +85,6 @@ namespace X13.Repository {
       changed = 18,
       remove = 20,
       subAck = 24,
-      unsubAck = 28,
-    }
-
-    internal bool EqualsGr(Perform other) {
-      return (this.art == Art.set || this.art == Art.changed)
-        && other != null
-        && this.src == other.src
-        && (((int)this.art) >> 2) == (((int)other.art) >> 2);
     }
   }
 }

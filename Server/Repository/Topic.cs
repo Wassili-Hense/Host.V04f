@@ -17,6 +17,8 @@ namespace X13.Repository {
     private string _name;
     private string _path;
     private ConcurrentDictionary<string, Topic> _children;
+    private List<SubRec> _subRecords;
+
     private BsonDocument _state;
     private BsonDocument _meta;
     private JSValue _value;
@@ -114,11 +116,37 @@ namespace X13.Repository {
       this._name = nName;
       I.UpdatePath(this);
     }
-
     public void Remove(Topic prim = null) {
       this.disposed = true;
       var c = Perform.Create(this, Perform.Art.remove, prim);
       _repo.DoCmd(c, false);
+    }
+    public SubRec Subscribe(SubRec.SubMask mask, Action<Perform> func) {
+      return Subscribe(mask, null, func);
+    }
+    public SubRec Subscribe(SubRec.SubMask mask, string prefix, Action<Perform> func) {
+      if(func == null) {
+        throw new ArgumentNullException(this.path + ".Subscribe(func == NULL, "+mask.ToString()+(prefix==null?string.Empty:", "+prefix)+")");
+      }
+      SubRec sb;
+      if(_subRecords == null) {
+        lock(this) {
+          if(_subRecords == null) {
+            _subRecords = new List<SubRec>();
+          }
+        }
+      }
+      lock(_subRecords){
+        sb = _subRecords.FirstOrDefault(z => z.func == func && z.setTopic == this && z.mask == mask && ((z.mask & SubRec.SubMask.Field)==SubRec.SubMask.None || z.prefix==prefix));
+        if(sb == null) {
+          sb = new SubRec(this, func, mask, prefix);
+          _subRecords.Add(sb);
+        }
+      }
+      var c = Perform.Create(this, Perform.Art.subscribe, this);
+      c.o = sb;
+      _repo.DoCmd(c, false);
+      return sb;
     }
 
     public JSValue GetValue() {
@@ -287,7 +315,6 @@ namespace X13.Repository {
           }
         }
       }
-
       public static void Remove(Topic t) {
         t.disposed = true;
         if(t._parent != null) {
@@ -299,6 +326,95 @@ namespace X13.Repository {
         obj = t._meta;
         state = t._state;
       }
+      public static void Publish(Perform cmd) {
+        SubRec sb;
+        Topic t = cmd.src;
+        string tmp_s;
+
+        if((cmd.art == Perform.Art.subscribe || cmd.art == Perform.Art.subAck) && (sb = cmd.o as SubRec) != null) {
+          try {
+            sb.func(cmd);
+          }
+          catch(Exception ex) {
+            Log.Warning("{0}.{1}({2}) - {3}", sb.func.Method.DeclaringType.Name, sb.func.Method.Name, cmd.ToString(), ex.ToString());
+          }
+        } else {
+          if(t._subRecords != null) {
+            for(int i = 0; i < t._subRecords.Count; i++) {
+              sb = t._subRecords[i];
+              if(((sb.mask & SubRec.SubMask.OnceOrAll) != SubRec.SubMask.None || ((sb.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren && sb.setTopic == t.parent))
+                  && (cmd.art!=Perform.Art.changed || (sb.mask & SubRec.SubMask.Value)==SubRec.SubMask.Value) 
+                  && (cmd.art!=Perform.Art.changedField || ((sb.mask & SubRec.SubMask.Field)==SubRec.SubMask.Field && (tmp_s=cmd.o as string)!=null && tmp_s.StartsWith(sb.prefix))) ) {
+                try {
+                  sb.func(cmd);
+                }
+                catch(Exception ex) {
+                  Log.Warning("{0}.{1}({2}) - {3}", sb.func.Method.DeclaringType.Name, sb.func.Method.Name, cmd.ToString(), ex.ToString());
+                }
+              }
+            }
+          }
+        }
+
+      }
+      public static void SubscribeByCreation(Topic t_c) {
+        Topic p;
+        if((p = t_c.parent) != null) {
+          if(p._subRecords != null) {
+            lock(p._subRecords) {
+              foreach(var st in p._subRecords.Where(z => z.setTopic == p && (z.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren)) {
+                Subscribe(t_c, st);
+              }
+            }
+          }
+          while(p != null) {
+            if(p._subRecords != null) {
+              lock(p._subRecords) {
+                foreach(var st in p._subRecords.Where(z => (z.mask & SubRec.SubMask.All) == SubRec.SubMask.All)) {
+                  Subscribe(t_c, st);
+                }
+              }
+            }
+            p = p.parent;
+          }
+        }
+      }
+
+      public static void Subscribe(Topic t, SubRec sr) {
+
+        if(t._subRecords == null) {
+          lock(t) {
+            if(t._subRecords == null) {
+              t._subRecords = new List<SubRec>();
+            }
+          }
+        }
+        lock(t._subRecords) {
+          if(!t._subRecords.Any(z => z.func == sr.func && z.setTopic == sr.setTopic && z.mask == sr.mask && ((z.mask & SubRec.SubMask.Field)==SubRec.SubMask.None || z.prefix==sr.prefix))) {
+            t._subRecords.Add(sr);
+          }
+        }
+      }
+      public static bool Unsubscribe(Topic t, SubRec sr) {
+        if(RemoveSubscripton(t, sr)) {
+          var c = Perform.Create(t, Perform.Art.unsubscribe, null);
+          c.o = sr;
+          _repo.DoCmd(c, false);
+          return true;
+        }
+        return false;
+      }
+      public static bool RemoveSubscripton(Topic t, SubRec sr) {
+        if(t._subRecords == null) {
+          return false;
+        }
+        bool fl;
+        lock(t._subRecords) {
+          fl = t._subRecords.Remove(sr);
+        }
+        return fl;
+      }
+
 
       private static BsonValue Js2Bs(JSValue val) {
         if(val == null) {
@@ -389,8 +505,6 @@ namespace X13.Repository {
         }
         throw new NotImplementedException("Bs2Js(" + val.Type.ToString() + ")");
       }
-
-
     }
     #endregion nested types
 

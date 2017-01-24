@@ -50,30 +50,45 @@ namespace X13.Repository {
     }
 
     private void TickStep1(Perform c) {
-      //SubRec sr;
-      //Topic t;
+      SubRec sr;
+
       switch(c.art) {
       case Perform.Art.create:
-        //if((t = c.src.parent) != null) {
-        //  if(t._subRecords != null) {
-        //    lock(t._subRecords) {
-        //      foreach(var st in t._subRecords.Where(z => z.path == t.path && (z.flags & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren)) {
-        //        c.src.Subscribe(st);
-        //      }
-        //    }
-        //  }
-        //  while(t != null) {
-        //    if(t._subRecords != null) {
-        //      lock(t._subRecords) {
-        //        foreach(var st in t._subRecords.Where(z => (z.flags & SubRec.SubMask.All) == SubRec.SubMask.All)) {
-        //          c.src.Subscribe(st);
-        //        }
-        //      }
-        //    }
-        //    t = t.parent;
-        //  }
-        //}
+        Topic.I.SubscribeByCreation(c.src);
         EnquePerf(c);
+        break;
+      case Perform.Art.subscribe:
+      case Perform.Art.unsubscribe:
+        if((sr = c.o as SubRec) != null) {
+          Topic.Bill b = null;
+          Perform np;
+          if(c.art == Perform.Art.subscribe && (sr.mask & SubRec.SubMask.Once) == SubRec.SubMask.Once) {
+            EnquePerf(c);
+          }
+          if((sr.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren) {
+            b = c.src.children;
+          }
+          if((sr.mask & SubRec.SubMask.All) == SubRec.SubMask.All) {
+            b = c.src.all;
+          }
+          if(b != null) {
+            foreach(Topic tmp in b) {
+              if(c.art == Perform.Art.subscribe) {
+                Topic.I.Subscribe(tmp, sr);
+                np = Perform.Create(tmp, c.art, c.src);
+                np.o = c.o;
+                EnquePerf(np);
+              } else {
+                Topic.I.RemoveSubscripton(tmp, sr);
+              }
+            }
+          }
+          if(c.art == Perform.Art.subscribe) {
+            np = Perform.Create(c.src, Perform.Art.subAck, c.src);
+            np.o = c.o;
+            EnquePerf(np);
+          }
+        }
         break;
 
       case Perform.Art.changed:
@@ -198,12 +213,12 @@ namespace X13.Repository {
         TickStep2(_prOp[i]);
       }
 
-      //for(_pfPos = 0; _pfPos < _prOp.Count; _pfPos++) {
-      //  cmd = _prOp[_pfPos];
-      //  if(cmd.art != Perform.Art.set) {
-      //    cmd.src.Publish(cmd);
-      //  }
-      //}
+      for(_pfPos = 0; _pfPos < _prOp.Count; _pfPos++) {
+        cmd = _prOp[_pfPos];
+        if(cmd.art != Perform.Art.set && cmd.art!=Perform.Art.setField) {
+          Topic.I.Publish(cmd);
+        }
+      }
       if(_db != null) {
         using(var tr = _db.BeginTrans()) {
           for(int i = 0; i < _prOp.Count; i++) {

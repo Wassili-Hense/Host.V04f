@@ -68,6 +68,7 @@
     <Compile Include="IPlugModul.cs" />
     <Compile Include="Repository\Perform.cs" />
     <Compile Include="Repository\Repo.cs" />
+    <Compile Include="Repository\SubRec.cs" />
     <Compile Include="Repository\Topic.cs" />
     <Compile Include="Svc\HAServer.cs">
       <SubType>Component</SubType>

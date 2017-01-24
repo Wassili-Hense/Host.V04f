@@ -1,10 +1,12 @@
 ﻿using LiteDB;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NiL.JS.Core;
 using JST = NiL.JS.BaseLibrary;
 using System;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using X13.Repository;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using X13.Repository;
 
 namespace SrvTest {
   [TestClass]
@@ -174,6 +176,164 @@ namespace SrvTest {
       _repo.Tick();
       Assert.AreEqual("/D/B", a_b.GetField("p").AsString);
       Assert.AreEqual("/D/B/C", a_b_c.GetField("p").AsString);
+    }
+    [TestMethod]
+    public void T12() {
+      Topic t0 = Topic.root.Get("child");
+      var arr = t0.children.ToArray();
+      Assert.AreEqual(0, arr.Length);
+      var t1 = t0.Get("ch_a");
+      arr = t0.children.ToArray();
+      Assert.AreEqual(1, arr.Length);
+      Assert.AreEqual(t1, arr[0]);
+      t1 = t0.Get("ch_b");
+      var t2 = t1.Get("a");
+      t2 = t1.Get("b");
+      t1 = t0.Get("ch_c");
+      t2 = t1.Get("a");
+      arr = t0.children.ToArray();
+      Assert.AreEqual(3, arr.Length);
+      Assert.AreEqual(t1, arr[2]);
+      arr = t0.all.ToArray();
+      Assert.AreEqual(7, arr.Length);  // child, ch_a, ch_b, ch_b/a, ch_b/b, ch_c, ch_c/a
+      Assert.AreEqual(t2, arr[6]);
+      Assert.AreEqual(t1, arr[5]);
+      Assert.AreEqual(t0, arr[0]);
+    }
+    [TestMethod]
+    public void T13() {
+      List<Perform> cmds = new List<Perform>();
+      Topic t0 = Topic.root.Get("child");
+      _repo.Tick();
+      var s1 = t0.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, s => cmds.Add(s));
+      _repo.Tick();
+      Assert.AreEqual(2, cmds.Count);
+      Assert.AreEqual(t0, cmds[0].src);
+      Assert.AreEqual(Perform.Art.subscribe, cmds[0].art);
+      Assert.AreEqual(t0, cmds[1].src);
+      Assert.AreEqual(Perform.Art.subAck, cmds[1].art);
+      cmds.Clear();
+
+      var t1 = t0.Get("ch_a");
+      t1.SetValue(new JST.String("Hi"));
+      _repo.Tick();
+      Assert.AreEqual(0, cmds.Count);
+
+      s1.Dispose();
+      t0.SetValue(new JST.Number(2.98));
+      _repo.Tick();
+      Assert.AreEqual(0, cmds.Count);
+    }
+    [TestMethod]
+    public void T14() {
+      Topic t0 = Topic.root.Get("child2");
+      var t1 = t0.Get("ch_a");
+      var t1_a = t1.Get("a");
+      var cmds = new List<Perform>();
+      _repo.Tick();
+      var s1 = t0.Subscribe(SubRec.SubMask.Chldren | SubRec.SubMask.Value, s => cmds.Add(s));
+      _repo.Tick();
+      Assert.AreEqual(2, cmds.Count);
+      Assert.AreEqual(Perform.Art.subscribe, cmds[0].art);
+      Assert.AreEqual(t1, cmds[0].src);
+      Assert.AreEqual(Perform.Art.subAck, cmds[1].art);
+      Assert.AreEqual(t0, cmds[1].src);
+      cmds.Clear();
+
+      t1.SetValue(new JST.String("Hi"));
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count);
+      Assert.AreEqual(Perform.Art.changed, cmds[0].art);
+      Assert.AreEqual(t1, cmds[0].src);
+      cmds.Clear();
+
+      var t2 = t0.Get("ch_b");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count);
+      Assert.AreEqual(Perform.Art.create, cmds[0].art);
+      Assert.AreEqual(t2, cmds[0].src);
+      cmds.Clear();
+
+      var t2_a = t2.Get("a");
+      _repo.Tick();
+      Assert.AreEqual(0, cmds.Count);
+      cmds.Clear();
+      s1.Dispose();
+    }
+    [TestMethod]
+    public void T15() {
+      Topic t0 = Topic.root.Get("child");
+      var cmds = new List<Perform>();
+      _repo.Tick();
+      var s1 = t0.Subscribe(SubRec.SubMask.All, s => cmds.Add(s));
+      _repo.Tick();
+      Assert.AreEqual(2, cmds.Count, "T15.01");
+      Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T15.02");
+      Assert.AreEqual(t0, cmds[0].src, "T15.03");
+      Assert.AreEqual(Perform.Art.subAck, cmds[1].art, "T15.04");
+      Assert.AreEqual(t0, cmds[1].src, "T15.05");
+      cmds.Clear();
+
+      t0.SetValue(new JST.String("Gamma"));
+      _repo.Tick();
+      Assert.AreEqual(0, cmds.Count, "T15.06");
+      cmds.Clear();
+
+      var t2 = t0.Get("ch_b");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T15.07");
+      Assert.AreEqual(Perform.Art.create, cmds[0].art, "T15.08");
+      Assert.AreEqual(t2, cmds[0].src, "T15.09");
+      cmds.Clear();
+
+      var t2_a = t2.Get("a");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T15.10");
+      Assert.AreEqual(Perform.Art.create, cmds[0].art, "T15.11");
+      Assert.AreEqual(t2_a, cmds[0].src, "T15.12");
+      cmds.Clear();
+      s1.Dispose();
+    }
+    [TestMethod]
+    public void T16() {
+      Topic t0 = Topic.root.Get("child");
+      var t1 = t0.Get("ch_a");
+      var t1_a = t1.Get("a");
+      var cmds = new List<Perform>();
+      _repo.Tick();
+      var s1 = t0.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds.Add(s));
+      _repo.Tick();
+      Assert.AreEqual(4, cmds.Count, "T16.01");
+      Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T16.02");
+      Assert.AreEqual(t0, cmds[0].src, "T16.03");
+      Assert.AreEqual(Perform.Art.subscribe, cmds[1].art, "T16.04");
+      Assert.AreEqual(t1, cmds[1].src, "T16.05");
+      Assert.AreEqual(Perform.Art.subscribe, cmds[2].art, "T16.06");
+      Assert.AreEqual(t1_a, cmds[2].src, "T16.07");
+      Assert.AreEqual(Perform.Art.subAck, cmds[3].art, "T16.17");
+      Assert.AreEqual(t0, cmds[3].src, "T15.18");
+      cmds.Clear();
+
+      t1.SetValue(new JST.String("Omega"));
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T16.08");
+      Assert.AreEqual(Perform.Art.changed, cmds[0].art, "T16.09");
+      Assert.AreEqual(t1, cmds[0].src, "T16.10");
+      cmds.Clear();
+
+      var t2 = t0.Get("ch_b");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T16.11");
+      Assert.AreEqual(Perform.Art.create, cmds[0].art, "T16.12");
+      Assert.AreEqual(t2, cmds[0].src, "T16.13");
+      cmds.Clear();
+
+      var t2_a = t2.Get("a");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T16.14");
+      Assert.AreEqual(Perform.Art.create, cmds[0].art, "T16.15");
+      Assert.AreEqual(t2_a, cmds[0].src, "T16.16");
+      cmds.Clear();
     }
   }
 }
