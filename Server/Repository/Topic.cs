@@ -22,6 +22,7 @@ namespace X13.Repository {
     private BsonDocument _state;
     private BsonDocument _meta;
     private JSValue _value;
+    private JSValue _object;
     private bool _saved;
 
     #endregion Member variables
@@ -43,6 +44,7 @@ namespace X13.Repository {
         var id = ObjectId.NewObjectId();
         _meta["_id"] = id;
         _meta["p"] = new BsonValue(_path);
+        _object = I.Bs2Js(_meta);
       }
     }
 
@@ -66,7 +68,7 @@ namespace X13.Repository {
           if(!_saved) {
             _state = null;
           }
-          c = Perform.Create(this, "s", _saved ? new BsonValue(true) : null, null);
+          c = Perform.Create(this, "s", _saved ? new JST.Boolean(true) : null, null);
           _repo.DoCmd(c, false);
         }
       }
@@ -115,6 +117,8 @@ namespace X13.Repository {
       _parent = nParent;
       this._name = nName;
       I.UpdatePath(this);
+      var c = Perform.Create(this, Perform.Art.move, prim);
+      _repo.DoCmd(c, false);
     }
     public void Remove(Topic prim = null) {
       this.disposed = true;
@@ -157,11 +161,26 @@ namespace X13.Repository {
       _repo.DoCmd(c, false);
     }
 
-    public BsonValue GetField(string fPath) {
-      return _meta == null ? BsonValue.Null : _meta.Get(fPath);
+    public JSValue GetField(string fPath) {
+      if(_object == null) {
+        return JSValue.Undefined;
+      }
+      if(string.IsNullOrEmpty(fPath)) {
+        return _object;
+      }
+      var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
+      JSValue val=_object;
+      for(int i = 0; i < ps.Length; i++) {
+        if(val.ValueType != JSValueType.Object) {
+          return JSValue.Undefined;
+        }
+        val=val.GetProperty(ps[i]);
+      }
+      return val;
     }
-    public void SetField(string fPath, BsonValue value, Topic prim = null) {
-      if(fPath == "_id" || fPath == "p" || fPath == "s") {
+
+    public void SetField(string fPath, JSValue value, Topic prim = null) {
+      if(string.IsNullOrEmpty(fPath) || fPath == "_id" || fPath == "p" || fPath == "s") {
         throw new FieldAccessException(fPath);
       }
       var c = Perform.Create(this, fPath, value, prim);
@@ -174,7 +193,8 @@ namespace X13.Repository {
       public const string delmiterStr = "/";
       public const string maskAll = "#";
       public const string maskChildren = "+";
-      public const string maskParent = "..";
+      //public const string maskParent = "..";
+      public static readonly char[] delmiterObj = new char[] { '.' };
       public static readonly char[] delmiterArr = new char[] { delmiter };
       public static readonly string[] curArr = new string[0];
       public static readonly string[] allArr = new string[] { maskAll };
@@ -231,6 +251,7 @@ namespace X13.Repository {
       public static void Create(BsonDocument obj, BsonDocument state) {
         Topic t = I.Get(Topic.root, obj["p"].AsString, true, null, false, false);
         t._meta = obj;
+        t._object = Bs2Js(obj);
         t._saved = obj["s"].AsBoolean;
         if(state != null) {
           if(t._saved) {
@@ -257,13 +278,13 @@ namespace X13.Repository {
           if(pt[i] == Bill.maskAll || pt[i] == Bill.maskChildren) {
             throw new ArgumentException(string.Format("{0}[{1}] dont allow wildcard", home._path, path));
           }
-          if(pt[i] == Bill.maskParent) {
-            home = home.parent;
-            if(home == null) {
-              throw new ArgumentException(string.Format("{0}[{1}] BAD path: excessive nesting", home._path, path));
-            }
-            continue;
-          }
+          //if(pt[i] == Bill.maskParent) {
+          //  home = home.parent;
+          //  if(home == null) {
+          //    throw new ArgumentException(string.Format("{0}[{1}] BAD path: excessive nesting", home._path, path));
+          //  }
+          //  continue;
+          //}
           next = null;
           if(home._children == null) {
             lock(home) {
@@ -302,12 +323,30 @@ namespace X13.Repository {
           t._state["v"] = Js2Bs(val);
         }
       }
-      public static void SetField(Topic t, string fPath, BsonValue bsonValue) {
-        t._meta.Set(fPath, bsonValue);
+      public static void SetField(Topic t, string fPath, JSValue val) {
+        var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
+        JSValue p = t._object, c;
+        for(int i = 0; i < ps.Length-1; i++) {
+          c = p.GetProperty(ps[i]);
+          if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
+            c = JSObject.CreateObject();
+            p[ps[i]]=c;
+          } else if(val.ValueType != JSValueType.Object) {
+            return;
+          }
+          p = c;
+        }
+        if(val == null) {
+          p.DeleteProperty(ps[ps.Length - 1]);
+        } else {
+          p[ps[ps.Length - 1]] = val;
+        }
+        t._meta.Set(fPath, Js2Bs(val));
       }
+
       public static void UpdatePath(Topic t) {
         t._path = t.parent == root ? "/" + t._name : t.parent._path + "/" + t._name;
-        var c = Perform.Create(t, "p", new BsonValue(t._path), null);
+        var c = Perform.Create(t, "p", new JST.String(t._path), null);
         _repo.DoCmd(c, false);
         if(t._children != null) {
           foreach(var ch in t._children) {
@@ -379,6 +418,17 @@ namespace X13.Repository {
           }
         }
       }
+      public static void SubscribeByMove(Topic t) {
+        if(t._subRecords != null) {
+          t._subRecords.RemoveAll(z => ((z.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren && z.setTopic != t) || (z.mask & SubRec.SubMask.All) == SubRec.SubMask.All);
+        }
+        SubscribeByCreation(t);
+        if(t._children != null) {
+          foreach(var c in t._children) {
+            SubscribeByMove(c.Value);
+          }
+        }
+      }
 
       public static void Subscribe(Topic t, SubRec sr) {
 
@@ -416,7 +466,7 @@ namespace X13.Repository {
       }
 
 
-      private static BsonValue Js2Bs(JSValue val) {
+      public static BsonValue Js2Bs(JSValue val) {
         if(val == null) {
           return BsonValue.Null;
         }
@@ -465,11 +515,13 @@ namespace X13.Repository {
           throw new NotImplementedException("js2Bs(" + val.ValueType.ToString() + ")");
         }
       }
-      private static JSValue Bs2Js(BsonValue val) {
+      public static JSValue Bs2Js(BsonValue val) {
         if(val == null) {
           return JSValue.Undefined;
         }
         switch(val.Type) {
+        case BsonType.ObjectId:
+          return new JSObjectId(val.AsObjectId);
         case BsonType.Array: {
             var arr = val.AsArray;
             var r = new JST.Array(arr.Count);

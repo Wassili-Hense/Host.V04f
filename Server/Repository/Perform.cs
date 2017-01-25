@@ -22,7 +22,7 @@ namespace X13.Repository {
       r.i = 0;
       return r;
     }
-    internal static Perform Create(Topic src, string fName, BsonValue val, Topic prim) {
+    internal static Perform Create(Topic src, string fName, JSValue val, Topic prim) {
       Perform r;
       r = new Perform(Art.setField, src, prim);
       r.o = fName;
@@ -34,7 +34,7 @@ namespace X13.Repository {
     internal object o;
     internal int i;
     internal object old_o;
-    internal BsonValue f_v;
+    internal JSValue f_v;
 
     public readonly Topic src;
     public Topic prim { get; internal set; }

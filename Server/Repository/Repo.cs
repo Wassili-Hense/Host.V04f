@@ -75,9 +75,12 @@ namespace X13.Repository {
             foreach(Topic tmp in b) {
               if(c.art == Perform.Art.subscribe) {
                 Topic.I.Subscribe(tmp, sr);
-                np = Perform.Create(tmp, c.art, c.src);
-                np.o = c.o;
-                EnquePerf(np);
+                if((sr.mask & SubRec.SubMask.Value) == SubRec.SubMask.Value
+                  || (sr.mask & SubRec.SubMask.Field) == SubRec.SubMask.None || string.IsNullOrEmpty(sr.prefix) || tmp.GetField(sr.prefix).Defined) {
+                  np = Perform.Create(tmp, Perform.Art.subscribe, c.src);
+                  np.o = c.o;
+                  EnquePerf(np);
+                }
               } else {
                 Topic.I.RemoveSubscripton(tmp, sr);
               }
@@ -95,6 +98,7 @@ namespace X13.Repository {
       case Perform.Art.set:
       case Perform.Art.setField:
       case Perform.Art.changedField:
+      case Perform.Art.move:
         EnquePerf(c);
         break;
       case Perform.Art.remove:
@@ -117,6 +121,9 @@ namespace X13.Repository {
         cmd.old_o = cmd.src.GetField(fPath);
         Topic.I.SetField(cmd.src, fPath, cmd.f_v);
         cmd.art = Perform.Art.changedField;
+      }
+      if(cmd.art == Perform.Art.move) {
+        Topic.I.SubscribeByMove(cmd.src);
       }
       if(cmd.art == Perform.Art.remove) {
         Topic.I.Remove(cmd.src);

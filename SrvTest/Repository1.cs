@@ -78,10 +78,10 @@ namespace SrvTest {
     public void T06() {
       Topic a = Topic.root.Get("A");
       var id = a.GetField("_id");
-      Assert.IsTrue(id.IsObjectId);
+      Assert.IsTrue(id.Value is JSObjectId);
       var path = a.GetField("p");
-      Assert.IsTrue(path.IsString);
-      Assert.AreEqual(path.AsString, "/A");
+      Assert.AreEqual(JSValueType.String, path.ValueType);
+      Assert.AreEqual("/A", path.ToString());
     }
     [TestMethod]
     public void T07() {
@@ -145,8 +145,8 @@ namespace SrvTest {
       c.saved = true;
       c.SetField("MQTT.path", "/dev/Node1");
       _repo.Tick();
-      Assert.IsTrue(c.GetField("s"));
-      Assert.AreEqual("/dev/Node1", c.GetField("MQTT.path").AsString);
+      Assert.IsTrue((bool)c.GetField("s"));
+      Assert.AreEqual("/dev/Node1", c.GetField("MQTT.path").ToString());
     }
     [TestMethod]
     public void T10() {
@@ -160,8 +160,8 @@ namespace SrvTest {
       Assert.AreEqual("/B/C", a_c.path);
 
       _repo.Tick();
-      Assert.AreEqual("/B", a.GetField("p").AsString);
-      Assert.AreEqual("/B/C", a_c.GetField("p").AsString);
+      Assert.AreEqual("/B", a.GetField("p").ToString());
+      Assert.AreEqual("/B/C", a_c.GetField("p").ToString());
     }
     [TestMethod]
     public void T11() {
@@ -174,8 +174,8 @@ namespace SrvTest {
       Assert.AreEqual("/D/B/C", a_b_c.path);
       Assert.IsFalse(Topic.root.Exist("/A/B"));
       _repo.Tick();
-      Assert.AreEqual("/D/B", a_b.GetField("p").AsString);
-      Assert.AreEqual("/D/B/C", a_b_c.GetField("p").AsString);
+      Assert.AreEqual("/D/B", a_b.GetField("p").ToString());
+      Assert.AreEqual("/D/B/C", a_b_c.GetField("p").ToString());
     }
     [TestMethod]
     public void T12() {
@@ -257,7 +257,7 @@ namespace SrvTest {
       var t2_a = t2.Get("a");
       _repo.Tick();
       Assert.AreEqual(0, cmds.Count);
-      cmds.Clear();
+
       s1.Dispose();
     }
     [TestMethod]
@@ -291,7 +291,7 @@ namespace SrvTest {
       Assert.AreEqual(1, cmds.Count, "T15.10");
       Assert.AreEqual(Perform.Art.create, cmds[0].art, "T15.11");
       Assert.AreEqual(t2_a, cmds[0].src, "T15.12");
-      cmds.Clear();
+
       s1.Dispose();
     }
     [TestMethod]
@@ -311,7 +311,7 @@ namespace SrvTest {
       Assert.AreEqual(Perform.Art.subscribe, cmds[2].art, "T16.06");
       Assert.AreEqual(t1_a, cmds[2].src, "T16.07");
       Assert.AreEqual(Perform.Art.subAck, cmds[3].art, "T16.17");
-      Assert.AreEqual(t0, cmds[3].src, "T15.18");
+      Assert.AreEqual(t0, cmds[3].src, "T16.18");
       cmds.Clear();
 
       t1.SetValue(new JST.String("Omega"));
@@ -333,7 +333,86 @@ namespace SrvTest {
       Assert.AreEqual(1, cmds.Count, "T16.14");
       Assert.AreEqual(Perform.Art.create, cmds[0].art, "T16.15");
       Assert.AreEqual(t2_a, cmds[0].src, "T16.16");
+
+      s1.Dispose();
+    }
+    [TestMethod]
+    public void T17() {
+      var cmds = new List<Perform>();
+
+      Topic a = Topic.root.Get("A");
+      Topic b = Topic.root.Get("B");
+      _repo.Tick();
+      a.SetField("TestA", true);
+      b.SetField("TestB", false);
+      _repo.Tick();
+      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Field, "TestB", s => cmds.Add(s));
+      _repo.Tick();
+      Assert.AreEqual(2, cmds.Count, "T17.01");
+      Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T17.02");
+      Assert.AreEqual(b, cmds[0].src, "T17.03");
+      Assert.AreEqual(Perform.Art.subAck, cmds[1].art, "T17.04");
+      Assert.AreEqual(Topic.root, cmds[1].src, "T17.05");
       cmds.Clear();
+      a.SetField("TestB", "ValB");
+      b.SetField("TestA", 34);
+      _repo.Tick();
+      Assert.AreEqual(1, cmds.Count, "T17.06");
+      Assert.AreEqual(Perform.Art.changedField, cmds[0].art, "T17.07");
+      Assert.AreEqual(a, cmds[0].src, "T17.08");
+
+      s1.Dispose();
+    }
+    
+    [TestMethod]
+    public void T18() {  // Move+Subscribe
+      var cmds1 = new List<Perform>();
+      var cmds2 = new List<Perform>();
+      var cmds3 = new List<Perform>();
+
+      var a = Topic.root.Get("A");
+      var b = a.Get("B");
+      var c = b.Get("C");
+      var d = Topic.root.Get("D");
+
+      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds1.Add(s));
+      var s2 = a.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds2.Add(s));
+      var s3 = c.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, s => cmds3.Add(s));
+      _repo.Tick();
+      cmds1.Clear();
+      cmds2.Clear();
+      cmds3.Clear();
+
+      b.Move(null, "E");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds1.Count, "T18.01");
+      Assert.AreEqual(1, cmds2.Count, "T18.02");
+      cmds1.Clear();
+      cmds2.Clear();
+
+      b.SetValue(1);
+      _repo.Tick();
+      Assert.AreEqual(1, cmds1.Count, "T18.03");
+      Assert.AreEqual(1, cmds2.Count, "T18.04");
+      cmds1.Clear();
+      cmds2.Clear();
+
+      b.Move(d, null);
+      _repo.Tick();
+      Assert.AreEqual(1, cmds1.Count, "T18.05");
+      Assert.AreEqual(0, cmds2.Count, "T18.06");
+      Assert.AreEqual(0, cmds3.Count, "T18.07");
+      cmds1.Clear();
+      cmds2.Clear();
+
+      c.SetValue("Kappa");
+      _repo.Tick();
+      Assert.AreEqual(1, cmds1.Count, "T18.08");
+      Assert.AreEqual(0, cmds2.Count, "T18.09");
+      Assert.AreEqual(1, cmds3.Count, "T18.10");
+      s1.Dispose();
+      s2.Dispose();
+      s3.Dispose();
     }
   }
 }
