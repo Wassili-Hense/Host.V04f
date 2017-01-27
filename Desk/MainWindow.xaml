@@ -1,0 +1,119 @@
+﻿<Window x:Class="X13.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
+        xmlns:x13="clr-namespace:X13"
+        xmlns:x13ui="clr-namespace:X13.UI"
+		xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
+		TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Consolas" FontSize="12"
+        Background="{DynamicResource {x:Static at:AeroColors.BaseColor15Key}}"
+        Title="X13.Desk" Icon="logo64.ico" Closed="Window_Closed" Loaded="Window_Loaded">
+  <Window.Style>
+    <Style TargetType="Window">
+      <Setter Property="WindowChrome.WindowChrome">
+        <Setter.Value>
+          <WindowChrome CaptionHeight="32" ResizeBorderThickness="7" />
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Style>
+  <Window.Resources>
+    <x13ui:ActiveDocumentConverter x:Key="ActiveDocumentConverter"/>
+    <Style x:Key="AeroStyleTitleBarButton" TargetType="{x:Type Button}">
+      <Setter Property="Focusable" Value="false" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type Button}">
+            <Grid>
+              <Border x:Name="PART_border" Background="Transparent" />
+              <ContentPresenter />
+            </Grid>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="PART_border" Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor17Key}}" />
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="PART_border" Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor6Key}}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+  </Window.Resources>
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="32"/>
+      <RowDefinition/>
+    </Grid.RowDefinitions>
+    <Grid Height="32">
+      <Grid.Resources>
+        <Style TargetType="Grid">
+          <Style.Triggers>
+            <DataTrigger Binding="{Binding IsActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="False">
+              <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor16Key}}" />
+            </DataTrigger>
+          </Style.Triggers>
+        </Style>
+      </Grid.Resources>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="36"/>
+        <ColumnDefinition Width="34"/>
+        <ColumnDefinition />
+        <ColumnDefinition Width="50"/>
+        <ColumnDefinition Width="34"/>
+        <ColumnDefinition Width="34"/>
+        <ColumnDefinition Width="38"/>
+      </Grid.ColumnDefinitions>
+      <Image x:Name="AppIcon" Grid.Column="0" 
+                   HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo64.ico" />
+      <Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                     WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click">
+        <Image Source="/Desk;component/Images/newDoc.png" Width="24" Height="22" />
+      </Button>
+      <TextBlock x:Name="Caption" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Dashboard" />
+      <Button Name="buConfig" Grid.Column="3" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                     WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left">
+        <Image Source="/Desk;component/Images/config.png" Width="24" Height="23" />
+      </Button>
+      <Button x:Name="MinButton" Grid.Column="4" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                    Click="MinButtonClick" WindowChrome.IsHitTestVisibleInChrome="True">
+        <Path Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                          StrokeThickness="1" Stretch="None" RenderOptions.EdgeMode="Aliased" Data="M0,8 H8 M0,7 H8 M0,6 H8" 
+						  VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="9" />
+      </Button>
+      <Button x:Name="MaxButton" Grid.Column="5" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                    Click="MaxButtonClick" WindowChrome.IsHitTestVisibleInChrome="True">
+        <Path x:Name="PART_MaxButton_Path" Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                          StrokeThickness="1" Stretch="None" RenderOptions.EdgeMode="Aliased" Data="M0,0 H8 V8 H0 V0 M0,1 H8 M0,2 H8" 
+						  VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="8" />
+      </Button>
+      <Button x:Name="CloseButton" Grid.Column="6" VerticalAlignment="Center" Width="34" Height="26" Style="{StaticResource AeroStyleTitleBarButton}"
+                    Click="CloseButtonClick" WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left" >
+        <Path Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" StrokeThickness="1.5" Stretch="None" Data="M0,0 L8,8 M0,8 L8,0" 
+						   VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="9" />
+      </Button>
+    </Grid>
+    <xcad:DockingManager x:Name="dmMain" Grid.Row="1" AllowMixedOrientation="True" DocumentClosed="dmMain_DocumentClosed" 
+			ActiveContent="{Binding ActiveDocument, Converter={StaticResource ActiveDocumentConverter}, Mode=TwoWay}" 
+            DocumentsSource="{Binding Files}">
+      <xcad:DockingManager.Theme>
+        <xcad:AeroTheme />
+      </xcad:DockingManager.Theme>
+      <xcad:DockingManager.DocumentHeaderTemplate>
+        <DataTemplate>
+          <Grid MaxWidth="140">
+            <TextBlock Text="{Binding Title}" FontFamily="Consolas" FontSize="12" />
+          </Grid>
+        </DataTemplate>
+      </xcad:DockingManager.DocumentHeaderTemplate>
+      <xcad:DockingManager.LayoutItemContainerStyle>
+        <Style TargetType="{x:Type xcad:LayoutItem}">
+          <Setter Property="Title" Value="{Binding Model.data.name}"/>
+          <Setter Property="ContentId" Value="{Binding Model.ContentId}"/>
+          <Setter Property="ToolTip" Value="{Binding Model.data.fullPath}" />
+        </Style>
+      </xcad:DockingManager.LayoutItemContainerStyle>
+    </xcad:DockingManager>
+  </Grid>
+</Window>
