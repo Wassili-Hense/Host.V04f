@@ -55,6 +55,10 @@
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NiL.JS, Version=2.4.1011.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
+      <HintPath>..\packages\NiL.JS.2.4.1011.0\lib\net45\NiL.JS.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="PresentationFramework.Aero">
       <Private>True</Private>
     </Reference>
@@ -90,9 +94,13 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="..\Server\DeskHost\DeskSocket.cs">
+      <Link>Data\DeskSocket.cs</Link>
+    </Compile>
     <Compile Include="..\Server\Log.cs">
       <Link>Log.cs</Link>
     </Compile>
+    <Compile Include="Data\Client.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Page Include="MainWindow.xaml">

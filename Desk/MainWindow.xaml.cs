@@ -1,4 +1,5 @@
-﻿using System;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -21,6 +22,7 @@ namespace X13 {
   public partial class MainWindow : Window {
     private string _cfgPath;
     private XmlDocument _cfgDoc;
+    private Data.Client _client;
 
     public MainWindow(string cfgPath) {
       _cfgPath = cfgPath;
@@ -31,28 +33,30 @@ namespace X13 {
         } else if(System.IO.File.Exists(_cfgPath)) {
           _cfgDoc = new XmlDocument();
           _cfgDoc.Load(_cfgPath);
-          var title = System.Reflection.Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(System.Reflection.AssemblyTitleAttribute), false).First() as System.Reflection.AssemblyTitleAttribute;
-
-
-          //TODO: check signature App.Name+version major+version minor
-          var window = _cfgDoc.SelectSingleNode("/Config/Window");
-          if(window != null) {
-            WindowState st;
-            double tmp;
-            if(window.Attributes["Top"] != null && double.TryParse(window.Attributes["Top"].Value, out tmp)) {
-              this.Top = tmp;
-            }
-            if(window.Attributes["Left"] != null && double.TryParse(window.Attributes["Left"].Value, out tmp)) {
-              this.Left = tmp;
-            }
-            if(window.Attributes["Width"] != null && double.TryParse(window.Attributes["Width"].Value, out tmp)) {
-              this.Width = tmp;
-            }
-            if(window.Attributes["Height"] != null && double.TryParse(window.Attributes["Height"].Value, out tmp)) {
-              this.Height = tmp;
-            }
-            if(window.Attributes["State"] != null && Enum.TryParse(window.Attributes["State"].Value, out st)) {
-              this.WindowState = st;
+          var sign = _cfgDoc.FirstChild.Attributes["Signature"];
+          if(_cfgDoc.FirstChild.Name != "Config" || sign == null || sign.Value != "X13.Desk v.0.4") {
+            _cfgDoc = null;
+            Log.Warning("Load config({0}) - unknown format", _cfgPath);
+          } else {
+            var window = _cfgDoc.SelectSingleNode("/Config/Window");
+            if(window != null) {
+              WindowState st;
+              double tmp;
+              if(window.Attributes["Top"] != null && double.TryParse(window.Attributes["Top"].Value, out tmp)) {
+                this.Top = tmp;
+              }
+              if(window.Attributes["Left"] != null && double.TryParse(window.Attributes["Left"].Value, out tmp)) {
+                this.Left = tmp;
+              }
+              if(window.Attributes["Width"] != null && double.TryParse(window.Attributes["Width"].Value, out tmp)) {
+                this.Width = tmp;
+              }
+              if(window.Attributes["Height"] != null && double.TryParse(window.Attributes["Height"].Value, out tmp)) {
+                this.Height = tmp;
+              }
+              if(window.Attributes["State"] != null && Enum.TryParse(window.Attributes["State"].Value, out st)) {
+                this.WindowState = st;
+              }
             }
           }
         }
@@ -68,18 +72,19 @@ namespace X13 {
     private void Window_Loaded(object sender, RoutedEventArgs e) {
       try {
         XmlNode xlay;
-        if(_cfgDoc != null
-           && (xlay = _cfgDoc.SelectSingleNode("/Config/LayoutRoot")) != null
-           && xlay.OuterXml != null) {
+        if(_cfgDoc != null && (xlay = _cfgDoc.SelectSingleNode("/Config/LayoutRoot")) != null) {
 
           var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
           layoutSerializer.LayoutSerializationCallback += LSF;
           layoutSerializer.Deserialize(new System.IO.StringReader(xlay.OuterXml));
         }
+        // 
+        _client = new Data.Client();
       }
       catch(Exception ex) {
         Log.Error("Load layout - {0}", ex.Message);
       }
+
     }
     private void Window_Closed(object sender, EventArgs e) {
       var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
@@ -91,7 +96,9 @@ namespace X13 {
 
         var xd = new XmlDocument();
         var root = xd.CreateElement("Config");
-        //TODO: signature
+        var sign = xd.CreateAttribute("Signature");
+        sign.Value="X13.Desk v.0.4";
+        root.Attributes.Append(sign);
         xd.AppendChild(root);
         var window = xd.CreateElement("Window");
         {

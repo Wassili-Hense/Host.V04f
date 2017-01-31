@@ -1,4 +1,5 @@
-﻿using LiteDB;
+﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using LiteDB;
 using NiL.JS.Core;
 using JST = NiL.JS.BaseLibrary;
 using System;

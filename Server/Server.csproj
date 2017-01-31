@@ -41,8 +41,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\LiteDB.3.0.0-beta3\lib\net35\LiteDB.dll</HintPath>
+    <Reference Include="LiteDB, Version=3.0.0.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
+      <HintPath>..\packages\LiteDB.3.0.0\lib\net35\LiteDB.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="NiL.JS, Version=2.4.1011.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
@@ -62,6 +62,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="DeskHost\DescMessage.cs" />
+    <Compile Include="DeskHost\DeskConnection.cs" />
+    <Compile Include="DeskHost\DeskHostPl.cs" />
+    <Compile Include="DeskHost\DeskSocket.cs" />
     <Compile Include="IPlugModul.cs" />
     <Compile Include="Repository\JSObjectId.cs" />
     <Compile Include="Repository\Perform.cs" />

@@ -99,8 +99,7 @@ namespace X13 {
       _cfgPath = cfgPath;
     }
     internal bool Start() {
-      string siName = string.Format("Global\\X13.HAServer@{0}", Path.GetFullPath(_cfgPath).Replace('\\', '$'));
-      _singleInstance = new Mutex(true, siName);
+      _singleInstance = new Mutex(true, "Global\\X13.HAServer");
 
       AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
       AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
@@ -212,13 +211,13 @@ namespace X13 {
         pName = i.Metadata.name ?? i.Value.GetType().FullName;
         try {
           i.Value.Init();
-          Log.Debug("plugin {0} Loaded", pName);
+          Log.Debug("plugin {0} Initialized", pName);
         }
         catch(Exception ex) {
-          Log.Error("Load plugin {0} failure - {1}", pName, ex.ToString());
+          Log.Error("Init plugin {0} failure - {1}", pName, ex.ToString());
+          i.Value.enabled = false;
         }
       }
-      _modules = _impModules.Where(z => z.Value.enabled).Select(z => z.Value).ToArray();
     }
     private void StartPlugins() {
       string pName;
@@ -233,8 +232,10 @@ namespace X13 {
         }
         catch(Exception ex) {
           Log.Error("Start plugin {0} failure - {1}", pName, ex.ToString());
+          i.Value.enabled = false;
         }
       }
+      _modules = _impModules.Where(z => z.Value.enabled).Select(z => z.Value).ToArray();
     }
     private void StopPlugins() {
       foreach(var i in _modules.Reverse()) {
