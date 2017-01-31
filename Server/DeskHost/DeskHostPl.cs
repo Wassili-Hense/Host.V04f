@@ -33,7 +33,7 @@ namespace X13.DeskHost {
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
 
-    internal void AddRMsg(DeskConnection conn, JST.Array arr) {
+    internal void AddRMsg(DeskMessage msg) {
       //TODO: !!!!!
     }
 

@@ -17,7 +17,7 @@ namespace X13.DeskHost {
 
     public DeskConnection(DeskHostPl pl, TcpClient tcp) {
       this._basePl = pl;
-      this._socket = new DeskSocket(tcp, OnRecv);
+      this._socket = new DeskSocket(tcp, _basePl.AddRMsg);
       this._socket.verbose = true;
 
       // Hello
@@ -26,11 +26,6 @@ namespace X13.DeskHost {
       arr[1] = Environment.MachineName;
       this._socket.SendArr(arr);
     }
-
-    private void OnRecv(JST.Array arr) {
-      _basePl.AddRMsg(this, arr);
-    }
-
 
     public void Dispose() {
       _socket.Dispose();

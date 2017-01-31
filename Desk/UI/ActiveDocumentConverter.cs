@@ -8,15 +8,15 @@ namespace X13.UI {
 
   class ActiveDocumentConverter : IValueConverter {
     public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      //if(value is UIDocument)
-      //  return value;
+      if(value is UIDocument)
+        return value;
 
       return Binding.DoNothing;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-      //if(value is UIDocument)
-      //  return value;
+      if(value is UIDocument)
+        return value;
 
       return Binding.DoNothing;
     }

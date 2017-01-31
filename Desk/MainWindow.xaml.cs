@@ -14,56 +14,38 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml;
+using X13.Data;
 
 namespace X13 {
   /// <summary>
   /// Interaction logic for MainWindow.xaml
   /// </summary>
   public partial class MainWindow : Window {
-    private string _cfgPath;
-    private XmlDocument _cfgDoc;
-    private Data.Client _client;
+    private DWorkspace _wp;
 
     public MainWindow(string cfgPath) {
-      _cfgPath = cfgPath;
-
-      try {
-        if(!System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(_cfgPath))) {
-          System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(_cfgPath));
-        } else if(System.IO.File.Exists(_cfgPath)) {
-          _cfgDoc = new XmlDocument();
-          _cfgDoc.Load(_cfgPath);
-          var sign = _cfgDoc.FirstChild.Attributes["Signature"];
-          if(_cfgDoc.FirstChild.Name != "Config" || sign == null || sign.Value != "X13.Desk v.0.4") {
-            _cfgDoc = null;
-            Log.Warning("Load config({0}) - unknown format", _cfgPath);
-          } else {
-            var window = _cfgDoc.SelectSingleNode("/Config/Window");
-            if(window != null) {
-              WindowState st;
-              double tmp;
-              if(window.Attributes["Top"] != null && double.TryParse(window.Attributes["Top"].Value, out tmp)) {
-                this.Top = tmp;
-              }
-              if(window.Attributes["Left"] != null && double.TryParse(window.Attributes["Left"].Value, out tmp)) {
-                this.Left = tmp;
-              }
-              if(window.Attributes["Width"] != null && double.TryParse(window.Attributes["Width"].Value, out tmp)) {
-                this.Width = tmp;
-              }
-              if(window.Attributes["Height"] != null && double.TryParse(window.Attributes["Height"].Value, out tmp)) {
-                this.Height = tmp;
-              }
-              if(window.Attributes["State"] != null && Enum.TryParse(window.Attributes["State"].Value, out st)) {
-                this.WindowState = st;
-              }
-            }
-          }
+      _wp = new DWorkspace(cfgPath);
+      XmlNode window;
+      if(_wp.config != null && (window = _wp.config.SelectSingleNode("/Config/Window")) != null) {
+        WindowState st;
+        double tmp;
+        if(window.Attributes["Top"] != null && double.TryParse(window.Attributes["Top"].Value, out tmp)) {
+          this.Top = tmp;
+        }
+        if(window.Attributes["Left"] != null && double.TryParse(window.Attributes["Left"].Value, out tmp)) {
+          this.Left = tmp;
+        }
+        if(window.Attributes["Width"] != null && double.TryParse(window.Attributes["Width"].Value, out tmp)) {
+          this.Width = tmp;
+        }
+        if(window.Attributes["Height"] != null && double.TryParse(window.Attributes["Height"].Value, out tmp)) {
+          this.Height = tmp;
+        }
+        if(window.Attributes["State"] != null && Enum.TryParse(window.Attributes["State"].Value, out st)) {
+          this.WindowState = st;
         }
       }
-      catch(Exception ex) {
-        Log.Error("Load config - {0}", ex.Message);
-      }
+
       InitializeComponent();
 #if !DEBUG
       System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
@@ -72,19 +54,21 @@ namespace X13 {
     private void Window_Loaded(object sender, RoutedEventArgs e) {
       try {
         XmlNode xlay;
-        if(_cfgDoc != null && (xlay = _cfgDoc.SelectSingleNode("/Config/LayoutRoot")) != null) {
+        if(_wp.config != null && (xlay = _wp.config.SelectSingleNode("/Config/LayoutRoot")) != null) {
 
           var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
           layoutSerializer.LayoutSerializationCallback += LSF;
           layoutSerializer.Deserialize(new System.IO.StringReader(xlay.OuterXml));
         }
-        // 
-        _client = new Data.Client();
       }
       catch(Exception ex) {
         Log.Error("Load layout - {0}", ex.Message);
       }
-
+      if(_wp.clients.Count == 0) {
+        var cl = new Client("localhost", DeskHost.DeskSocket.portDefault, null, null);
+        _wp.clients.Add(cl);
+        cl.Connect();
+      }
     }
     private void Window_Closed(object sender, EventArgs e) {
       var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
@@ -94,37 +78,37 @@ namespace X13 {
           layoutSerializer.Serialize(ix);
         }
 
-        var xd = new XmlDocument();
-        var root = xd.CreateElement("Config");
-        var sign = xd.CreateAttribute("Signature");
-        sign.Value="X13.Desk v.0.4";
+        _wp.config = new XmlDocument();
+        var root = _wp.config.CreateElement("Config");
+        var sign = _wp.config.CreateAttribute("Signature");
+        sign.Value = "X13.Desk v.0.4";
         root.Attributes.Append(sign);
-        xd.AppendChild(root);
-        var window = xd.CreateElement("Window");
+        _wp.config.AppendChild(root);
+        var window = _wp.config.CreateElement("Window");
         {
-          var tmp = xd.CreateAttribute("State");
+          var tmp = _wp.config.CreateAttribute("State");
           tmp.Value = this.WindowState.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = xd.CreateAttribute("Left");
+          tmp = _wp.config.CreateAttribute("Left");
           tmp.Value = this.Left.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = xd.CreateAttribute("Top");
+          tmp = _wp.config.CreateAttribute("Top");
           tmp.Value = this.Top.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = xd.CreateAttribute("Width");
+          tmp = _wp.config.CreateAttribute("Width");
           tmp.Value = this.Width.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = xd.CreateAttribute("Height");
+          tmp = _wp.config.CreateAttribute("Height");
           tmp.Value = this.Height.ToString();
           window.Attributes.Append(tmp);
         }
         root.AppendChild(window);
-        root.AppendChild(xd.ImportNode(lDoc.FirstChild, true));
-        xd.Save(_cfgPath);
+        root.AppendChild(_wp.config.ImportNode(lDoc.FirstChild, true));
+        _wp.Close();
       }
       catch(Exception ex) {
         Log.Error("Save config - {0}", ex.Message);

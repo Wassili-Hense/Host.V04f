@@ -1,6 +1,7 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
 using JSC = NiL.JS.Core;
 using JST = NiL.JS.BaseLibrary;
+using JSF = NiL.JS.Core.Functions;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,6 +13,27 @@ using System.Threading;
 
 namespace X13.DeskHost {
   internal class DeskSocket : IDisposable {
+    private static JSF.ExternalFunction _JSON_Replacer;
+    static DeskSocket() {
+      _JSON_Replacer = new JSF.ExternalFunction(ConvertDate);
+    }
+    private static JSC.JSValue ConvertDate(JSC.JSValue thisBind, JSC.Arguments args) {
+      if(args.Length == 2 && args[1].ValueType == JSC.JSValueType.String) {
+        // 2015-09-16T14:15:18.994Z
+        var s = args[1].ToString();
+        if(s != null && s.Length == 24 && s[4] == '-' && s[7] == '-' && s[10] == 'T' && s[13] == ':' && s[16] == ':' && s[19] == '.') {
+          var a = new JSC.Arguments();
+          a.Add(args[1]);
+          return new JST.Date(a).valueOf();
+        }
+      }
+      return args[1];
+    }
+    public static JSC.JSValue ParseJson(string json) {
+      return JST.JSON.parse(json, _JSON_Replacer);
+    }
+    public const int portDefault = 10013;
+
     private TcpClient _socket;
     private NetworkStream _stream;
     private byte[] _rcvBuf;
@@ -20,9 +42,9 @@ namespace X13.DeskHost {
     private AsyncCallback _rcvCB;
     private int _rcvState;
     private int _rcvLength;
-    private Action<JST.Array> _callback;
+    private Action<DeskMessage> _callback;
 
-    public DeskSocket(TcpClient tcp, Action<JST.Array> cb) {
+    public DeskSocket(TcpClient tcp, Action<DeskMessage> cb) {
       this._socket = tcp;
       this._stream = _socket.GetStream();
       this._rcvBuf = new byte[1];
@@ -119,11 +141,13 @@ namespace X13.DeskHost {
                 string ms = null;
                 try {
                   ms = Encoding.UTF8.GetString(_rcvMsgBuf, 0, _rcvState);
-                  var mj = JST.JSON.parse(ms) as JST.Array;
+                  var mj = ParseJson(ms) as JST.Array;
                   if(verbose) {
                     Log.Debug("{0}.Rcv({1})", this.ToString(), ms);
                   }
-                  _callback(mj);
+                  if(mj != null && mj.Count() > 0) {
+                    _callback(new DeskMessage(this, mj));
+                  }
                 }
                 catch(Exception ex) {
                   if(verbose) {
@@ -165,6 +189,5 @@ namespace X13.DeskHost {
         return;
       }
     }
-
   }
 }

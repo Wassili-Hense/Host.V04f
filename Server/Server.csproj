@@ -62,7 +62,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DeskHost\DescMessage.cs" />
+    <Compile Include="DeskHost\DeskMessage.cs" />
     <Compile Include="DeskHost\DeskConnection.cs" />
     <Compile Include="DeskHost\DeskHostPl.cs" />
     <Compile Include="DeskHost\DeskSocket.cs" />
