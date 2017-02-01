@@ -13,6 +13,7 @@ namespace X13 {
   /// </summary>
   public partial class App : Application {
     internal static MainWindow mainWindow { get; set; }
+    internal static Data.DWorkspace Workspace { get; set; }
 
     public App() {
       AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
@@ -27,7 +28,7 @@ namespace X13 {
       }
     }
     private System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-      Log.Error("[{0}] Resolve failed: {1}", args.RequestingAssembly.FullName, args.Name);
+      Log.Error("AssemblyResolve failed: {0}", args.Name);
       return null;
     }
 

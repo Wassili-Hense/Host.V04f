@@ -4,6 +4,7 @@
         xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
         xmlns:x13="clr-namespace:X13"
         xmlns:x13ui="clr-namespace:X13.UI"
+        xmlns:x13d="clr-namespace:X13.Data"
 		xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
 		TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Consolas" FontSize="12"
         Background="{DynamicResource {x:Static at:AeroColors.BaseColor15Key}}"
@@ -73,7 +74,41 @@
       </Button>
       <TextBlock x:Name="Caption" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Dashboard" />
       <Button Name="buConfig" Grid.Column="3" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
-                     WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left">
+                     WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left" Click="buConfig_Click">
+        <Button.ContextMenu>
+          <ContextMenu>
+            <MenuItem Name="miConnections" Header="Connections" >
+              <MenuItem.ItemTemplate>
+                <DataTemplate DataType="{x:Type x13d:Client}">
+                  <Border Margin="0, 3" BorderThickness="0,1" MouseUp="Connection_MouseUp" >
+                    <Border.BorderBrush>
+                      <LinearGradientBrush EndPoint="1,0.5" StartPoint="0,0.5">
+                        <GradientStop Color="White" Offset="0"/>
+                        <GradientStop Color="Black" Offset="0.8"/>
+                        <GradientStop Color="White" Offset="1"/>
+                      </LinearGradientBrush>
+                    </Border.BorderBrush>
+                    <Grid MinHeight="35" MinWidth="250" Margin="3">
+                      <Grid.RowDefinitions>
+                        <RowDefinition/>
+                        <RowDefinition/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="35"/>
+                      </Grid.ColumnDefinitions>
+                      <TextBlock Grid.Column="0" Grid.Row="0" Text="{Binding alias}" FontWeight="Bold" FontSize="14" Margin="0,0,15,2" />
+                      <TextBlock Grid.Column="0" Grid.Row="1" Text="{Binding}" Margin="0,2,15,0" />
+                      <Button Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Padding="10,0,0,0" BorderThickness="0">
+                        <Image Stretch="None" Source="Images/trash.png" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </MenuItem.ItemTemplate>
+            </MenuItem>
+          </ContextMenu>
+        </Button.ContextMenu>
         <Image Source="/Desk;component/Images/config.png" Width="24" Height="23" />
       </Button>
       <Button x:Name="MinButton" Grid.Column="4" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"

@@ -21,12 +21,15 @@ namespace X13 {
   /// Interaction logic for MainWindow.xaml
   /// </summary>
   public partial class MainWindow : Window {
-    private DWorkspace _wp;
+    private System.Windows.Threading.DispatcherTimer _tick;
 
     public MainWindow(string cfgPath) {
-      _wp = new DWorkspace(cfgPath);
+#if !DEBUG
+      System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
+#endif
+      App.Workspace = new DWorkspace(cfgPath);
       XmlNode window;
-      if(_wp.config != null && (window = _wp.config.SelectSingleNode("/Config/Window")) != null) {
+      if(App.Workspace.config != null && (window = App.Workspace.config.SelectSingleNode("/Config/Window")) != null) {
         WindowState st;
         double tmp;
         if(window.Attributes["Top"] != null && double.TryParse(window.Attributes["Top"].Value, out tmp)) {
@@ -45,16 +48,15 @@ namespace X13 {
           this.WindowState = st;
         }
       }
-
       InitializeComponent();
-#if !DEBUG
-      System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
-#endif
+      dmMain.DataContext = App.Workspace;
+      miConnections.ItemsSource = App.Workspace.Clients;
+      this._tick = new System.Windows.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(50), System.Windows.Threading.DispatcherPriority.Normal, App.Workspace.TickFunction, this.Dispatcher);
     }
     private void Window_Loaded(object sender, RoutedEventArgs e) {
       try {
         XmlNode xlay;
-        if(_wp.config != null && (xlay = _wp.config.SelectSingleNode("/Config/LayoutRoot")) != null) {
+        if(App.Workspace.config != null && (xlay = App.Workspace.config.SelectSingleNode("/Config/LayoutRoot")) != null) {
 
           var layoutSerializer = new Xceed.Wpf.AvalonDock.Layout.Serialization.XmlLayoutSerializer(this.dmMain);
           layoutSerializer.LayoutSerializationCallback += LSF;
@@ -64,9 +66,9 @@ namespace X13 {
       catch(Exception ex) {
         Log.Error("Load layout - {0}", ex.Message);
       }
-      if(_wp.clients.Count == 0) {
+      if(App.Workspace.Clients.Count == 0) {
         var cl = new Client("localhost", DeskHost.DeskSocket.portDefault, null, null);
-        _wp.clients.Add(cl);
+        App.Workspace.Clients.Add(cl);
         cl.Connect();
       }
     }
@@ -78,47 +80,42 @@ namespace X13 {
           layoutSerializer.Serialize(ix);
         }
 
-        _wp.config = new XmlDocument();
-        var root = _wp.config.CreateElement("Config");
-        var sign = _wp.config.CreateAttribute("Signature");
+        App.Workspace.config = new XmlDocument();
+        var root = App.Workspace.config.CreateElement("Config");
+        var sign = App.Workspace.config.CreateAttribute("Signature");
         sign.Value = "X13.Desk v.0.4";
         root.Attributes.Append(sign);
-        _wp.config.AppendChild(root);
-        var window = _wp.config.CreateElement("Window");
+        App.Workspace.config.AppendChild(root);
+        var window = App.Workspace.config.CreateElement("Window");
         {
-          var tmp = _wp.config.CreateAttribute("State");
+          var tmp = App.Workspace.config.CreateAttribute("State");
           tmp.Value = this.WindowState.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = _wp.config.CreateAttribute("Left");
+          tmp = App.Workspace.config.CreateAttribute("Left");
           tmp.Value = this.Left.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = _wp.config.CreateAttribute("Top");
+          tmp = App.Workspace.config.CreateAttribute("Top");
           tmp.Value = this.Top.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = _wp.config.CreateAttribute("Width");
+          tmp = App.Workspace.config.CreateAttribute("Width");
           tmp.Value = this.Width.ToString();
           window.Attributes.Append(tmp);
 
-          tmp = _wp.config.CreateAttribute("Height");
+          tmp = App.Workspace.config.CreateAttribute("Height");
           tmp.Value = this.Height.ToString();
           window.Attributes.Append(tmp);
         }
         root.AppendChild(window);
-        root.AppendChild(_wp.config.ImportNode(lDoc.FirstChild, true));
-        _wp.Close();
+        root.AppendChild(App.Workspace.config.ImportNode(lDoc.FirstChild, true));
+        App.Workspace.Close();
       }
       catch(Exception ex) {
         Log.Error("Save config - {0}", ex.Message);
       }
-      //try {
-      //  DWorkspace.This.Exit();
-      //}
-      //catch(Exception ex) {
-      //  Log.Error("DWorkspace.Exit() - {0}", ex.Message);
-      //}
+      _tick.Stop();
       Log.Finish();
     }
 
@@ -164,6 +161,20 @@ namespace X13 {
         SystemCommands.RestoreWindow(this);
       } else {
         SystemCommands.MaximizeWindow(this);
+      }
+    }
+
+    private void buConfig_Click(object sender, RoutedEventArgs e) {
+      if(buConfig.ContextMenu != null) {
+        buConfig.ContextMenu.IsOpen = true;
+      }
+    }
+
+    private void Connection_MouseUp(object sender, MouseButtonEventArgs e) {
+      var s = sender as FrameworkElement;
+      Client cl;
+      if(s != null && (cl = s.DataContext as Client) != null) {
+        App.Workspace.Open(cl.ToString());
       }
     }
   }

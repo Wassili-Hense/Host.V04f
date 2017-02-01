@@ -106,6 +106,7 @@
     <Compile Include="Data\Client.cs" />
     <Compile Include="Data\DTopic.cs" />
     <Compile Include="Data\DWorkspace.cs" />
+    <Compile Include="Data\NPC_UI.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Compile Include="UI\IBaseForm.cs" />
@@ -175,7 +176,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup />
   <ItemGroup>
     <Resource Include="Images\newDoc.png" />
   </ItemGroup>
@@ -184,6 +184,9 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="logo64.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\trash.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

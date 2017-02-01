@@ -41,7 +41,7 @@ namespace X13.UI {
     private DTopic _data;
 
     public bool connected { get { return _data != null; } }
-    public DTopic data { get { return _data; } }
+    internal DTopic data { get { return _data; } }
     public IBaseForm contentForm {
       get {
         return _contentForm;
@@ -57,17 +57,17 @@ namespace X13.UI {
 
     private void RequestData(Uri url) {
       this.Cursor = Cursors.AppStarting;
-      DWorkspace.This.GetAsync(url).ContinueWith(this.DataUpd, TaskScheduler.FromCurrentSynchronizationContext());
+      App.Workspace.GetAsync(url).ContinueWith(this.DataUpd, TaskScheduler.FromCurrentSynchronizationContext());
     }
     private void DataUpd(Task<DTopic> t) {
       if(t.IsFaulted) {
         Log.Warning("{0}", t.Exception.Message);
       } else if(t.IsCompleted) {
         _data = t.Result;
-        if(_data == null) {  // topic deleted
-          DWorkspace.This.Close(this);
-          return;
-        }
+        //if(_data == null) {  // topic deleted
+        //  DWorkspace.This.Close(this);
+        //  return;
+        //}
         _path = _data.fullPath;
         OnPropertyChanged("data");
 
@@ -78,22 +78,22 @@ namespace X13.UI {
           c = c.parent;
         }
         if(_view == null) {
-          if(_data.typeStr == "Logram") {
-            _view = "LO";
-          } else {
+          //if(_data.typeStr == "Logram") {
+          //  _view = "LO";
+          //} else {
             _view = "IN";
-          }
+          //}
         }
         OnPropertyChanged("ContentId");
         OnPropertyChanged("connected");
         if(_view == "IN") {
-          if((ccMain.Content as InspectorForm) == null) {
-            contentForm = new InspectorForm(_data);
-          }
-        } else if(_view == "LO") {
-          if((ccMain.Content as LogramForm) == null) {
-            contentForm = new LogramForm(_data);
-          }
+          //if((ccMain.Content as InspectorForm) == null) {
+          //  contentForm = new InspectorForm(_data);
+          //}
+        //} else if(_view == "LO") {
+        //  if((ccMain.Content as LogramForm) == null) {
+        //    contentForm = new LogramForm(_data);
+        //  }
         }
       }
       this.Focus();
@@ -126,20 +126,20 @@ namespace X13.UI {
           tbAddress.Background = Brushes.LightPink;
         }
       } else if(e.Key == Key.Escape) {
-        DWorkspace.This.Close(this);
+        //DWorkspace.This.Close(this);
       }
     }
     private void Button_Click(object sender, RoutedEventArgs e) {
       var bu = sender as Button;
       DTopic t;
       if(bu != null && (t = bu.DataContext as DTopic) != null) {
-        DWorkspace.This.Open(t.fullPath);
+        //DWorkspace.This.Open(t.fullPath);
       }
     }
     #endregion Address bar
 
     private void buChangeView_Click(object sender, RoutedEventArgs e) {
-      if((ccMain.Content as InspectorForm) != null) {
+      /*if((ccMain.Content as InspectorForm) != null) {
         if(_data.typeStr == "Logram") {
           _view = "LO";
           contentForm = new LogramForm(_data);
@@ -149,7 +149,7 @@ namespace X13.UI {
         _view = "IN";
         contentForm = new InspectorForm(_data);
         OnPropertyChanged("ContentId");
-      }
+      }*/
     }
 
     #region INotifyPropertyChanged Members

@@ -174,7 +174,7 @@ namespace X13 {
       }
     }
     private Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-      Log.Error("[{0}] Resolve failed: {1}", args.RequestingAssembly.FullName, args.Name);
+      Log.Error("AssemblyResolve failed: {0}", args.Name);
       return null;
     }
 

@@ -1,12 +1,13 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
 using JSC = NiL.JS.Core;
-using JST = NiL.JS.BaseLibrary;
+using JSL = NiL.JS.BaseLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using X13.Repository;
 
 namespace X13.DeskHost {
   [System.ComponentModel.Composition.Export(typeof(IPlugModul))]
@@ -16,6 +17,7 @@ namespace X13.DeskHost {
     #region internal Members
     private TcpListener _tcp;
     private System.Collections.Concurrent.ConcurrentBag<DeskConnection> _connections;
+    private System.Collections.Concurrent.ConcurrentBag<DeskMessage> _msgs;
 
     private void Connect(IAsyncResult ar) {
       try {
@@ -34,13 +36,14 @@ namespace X13.DeskHost {
     }
 
     internal void AddRMsg(DeskMessage msg) {
-      //TODO: !!!!!
+      _msgs.Add(msg);
     }
 
     #endregion internal Members
 
     public DeskHostPl() {
       _connections = new System.Collections.Concurrent.ConcurrentBag<DeskConnection>();
+      _msgs = new System.Collections.Concurrent.ConcurrentBag<DeskMessage>();
       enabled = true;
     }
 
@@ -53,6 +56,25 @@ namespace X13.DeskHost {
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
     public void Tick() {
+      DeskMessage msg;
+      while(_msgs.TryTake(out msg)) {
+        if(msg.Count == 0) {
+          continue;
+        }
+        try {
+          if(msg[0].IsNumber) {
+            var conn = (DeskConnection)msg._conn;
+            switch((int)msg[0]) {
+            case 4:
+              conn.Subscribe(msg);
+              break;
+            }
+          }
+        }
+        catch(Exception ex) {
+          Log.Warning("{0} - {1}", msg, ex);
+        }
+      }
     }
     public void Stop() {
       if(_tcp == null) {

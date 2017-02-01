@@ -8,9 +8,8 @@ using System.Text;
 
 namespace X13.DeskHost {
   internal class DeskMessage {
-    private DeskSocket _conn;
+    public readonly DeskSocket _conn;
     private JST.Array _request;
-    private JST.Array _response;
 
     public DeskMessage(DeskSocket conn, JST.Array req) {
       this._conn = conn;
@@ -26,7 +25,7 @@ namespace X13.DeskHost {
     }
     public readonly int Count;
     public void Response(params JSC.JSValue[] args) {
-      _response = new JST.Array(args);
+      _conn.SendArr(new JST.Array(args));
     }
   }
 }
