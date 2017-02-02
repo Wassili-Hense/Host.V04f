@@ -157,7 +157,7 @@ namespace X13.Repository {
         }
         break;
       case Perform.Art.create:
-        _objects.Insert(obj);
+        _objects.Upsert(obj);
         break;
       case Perform.Art.remove:
         _states.Delete(obj["_id"]);

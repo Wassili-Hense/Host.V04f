@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Xml;
 using X13.Data;
+using X13.UI;
 
 namespace X13 {
   /// <summary>
@@ -133,7 +134,7 @@ namespace X13 {
         } else {
           view = null;
         }
-        //arg.Content = DWorkspace.This.Open(u.GetLeftPart(UriPartial.Path), view);
+        arg.Content = App.Workspace.Open(u.GetLeftPart(UriPartial.Path), view);
         if(arg.Content == null) {
           arg.Cancel = true;
         }
@@ -144,10 +145,10 @@ namespace X13 {
       //DWorkspace.This.Open(null);
     }
     private void dmMain_DocumentClosed(object sender, Xceed.Wpf.AvalonDock.DocumentClosedEventArgs e) {
-      //var form = e.Document.Content as UIDocument;
-      //if(form != null) {
-      //  DWorkspace.This.Close(form);
-      //}
+      var form = e.Document.Content as UIDocument;
+      if(form != null) {
+        App.Workspace.Close(form);
+      }
     }
 
     private void CloseButtonClick(object sender, RoutedEventArgs e) {

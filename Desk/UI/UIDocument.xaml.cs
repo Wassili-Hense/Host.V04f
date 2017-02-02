@@ -64,10 +64,10 @@ namespace X13.UI {
         Log.Warning("{0}", t.Exception.Message);
       } else if(t.IsCompleted) {
         _data = t.Result;
-        //if(_data == null) {  // topic deleted
-        //  DWorkspace.This.Close(this);
-        //  return;
-        //}
+        if(_data == null) {  // topic deleted
+          App.Workspace.Close(this);
+          return;
+        }
         _path = _data.fullPath;
         OnPropertyChanged("data");
 
@@ -86,15 +86,17 @@ namespace X13.UI {
         }
         OnPropertyChanged("ContentId");
         OnPropertyChanged("connected");
-        if(_view == "IN") {
-          //if((ccMain.Content as InspectorForm) == null) {
-          //  contentForm = new InspectorForm(_data);
-          //}
+        //if(_view == "IN") {
+        //  if((ccMain.Content as InspectorForm) == null) {
+        //    contentForm = new InspectorForm(_data);
+        //  }
+
         //} else if(_view == "LO") {
         //  if((ccMain.Content as LogramForm) == null) {
         //    contentForm = new LogramForm(_data);
         //  }
-        }
+
+        //}
       }
       this.Focus();
       this.Cursor = Cursors.Arrow;
@@ -126,30 +128,32 @@ namespace X13.UI {
           tbAddress.Background = Brushes.LightPink;
         }
       } else if(e.Key == Key.Escape) {
-        //DWorkspace.This.Close(this);
+        App.Workspace.Close(this);
       }
     }
     private void Button_Click(object sender, RoutedEventArgs e) {
       var bu = sender as Button;
       DTopic t;
       if(bu != null && (t = bu.DataContext as DTopic) != null) {
-        //DWorkspace.This.Open(t.fullPath);
+        App.Workspace.Open(t.fullPath);
       }
     }
     #endregion Address bar
 
     private void buChangeView_Click(object sender, RoutedEventArgs e) {
-      /*if((ccMain.Content as InspectorForm) != null) {
-        if(_data.typeStr == "Logram") {
-          _view = "LO";
-          contentForm = new LogramForm(_data);
-          OnPropertyChanged("ContentId");
-        }
-      } else {
-        _view = "IN";
-        contentForm = new InspectorForm(_data);
-        OnPropertyChanged("ContentId");
-      }*/
+      //if((ccMain.Content as InspectorForm) != null) {
+      //  if(_data.typeStr == "Logram") {
+      //    _view = "LO";
+      //    contentForm = new LogramForm(_data);
+      //    OnPropertyChanged("ContentId");
+      //  }
+      //} else {
+
+        //_view = "IN";
+        //contentForm = new InspectorForm(_data);
+        //OnPropertyChanged("ContentId");
+
+      //}
     }
 
     #region INotifyPropertyChanged Members

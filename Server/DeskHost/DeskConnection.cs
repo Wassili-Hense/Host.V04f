@@ -15,6 +15,7 @@ namespace X13.DeskHost {
   internal class DeskConnection : DeskSocket {
     private DeskHostPl _basePl;
     private SortedSet<Topic> _subscriptions;
+    private Topic _owner;
 
     public DeskConnection(DeskHostPl pl, TcpClient tcp) : base(tcp, pl.AddRMsg) {
       this._basePl = pl;
@@ -26,6 +27,8 @@ namespace X13.DeskHost {
       arr[0] = 1;
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
+      _owner = Topic.root.Get("/system/Desk").Get(base.ToString());
+      _owner.SetValue(true, _owner);
     }
     /// <summary>Subscribe topics</summary>
     /// <param name="args">

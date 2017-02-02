@@ -107,6 +107,14 @@
     <Compile Include="Data\DTopic.cs" />
     <Compile Include="Data\DWorkspace.cs" />
     <Compile Include="Data\NPC_UI.cs" />
+    <Compile Include="Inspector\InBase.cs" />
+    <Compile Include="Inspector\InspectorForm.xaml.cs">
+      <DependentUpon>InspectorForm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Inspector\InTopic.cs" />
+    <Compile Include="Inspector\InValue.cs" />
+    <Compile Include="Inspector\IValueEditor.cs" />
+    <Compile Include="Inspector\veDefault.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Compile Include="UI\IBaseForm.cs" />
@@ -114,6 +122,10 @@
       <DependentUpon>UIDocument.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Inspector\InspectorForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

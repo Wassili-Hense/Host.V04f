@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Collections.ObjectModel;
 
 namespace X13.Data {
   internal class DTopic {
@@ -24,7 +25,7 @@ namespace X13.Data {
       this.name = name;
       this.path = this.parent == _client.root ? ("/" + name) : (this.parent.path + "/" + name);
     }
-    internal DTopic(Client cl) {
+    public DTopic(Client cl) {
       _client = cl;
       this.name = _client.ToString();
       this.path = "/";
@@ -34,7 +35,16 @@ namespace X13.Data {
     public string path { get; private set; }
     public string fullPath { get { return _client.ToString() + this.path; } }
     public DTopic parent { get; private set; }
+    public JSC.JSValue value { get { return _value; } }
+    public JSC.JSValue type { get { return _meta; } }  // TODO: rename
+    public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
+
+    public Task<DTopic> CreateAsync(string name, string typeName, JSC.JSValue value) {
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), typeName, value.Defined ? value : null);
+      App.Workspace.AddMsg(req);
+      return req.Task;
+    }
     public Task<DTopic> GetAsync(string p) {
       DTopic ts;
       if(string.IsNullOrEmpty(p)) {
@@ -49,6 +59,12 @@ namespace X13.Data {
       App.Workspace.AddMsg(req);
       return req.Task;
 
+    }
+    public void SetValue(JSC.JSValue value) {
+      throw new NotImplementedException();
+    }
+    public void Move(DTopic dTopic, string name) {
+      throw new NotImplementedException();
     }
 
     public event Action<Art, DTopic> changed;
@@ -123,7 +139,6 @@ namespace X13.Data {
       }
     }
 
-
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
@@ -197,13 +212,13 @@ namespace X13.Data {
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
           DTopic next;
-          JSL.Array ca = value.Value as JSL.Array;
-          if(ca == null || (int)ca.length != 1) {
-            _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
+          if(value.IsNull) {
+            _cur._disposed = true;
             return;
           }
-          if(ca[0].IsNull) {
-            _cur._disposed = true;
+          JSL.Array ca = value.Value as JSL.Array;
+          if(ca == null) {
+            _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
             return;
           }
           string aName, aPath;
@@ -238,8 +253,16 @@ namespace X13.Data {
     }
     public enum Art {
       value,
+      type,
       addChild,
       RemoveChild,
     }
+
+    internal void Delete() {
+      throw new NotImplementedException();
+    }
+
+
+
   }
 }

@@ -9,7 +9,7 @@ using System.Text;
 using System.Collections.Concurrent;
 
 namespace X13.Repository {
-  public sealed class Topic {
+  public sealed class Topic : IComparable<Topic> {
     private static Repo _repo;
     public static Topic root { get; private set; }
 
@@ -560,12 +560,15 @@ namespace X13.Repository {
       }
     }
     #endregion nested types
+    public int CompareTo(Topic other) {
+      if(other == null) {
+        return 1;
+      }
+      return this._path.CompareTo(other._path);
+    }
 
     public override string ToString() {
       return _path;
     }
-
-
-
   }
 }

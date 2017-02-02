@@ -15,6 +15,10 @@ namespace X13 {
     internal static MainWindow mainWindow { get; set; }
     internal static Data.DWorkspace Workspace { get; set; }
 
+    internal static System.Windows.Media.Imaging.BitmapSource GetIcon(string icData) {
+      return null;
+    }
+
     public App() {
       AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
       AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
