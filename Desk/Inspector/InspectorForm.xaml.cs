@@ -48,7 +48,8 @@ namespace X13.UI {
     internal InspectorForm(DTopic data) {
       this._data = data;
       _valueVC = new ObservableCollection<InBase>();
-      CollectionChange(new InValue(data, CollectionChange), true);
+      CollectionChange(new InValue(data, false, CollectionChange), true);
+      CollectionChange(new InValue(data, true, CollectionChange), true);
       CollectionChange(new InTopic(data, null, CollectionChange), true);
       InitializeComponent();
       lvValue.ItemsSource = _valueVC;

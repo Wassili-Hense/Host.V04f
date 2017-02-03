@@ -13,7 +13,7 @@ namespace X13.DeskHost {
   [System.ComponentModel.Composition.Export(typeof(IPlugModul))]
   [System.ComponentModel.Composition.ExportMetadata("priority", 8)]
   [System.ComponentModel.Composition.ExportMetadata("name", "DeskHost")]
-  public class DeskHostPl : IPlugModul {
+  internal class DeskHostPl : IPlugModul {
     #region internal Members
     private TcpListener _tcp;
     private System.Collections.Concurrent.ConcurrentBag<DeskConnection> _connections;
@@ -62,13 +62,9 @@ namespace X13.DeskHost {
           continue;
         }
         try {
-          if(msg[0].IsNumber) {
-            var conn = (DeskConnection)msg._conn;
-            switch((int)msg[0]) {
-            case 4:
-              conn.Subscribe(msg);
-              break;
-            }
+          if(msg[0].ValueType==JSC.JSValueType.String) {
+            var key = msg[0].Value as string;
+            //TODO: TryGet(Key, out func)
           }
         }
         catch(Exception ex) {

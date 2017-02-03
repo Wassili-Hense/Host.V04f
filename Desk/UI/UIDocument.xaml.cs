@@ -41,7 +41,7 @@ namespace X13.UI {
     private DTopic _data;
 
     public bool connected { get { return _data != null; } }
-    internal DTopic data { get { return _data; } }
+    public DTopic data { get { return _data; } }
     public IBaseForm contentForm {
       get {
         return _contentForm;
@@ -86,17 +86,17 @@ namespace X13.UI {
         }
         OnPropertyChanged("ContentId");
         OnPropertyChanged("connected");
-        //if(_view == "IN") {
-        //  if((ccMain.Content as InspectorForm) == null) {
-        //    contentForm = new InspectorForm(_data);
-        //  }
+        if(_view == "IN") {
+          if((ccMain.Content as InspectorForm) == null) {
+            contentForm = new InspectorForm(_data);
+          }
 
         //} else if(_view == "LO") {
         //  if((ccMain.Content as LogramForm) == null) {
         //    contentForm = new LogramForm(_data);
         //  }
 
-        //}
+        }
       }
       this.Focus();
       this.Cursor = Cursors.Arrow;
@@ -148,11 +148,9 @@ namespace X13.UI {
       //    OnPropertyChanged("ContentId");
       //  }
       //} else {
-
         //_view = "IN";
         //contentForm = new InspectorForm(_data);
         //OnPropertyChanged("ContentId");
-
       //}
     }
 

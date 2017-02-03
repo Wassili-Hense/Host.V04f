@@ -1,4 +1,6 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using JSC = NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -22,6 +24,8 @@ namespace X13 {
     public App() {
       AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CurrentDomain_UnhandledException);
       AppDomain.CurrentDomain.AssemblyResolve += CurrentDomain_AssemblyResolve;
+      _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
+      _msgProcessFunc = new Action(ProcessMessage);
     }
 
     private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e) {
@@ -45,8 +49,44 @@ namespace X13 {
       }
 
       mainWindow = new MainWindow(cfgPath);
-
+      _msgProcessBusy = 1;
       mainWindow.Show();
     }
+
+    #region Background worker
+    private static System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
+    private static int _msgProcessBusy;
+    private static Action _msgProcessFunc;
+
+    internal static void PostMsg(INotMsg msg) {
+      _msgs.Enqueue(msg);
+      if(_msgProcessBusy == 1) {
+        mainWindow.Dispatcher.BeginInvoke(_msgProcessFunc, System.Windows.Threading.DispatcherPriority.DataBind);
+      }
+    }
+    private static void ProcessMessage() {
+      INotMsg msg;
+      if(System.Threading.Interlocked.CompareExchange(ref _msgProcessBusy, 2, 1) != 1) {
+        return;
+      }
+      while(_msgs.Any()) {
+        if(_msgs.TryDequeue(out msg)) {
+          try {
+            //Log.Debug("Tick: {0}", msg.ToString());
+            msg.Process(Workspace);
+          }
+          catch(Exception ex) {
+            Log.Warning("App.ProcessMessage(0) - {1}", msg, ex.ToString());
+          }
+        }
+      }
+      _msgProcessBusy = 1;
+    }
+    #endregion Background worker
+
+  }
+  internal interface INotMsg {
+    void Process(Data.DWorkspace ws);
+    void Response(Data.DWorkspace ws, bool success, JSC.JSValue value);
   }
 }

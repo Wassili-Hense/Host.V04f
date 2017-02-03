@@ -116,7 +116,7 @@ namespace X13.UI {
       }
     }
 
-    private async void InsertItems(ReadOnlyCollection<DTopic> its) {
+    private void InsertItems(ReadOnlyCollection<DTopic> its) {
       bool pc_items = false;
       if(_items == null) {
         lock(this) {
@@ -127,7 +127,7 @@ namespace X13.UI {
         }
       }
       foreach(var t in its.ToArray()) {
-        await AddTopic(t);
+        var td = AddTopic(t);
       }
       if(pc_items) {
         PropertyChangedReise("items");

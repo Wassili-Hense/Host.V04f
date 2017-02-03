@@ -98,7 +98,7 @@ namespace X13.Data {
         arr[0] = this.ToString();
         arr[1] = "Bad username or password";
         msg.Response(null, false, arr);
-        App.Workspace.AddMsg(msg);
+        App.PostMsg(msg);
       } else {
         lock(_connEvnt) {
           _connEvnt.Add(new WaitConnect(msg, this));
@@ -126,7 +126,7 @@ namespace X13.Data {
           lock(_connEvnt) {
             foreach(var ce in _connEvnt) {
               ce.Response(null, true, null);
-              App.Workspace.AddMsg(ce);
+              App.PostMsg(ce);
             }
             _connEvnt.Clear();
           }
@@ -146,7 +146,7 @@ namespace X13.Data {
         }
         if(req != null) {
           req.Response(null, true, msg[2]);
-          App.Workspace.AddMsg(req);
+          App.PostMsg(req);
         }
         break;
       }
@@ -175,12 +175,15 @@ namespace X13.Data {
       public void Process(DWorkspace ws) {
         if(_req != null) {
           _req.Response(ws, _success, _resp);
-          ws.AddMsg(_req);
+          App.PostMsg(_req);
         }
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         _resp = value;
         _success = success;
+      }
+      public override string ToString() {
+        return "ClRequest: " + data.ToString() + _resp == null ? string.Empty : (" >> " + _success.ToString());
       }
     }
 
@@ -206,6 +209,10 @@ namespace X13.Data {
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         _success = success;
         _value = value;
+      }
+
+      public override string ToString() {
+        return "WaitConnect: " + _success.ToString();
       }
     }
 

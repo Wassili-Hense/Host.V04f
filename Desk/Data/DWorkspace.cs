@@ -23,7 +23,6 @@ namespace X13.Data {
     public DWorkspace(string cfgPath) {
       this._cfgPath = cfgPath;
       Clients = new ObservableCollection<Client>();
-      _msgs = new System.Collections.Concurrent.ConcurrentQueue<INotMsg>();
       _files = new ObservableCollection<UIDocument>();
       _activeDocument = null;
 
@@ -89,7 +88,7 @@ namespace X13.Data {
         }
       }
       UIDocument ui;
-      ui = _files.FirstOrDefault(z => z != null && z.ContentId == id);
+      ui = _files.FirstOrDefault(z => z != null && ((z.data!=null && z.data.fullPath==path) || z.ContentId == id));
       if(ui == null) {
         ui = new UI.UIDocument(path, view);
         _files.Add(ui);
@@ -186,29 +185,5 @@ namespace X13.Data {
       }
     }
 
-    #region Background worker
-    private System.Collections.Concurrent.ConcurrentQueue<INotMsg> _msgs;
-
-    public void AddMsg(INotMsg msg) {
-      _msgs.Enqueue(msg);
-    }
-    public void TickFunction(object sender, EventArgs e) {
-      INotMsg msg;
-      while(_msgs.Any()) {
-        if(_msgs.TryDequeue(out msg)) {
-          try {
-            msg.Process(this);
-          }
-          catch(Exception ex) {
-            Log.Warning("TickFunction - {0}", ex.ToString());
-          }
-        }
-      }
-    }
-    #endregion Background worker
-  }
-  internal interface INotMsg {
-    void Process(DWorkspace ws);
-    void Response(DWorkspace ws, bool success, JSC.JSValue value);
   }
 }

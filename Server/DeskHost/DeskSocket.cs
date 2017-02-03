@@ -42,7 +42,7 @@ namespace X13.DeskHost {
     private AsyncCallback _rcvCB;
     private int _rcvState;
     private int _rcvLength;
-    private Action<DeskMessage> _callback;
+    protected Action<DeskMessage> _callback;
 
     public DeskSocket(TcpClient tcp, Action<DeskMessage> cb) {
       this._socket = tcp;
@@ -60,31 +60,37 @@ namespace X13.DeskHost {
     public void SendArr(JST.Array arr) {
       var ms = JST.JSON.stringify(arr, null, null);
       int len = Encoding.UTF8.GetByteCount(ms);
-      int st = 2;
+      int st = 1;
       int tmp = len;
       while(tmp > 0x7F) {
         tmp = tmp >> 7;
         st++;
       }
-      var buf = new byte[len + st + 1];
-      Encoding.UTF8.GetBytes(ms, 0, ms.Length, buf, st);
+      var buf = new byte[len + st + 2];
+      Encoding.UTF8.GetBytes(ms, 0, ms.Length, buf, st + 1);
       tmp = len;
       buf[0] = 0;
-      st = 1;
-      while(tmp > 0) {
-        buf[st] = (byte)((tmp & 0x7F) | (tmp > 0x7F ? 0x80 : 0));
+      for(int i = st; i > 0; i--) {
+        buf[i] = (byte)((tmp & 0x7F) | (i < st ? 0x80 : 0));
         tmp = tmp >> 7;
-        st++;
       }
       buf[buf.Length - 1] = 0xFF;
       this._stream.Write(buf, 0, buf.Length);
       Log.Debug("{0}.Send({1})", this.ToString(), ms);
     }
-    public void Dispose() {
+    private void Dispose(bool info) {
       if(Interlocked.Exchange(ref _connected, 0) != 0) {
         _stream.Close();
         _socket.Close();
+        if(info) {
+          var arr = new JST.Array(1);
+          arr[0] = 99;                            // Lost
+          _callback(new DeskMessage(this, arr));
+        }
       }
+    }
+    public void Dispose() {
+      Dispose(false);
     }
     public override string ToString() {
       return ((IPEndPoint)_socket.Client.RemoteEndPoint).ToString();
@@ -98,7 +104,7 @@ namespace X13.DeskHost {
         len = _stream.EndRead(ar);
       }
       catch(IOException) {
-        this.Dispose();
+        this.Dispose(true);
         return;
       }
       catch(ObjectDisposedException) {
@@ -154,6 +160,8 @@ namespace X13.DeskHost {
                     Log.Warning("{0}.Rcv({1}) - {2}", this.ToString(), ms ?? BitConverter.ToString(_rcvMsgBuf, 0, _rcvState), ex.Message);
                   }
                 }
+              } else {
+                Log.Warning("Paranoic");
               }
               _rcvState = -2;
             }
@@ -167,21 +175,15 @@ namespace X13.DeskHost {
           Log.Warning(ex.ToString());
         }
       } else {
-        if(_connected != 0) {
-          //TODO: DeskMessage(Disconnect)
-          this.Dispose();
-        }
+        this.Dispose(true);
         return;
       }
 
       try {
         _stream.BeginRead(_rcvBuf, 0, 1, _rcvCB, _stream);
       }
-      catch(IOException ex) {
-        if(_connected != 0) {
-          this.Dispose();
-          Log.Warning("DeskConnection.RcvProcess {0}", ex.Message);
-        }
+      catch(IOException ) {
+        this.Dispose(true);
         return;
       }
       catch(ObjectDisposedException ex) {

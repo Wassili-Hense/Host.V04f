@@ -22,8 +22,6 @@ namespace X13 {
   /// Interaction logic for MainWindow.xaml
   /// </summary>
   public partial class MainWindow : Window {
-    private System.Windows.Threading.DispatcherTimer _tick;
-
     public MainWindow(string cfgPath) {
 #if !DEBUG
       System.Diagnostics.PresentationTraceSources.DataBindingSource.Switch.Level = System.Diagnostics.SourceLevels.Critical;
@@ -52,7 +50,6 @@ namespace X13 {
       InitializeComponent();
       dmMain.DataContext = App.Workspace;
       miConnections.ItemsSource = App.Workspace.Clients;
-      this._tick = new System.Windows.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(50), System.Windows.Threading.DispatcherPriority.Normal, App.Workspace.TickFunction, this.Dispatcher);
     }
     private void Window_Loaded(object sender, RoutedEventArgs e) {
       try {
@@ -116,7 +113,6 @@ namespace X13 {
       catch(Exception ex) {
         Log.Error("Save config - {0}", ex.Message);
       }
-      _tick.Stop();
       Log.Finish();
     }
 
@@ -175,7 +171,7 @@ namespace X13 {
       var s = sender as FrameworkElement;
       Client cl;
       if(s != null && (cl = s.DataContext as Client) != null) {
-        App.Workspace.Open(cl.ToString());
+        App.Workspace.Open(cl.ToString()+"/");
       }
     }
   }

@@ -19,19 +19,19 @@ namespace X13.UI {
     private JSC.JSValue _value;
     private string _path;
 
-    public InValue(DTopic data, Action<InBase, bool> collFunc) {
+    public InValue(DTopic data, bool meta, Action<InBase, bool> collFunc) {
       _data = data;
       _parent = null;
       _collFunc = collFunc;
-      name = "value";
+      name = meta?"object":"value";
       _path = string.Empty;
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
       levelPadding = 5;
       _items = new List<InBase>();
-      _value = _data.value;
+      _value = meta?_data.type:_data.value;
       UpdateType(_data.type);
-      UpdateData(_data.value);
+      UpdateData(meta ? _data.type : _data.value);
       _isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
     }
@@ -66,18 +66,18 @@ namespace X13.UI {
     }
     protected override void UpdateType(JSC.JSValue type) {
       base.UpdateType(type);
-      if(_type != null && _type.ValueType==JSC.JSValueType.Object && !_type.IsNull) {
-        var pr = _type["Properties"] as JSC.JSValue;
-        if(pr != null) {
-          InValue vc;
-          foreach(var kv in pr) {
-            vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
-            if(vc != null) {
-              vc.UpdateType(kv.Value);
-            }
-          }
-        }
-      }
+      //if(_type != null && _type.ValueType==JSC.JSValueType.Object && !_type.IsNull) {
+      //  var pr = _type["Properties"] as JSC.JSValue;
+      //  if(pr != null) {
+      //    InValue vc;
+      //    foreach(var kv in pr) {
+      //      vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
+      //      if(vc != null) {
+      //        vc.UpdateType(kv.Value);
+      //      }
+      //    }
+      //  }
+      //}
       bool gh = _parent == null && editor is veDefault;
       if(gh != IsGroupHeader) {
         IsGroupHeader = gh;

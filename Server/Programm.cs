@@ -142,7 +142,7 @@ namespace X13 {
       InitPlugins();
       StartPlugins();
 
-      _tickTimer = new Timer(Tick, null, 200, 80);
+      _tickTimer = new Timer(Tick, null, 200, 45);
       int i;
       do {
         _tick.WaitOne();

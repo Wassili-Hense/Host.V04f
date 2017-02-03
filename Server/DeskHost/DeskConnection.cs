@@ -17,7 +17,9 @@ namespace X13.DeskHost {
     private SortedSet<Topic> _subscriptions;
     private Topic _owner;
 
-    public DeskConnection(DeskHostPl pl, TcpClient tcp) : base(tcp, pl.AddRMsg) {
+    public DeskConnection(DeskHostPl pl, TcpClient tcp)
+      : base(tcp, null) { //
+      base._callback = new Action<DeskMessage>(RcvMsg);
       this._basePl = pl;
       this._subscriptions = new SortedSet<Topic>();
       base.verbose = true;
@@ -30,12 +32,39 @@ namespace X13.DeskHost {
       _owner = Topic.root.Get("/system/Desk").Get(base.ToString());
       _owner.SetValue(true, _owner);
     }
+    private void RcvMsg(DeskMessage msg) {
+      if(msg.Count == 0) {
+        return;
+      }
+      try {
+        if(msg[0].IsNumber) {
+          switch((int)msg[0]) {
+          case 4:
+            this.Subscribe(msg);
+            break;
+          case 99: {
+              var o = Interlocked.Exchange(ref _owner, null);
+              if(o != null) {
+                Log.Warning("{0} connection dropped", o.path);
+                o.Remove(o);
+              }
+            }
+            break;    // Disconnect
+          }
+        } else {
+          _basePl.AddRMsg(msg);
+        }
+      }
+      catch(Exception ex) {
+        Log.Warning("{0} - {1}", msg, ex);
+      }
+    }
     /// <summary>Subscribe topics</summary>
     /// <param name="args">
     /// REQUEST:  [4, msgId, path, mask], mask: 1 - data, 2 - children
     /// RESPONSE: [5, msgId, [topics]], topic -  array of [path, flags [, state, object]], flags: 1 - present, 16 - hat children
     /// </param>
-    public void Subscribe(DeskMessage msg) {
+    private void Subscribe(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || !msg[3].IsNumber) {
         Log.Warning("Syntax error: {0}", msg);
         return;

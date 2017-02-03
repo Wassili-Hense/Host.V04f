@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.ObjectModel;
 
 namespace X13.Data {
-  internal class DTopic {
+  public class DTopic {
     private static char[] FIELDS_SEPARATOR = new char[] { '.' };
     private Client _client;
 
@@ -25,7 +25,7 @@ namespace X13.Data {
       this.name = name;
       this.path = this.parent == _client.root ? ("/" + name) : (this.parent.path + "/" + name);
     }
-    public DTopic(Client cl) {
+    internal DTopic(Client cl) {
       _client = cl;
       this.name = _client.ToString();
       this.path = "/";
@@ -39,10 +39,9 @@ namespace X13.Data {
     public JSC.JSValue type { get { return _meta; } }  // TODO: rename
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
-
     public Task<DTopic> CreateAsync(string name, string typeName, JSC.JSValue value) {
       var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), typeName, value.Defined ? value : null);
-      App.Workspace.AddMsg(req);
+      App.PostMsg(req);
       return req.Task;
     }
     public Task<DTopic> GetAsync(string p) {
@@ -56,7 +55,7 @@ namespace X13.Data {
         p = this == _client.root ? ("/" + p) : (this.path + "/" + p);
       }
       var req = new TopicReq(ts, p);
-      App.Workspace.AddMsg(req);
+      App.PostMsg(req);
       return req.Task;
 
     }
@@ -64,6 +63,9 @@ namespace X13.Data {
       throw new NotImplementedException();
     }
     public void Move(DTopic dTopic, string name) {
+      throw new NotImplementedException();
+    }
+    public void Delete() {
       throw new NotImplementedException();
     }
 
@@ -139,6 +141,9 @@ namespace X13.Data {
       }
     }
 
+    public override string ToString() {
+      return this.fullPath;
+    }
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
@@ -207,7 +212,7 @@ namespace X13.Data {
           return;
         }
         _cur = next;
-        ws.AddMsg(this);
+        App.PostMsg(this);
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
@@ -245,10 +250,15 @@ namespace X13.Data {
                 next.MetaPublished(cb[3]);
               }
             }
+            //Log.Debug("Resp({0}, {1})", next.path, (int)cb.length);
           }
         } else {
           _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
         }
+      }
+
+      public override string ToString() {
+        return "TopicReq(" + _cur.path + ")";
       }
     }
     public enum Art {
@@ -258,9 +268,6 @@ namespace X13.Data {
       RemoveChild,
     }
 
-    internal void Delete() {
-      throw new NotImplementedException();
-    }
 
 
 
