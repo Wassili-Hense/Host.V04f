@@ -16,23 +16,23 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.UI {
   internal class InTopic : InBase, IDisposable {
     #region default children
-    private static JSC.JSObject DEFS_Bool;
-    private static JSC.JSObject DEFS_Double;
-    private static JSC.JSObject DEFS_String;
-    private static JSC.JSObject DEFS_Date;
-    static InTopic() {
-      DEFS_Bool = JSC.JSObject.CreateObject();
-      DEFS_Bool["type"] = "Boolean";
+    //private static JSC.JSObject DEFS_Bool;
+    //private static JSC.JSObject DEFS_Double;
+    //private static JSC.JSObject DEFS_String;
+    //private static JSC.JSObject DEFS_Date;
+    //static InTopic() {
+    //  DEFS_Bool = JSC.JSObject.CreateObject();
+    //  DEFS_Bool["type"] = "Boolean";
 
-      DEFS_Double = JSC.JSObject.CreateObject();
-      DEFS_Double["type"] = "Double";
+    //  DEFS_Double = JSC.JSObject.CreateObject();
+    //  DEFS_Double["type"] = "Double";
 
-      DEFS_String = JSC.JSObject.CreateObject();
-      DEFS_String["type"] = "String";
+    //  DEFS_String = JSC.JSObject.CreateObject();
+    //  DEFS_String["type"] = "String";
 
-      DEFS_Date = JSC.JSObject.CreateObject();
-      DEFS_Date["type"] = "Date";
-    }
+    //  DEFS_Date = JSC.JSObject.CreateObject();
+    //  DEFS_Date["type"] = "Date";
+    //}
     #endregion default children
 
     private InTopic _parent;
@@ -237,19 +237,19 @@ namespace X13.UI {
           }
           ma.Items.Add(mi);
         }
-      } else {
-        mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "Double",  Tag = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "String", Tag = InTopic.DEFS_String, Icon = new Image() { Source = App.GetIcon("String") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "Date", Tag = InTopic.DEFS_Date, Icon = new Image() { Source = App.GetIcon("Date") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
+      //} else {
+      //  mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
+      //  mi.Click += miAdd_Click;
+      //  ma.Items.Add(mi);
+      //  mi = new MenuItem() { Header = "Double",  Tag = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } };
+      //  mi.Click += miAdd_Click;
+      //  ma.Items.Add(mi);
+      //  mi = new MenuItem() { Header = "String", Tag = InTopic.DEFS_String, Icon = new Image() { Source = App.GetIcon("String") } };
+      //  mi.Click += miAdd_Click;
+      //  ma.Items.Add(mi);
+      //  mi = new MenuItem() { Header = "Date", Tag = InTopic.DEFS_Date, Icon = new Image() { Source = App.GetIcon("Date") } };
+      //  mi.Click += miAdd_Click;
+      //  ma.Items.Add(mi);
       }
       if(ma.HasItems) {
         l.Add(ma);

@@ -23,10 +23,11 @@ namespace X13.UI {
       _data = data;
       _parent = null;
       _collFunc = collFunc;
-      name = meta?"object":"value";
+      name = meta?"manifest":"state";
       _path = string.Empty;
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
+      base.IsGroupHeader = meta;
       levelPadding = 5;
       _items = new List<InBase>();
       _value = meta?_data.type:_data.value;
@@ -45,6 +46,7 @@ namespace X13.UI {
       _items = new List<InBase>();
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
+      base.IsGroupHeader = false;
       levelPadding = _parent.levelPadding + 7;
       _value = value;
       UpdateType(type);
@@ -78,11 +80,6 @@ namespace X13.UI {
       //    }
       //  }
       //}
-      bool gh = _parent == null && editor is veDefault;
-      if(gh != IsGroupHeader) {
-        IsGroupHeader = gh;
-        PropertyChangedReise("IsGroupHeader");
-      }
     }
     private void UpdateData(JSC.JSValue val) {
       _value = val;

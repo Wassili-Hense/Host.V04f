@@ -8,7 +8,7 @@
              xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
-             FontFamily="Consolas" FontSize="12">
+             TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Arial" FontSize="14">
   <Grid Margin="0">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/>
