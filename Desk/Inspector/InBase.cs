@@ -16,8 +16,8 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.UI {
   public abstract class InBase : NPC_UI, IComparable<InBase> {
     protected bool _isVisible;
-    protected JSC.JSValue _type;
-    protected string _view;
+    protected JSC.JSValue _manifest;
+    protected string _editorName;
     protected bool _isExpanded;
     protected List<InBase> _items;
     protected Action<InBase, bool> _collFunc;
@@ -78,10 +78,10 @@ namespace X13.UI {
       }
     }
 
-    protected virtual void UpdateType(JSC.JSValue type) {
-      this._type = type;
+    protected virtual void UpdateType(JSC.JSValue manifest) {
+      this._manifest = manifest;
 
-      //string nv = null;
+      string nv = null;
       //BitmapSource ni = null;
 
       //if(_type != null && _type.Value != null) {
@@ -94,9 +94,9 @@ namespace X13.UI {
       //    ni = App.GetIcon(iv.Value as string);
       //  }
       //}
-      //if(nv == null) {
-      //  nv = value.ValueType.ToString();
-      //}
+      if(nv == null) {
+        nv = value.ValueType.ToString();
+      }
       //if(ni == null) {
       //  ni = App.GetIcon(nv);
       //}
@@ -107,12 +107,12 @@ namespace X13.UI {
       //  icon = ni;
       //  PropertyChangedReise("icon");
       //}
-      //if(nv != _view) {
-      //  _view = nv;
-      //  editor = InspectorForm.GetEdititor(_view, this, _type);
-      //  PropertyChangedReise("editor");
-      //}
-      //this.editor.TypeChanged(_type);
+      if(nv != _editorName) {
+        _editorName = nv;
+        editor = InspectorForm.GetEdititor(_editorName, this, _manifest);
+        PropertyChangedReise("editor");
+      }
+      this.editor.TypeChanged(_manifest);
     }
     public void Deleted() {
       if(_isVisible) {

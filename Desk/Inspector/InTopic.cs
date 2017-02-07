@@ -224,7 +224,7 @@ namespace X13.UI {
       JSC.JSValue f, tmp1;
       MenuItem mi;
       MenuItem ma = new MenuItem() { Header = "Add" };
-      if(_type != null && (f = _type["Children"]).ValueType == JSC.JSValueType.Object) {
+      if(_manifest != null && (f = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
           // TODO: check resources
           if(_items.Any(z => (tmp1 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == tmp1.Value as string)) {
@@ -262,7 +262,7 @@ namespace X13.UI {
         l.Add(new Separator());
       }
       mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = !_root && (_type == null || (f = _type["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      mi.IsEnabled = !_root && (_manifest == null || (f = _manifest["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
       mi.Click += miDelete_Click;
       l.Add(mi);
       if(!_root) {

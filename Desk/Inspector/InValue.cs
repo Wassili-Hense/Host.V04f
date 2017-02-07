@@ -1,16 +1,16 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using JSL = NiL.JS.BaseLibrary;
-using JSC = NiL.JS.Core;
-using System.Collections.ObjectModel;
-using X13.Data;
-using System.Windows.Controls;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using X13.Data;
+using JSC = NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.UI {
   internal class InValue : InBase, IDisposable {
@@ -18,7 +18,6 @@ namespace X13.UI {
     private InValue _parent;
     private JSC.JSValue _value;
     private string _path;
-    private bool _isManifest;
 
     public InValue(DTopic data, bool isManifest, Action<InBase, bool> collFunc) {
       _data = data;
@@ -28,8 +27,7 @@ namespace X13.UI {
       _path = string.Empty;
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
-      _isManifest = isManifest;
-      base.IsGroupHeader = isManifest;
+      base.IsGroupHeader = true;
       levelPadding = 5;
       _items = new List<InBase>();
       _value = isManifest?_data.type:_data.value;
@@ -70,18 +68,18 @@ namespace X13.UI {
     }
     protected override void UpdateType(JSC.JSValue type) {
       base.UpdateType(type);
-      //if(_type != null && _type.ValueType==JSC.JSValueType.Object && !_type.IsNull) {
-      //  var pr = _type["Properties"] as JSC.JSValue;
-      //  if(pr != null) {
-      //    InValue vc;
-      //    foreach(var kv in pr) {
-      //      vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
-      //      if(vc != null) {
-      //        vc.UpdateType(kv.Value);
-      //      }
-      //    }
-      //  }
-      //}
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
+        var pr = _manifest["Fields"] as JSC.JSValue;
+        if(pr != null) {
+          InValue vc;
+          foreach(var kv in pr) {
+            vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
+            if(vc != null) {
+              vc.UpdateType(kv.Value);
+            }
+          }
+        }
+      }
     }
     private void UpdateData(JSC.JSValue val) {
       _value = val;
@@ -101,7 +99,7 @@ namespace X13.UI {
             JSC.JSValue cs;
             {
               JSC.JSValue pr;
-              if(_type == null || (pr = _type["Properties"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object) {
+              if(_manifest == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object) {
                 cs = null;
               }
             }
@@ -123,7 +121,7 @@ namespace X13.UI {
         }
       }
       if(editor == null) {
-        editor = InspectorForm.GetEdititor(_view, this, _type);
+        editor = InspectorForm.GetEdititor(_editorName, this, _manifest);
         PropertyChangedReise("editor");
       } else {
         editor.ValueChanged(_value);
@@ -171,7 +169,7 @@ namespace X13.UI {
       var l = new List<Control>();
       JSC.JSValue f;
       MenuItem mi;
-      if(_type != null && (f = _type["Properties"]).ValueType == JSC.JSValueType.Object) {
+      if(_manifest != null && (f = _manifest["Properties"]).ValueType == JSC.JSValueType.Object) {
         MenuItem ma = new MenuItem() { Header = "Add" };
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
           if(_items.Any(z => z.name == kv.Key)) {
@@ -191,7 +189,7 @@ namespace X13.UI {
         }
       }
       mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = _parent != null && (_type == null || (f = _type["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      mi.IsEnabled = _parent != null && (_manifest == null || (f = _manifest["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
       mi.Click += miDelete_Click;
       l.Add(mi);
       return l;

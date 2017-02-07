@@ -69,6 +69,16 @@ namespace X13.Data {
       }
       this.Send(new ClRequest(0, arr, req));
     }
+    public void Publish(string path, JSC.JSValue value, INotMsg req) {
+      int mid = Interlocked.Increment(ref _msgId);
+      var arr = new JSL.Array(4);
+      arr[0] = 6;
+      arr[1] = mid;
+      arr[2] = path;
+      arr[3] = value;
+      this.Send(new ClRequest(mid, arr, req));
+    }
+
     public void Close() {
       var sc = Interlocked.Exchange(ref _socket, null);
       if(sc != null) {

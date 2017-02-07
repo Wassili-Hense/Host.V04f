@@ -59,8 +59,10 @@ namespace X13.Data {
       return req.Task;
 
     }
-    public void SetValue(JSC.JSValue value) {
-      throw new NotImplementedException();
+    public Task<bool> SetValue(JSC.JSValue val) {
+      var ds = new TopicPublish(this, val);
+      App.PostMsg(ds);
+      return ds.Task;
     }
     public void Move(DTopic dTopic, string name) {
       throw new NotImplementedException();
@@ -261,6 +263,39 @@ namespace X13.Data {
         return "TopicReq(" + _cur.path + ")";
       }
     }
+    private class TopicPublish : INotMsg {
+      private TaskCompletionSource<bool> _tcs;
+      private DTopic _topic;
+      private JSC.JSValue _value;
+      private bool _complete;
+
+      public TopicPublish(DTopic t, JSC.JSValue value) {
+        _topic = t;
+        _value = value;
+        _tcs = new TaskCompletionSource<bool>();
+      }
+      public Task<bool> Task { get { return _tcs.Task; } }
+
+      public void Process(DWorkspace ws) {
+        if(!_complete) {
+          if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
+            _tcs.SetResult(true);
+          } else {
+            _topic._client.Publish(_topic.path, _value, this);
+          }
+        }
+      }
+      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+        if(success) {
+          _topic.ValuePublished(this._value);
+          _tcs.SetResult(true);
+        } else {
+          _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));
+        }
+        _complete = true;
+      }
+    }
+
     public enum Art {
       value,
       type,

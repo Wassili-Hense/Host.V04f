@@ -25,7 +25,7 @@ namespace X13.DeskHost {
           if(s.Length == 24 && s[4] == '-' && s[7] == '-' && s[10] == 'T' && s[13] == ':' && s[16] == ':' && s[19] == '.') {
             var a = new JSC.Arguments();
             a.Add(args[1]);
-            return new JST.Date(a).valueOf();
+            return JSC.JSValue.Marshal(new JST.Date(a));
           }
         }
       }

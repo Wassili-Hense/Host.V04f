@@ -14,7 +14,7 @@
       <BitmapImage x:Key="NullImage" UriSource="/Desk;component/Images/ty_topic.png" />
       <SolidColorBrush x:Key="SplitBrush" Color="#FFA9D4D4" />
       <DataTemplate x:Key="EditTemplate">
-        <TextBox Text="{Binding name, Mode=OneTime}" MaxLines="1" UndoLimit="10" Margin="0,1,3,0" Background="Azure" VerticalAlignment="Top" BorderThickness="0" Loaded="tbItemName_Loaded" PreviewKeyDown="tbItemName_PreviewKeyDown" LostFocus="tbItemName_LostFocus" />
+        <TextBox Text="{Binding name, Mode=OneTime}" MaxLines="1" UndoLimit="10" Margin="0,4,3,3" Background="Azure" VerticalAlignment="Top" BorderThickness="0" Loaded="tbItemName_Loaded" PreviewKeyDown="tbItemName_PreviewKeyDown" LostFocus="tbItemName_LostFocus" />
       </DataTemplate>
     </Grid.Resources>
     <Grid.RowDefinitions>
@@ -51,7 +51,7 @@
               <Setter Property="BorderBrush" Value="{DynamicResource SplitBrush}" />
             </DataTrigger>
             <Trigger Property="IsSelected" Value="True">
-              <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor25Key}}" />
+              <Setter Property="Background" Value="{DynamicResource {x:Static at:AeroColors.BaseColor31Key}}" />
             </Trigger>
           </Style.Triggers>
         </Style>
@@ -73,7 +73,7 @@
                     <ColumnDefinition Width="20"/>
                     <ColumnDefinition Width="*"/>
                   </Grid.ColumnDefinitions>
-                  <Border Grid.Column="1" BorderThickness="0,0,2,0" BorderBrush="{DynamicResource SplitBrush}" >
+                  <Border Grid.Column="1" BorderThickness="0,0,2,0" Margin="0, -1" BorderBrush="{DynamicResource SplitBrush}" >
                     <ToggleButton x:Name="Expander" ClickMode="Press" IsChecked="{Binding IsExpanded}" IsEnabled="{Binding HasChildren}" Height="16" Width="16" Focusable="False">
                     <ToggleButton.Template>
                       <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -117,7 +117,7 @@
                         <Setter Property="ContentTemplate">
                           <Setter.Value>
                             <DataTemplate>
-                              <TextBlock Text="{Binding name}" Margin="3,2,5,0" VerticalAlignment="Top" Foreground="Black" />
+                              <TextBlock Text="{Binding name}" Margin="3,5,5,3" VerticalAlignment="Top" Foreground="Black" />
                             </DataTemplate>
                           </Setter.Value>
                         </Setter>
@@ -142,7 +142,7 @@
             </GridViewColumn.Width-->
             <GridViewColumn.CellTemplate>
               <DataTemplate>
-                <ContentPresenter Margin="0,1" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
+                <ContentPresenter Margin="0,4" Content="{Binding editor}" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" />
               </DataTemplate>
             </GridViewColumn.CellTemplate>
           </GridViewColumn>

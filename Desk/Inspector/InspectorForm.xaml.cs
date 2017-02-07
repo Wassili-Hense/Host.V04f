@@ -25,19 +25,19 @@ namespace X13.UI {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
     static InspectorForm() {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
-      //_editors["Boolean"] = veSliderBool.Create;
-      //_editors["Integer"] = veInteger.Create;
-      //_editors["Double"] = veDouble.Create;
-      //_editors["String"] = veString.Create;
-      //_editors["Date"] = veDateTimePicker.Create;
+      _editors["Boolean"] = veSliderBool.Create;
+      _editors["Integer"] = veInteger.Create;
+      _editors["Double"] = veDouble.Create;
+      _editors["String"] = veString.Create;
+      _editors["Date"] = veDateTimePicker.Create;
     }
-    public static IValueEditor GetEdititor(string view, InBase owner, JSC.JSValue type) {
+    public static IValueEditor GetEdititor(string editor, InBase owner, JSC.JSValue manifest) {
       IValueEditor rez;
       Func<InBase, JSC.JSValue, IValueEditor> ct;
-      if(view!=null && _editors.TryGetValue(view, out ct) && ct != null) {
-        rez = ct(owner, type);
+      if(editor!=null && _editors.TryGetValue(editor, out ct) && ct != null) {
+        rez = ct(owner, manifest);
       } else {
-        rez = new veDefault(owner, type);
+        rez = new veDefault(owner, manifest);
       }
       return rez;
     }
@@ -49,7 +49,7 @@ namespace X13.UI {
       this._data = data;
       _valueVC = new ObservableCollection<InBase>();
       CollectionChange(new InValue(data, false, CollectionChange), true);
-      CollectionChange(new InValue(data, true, CollectionChange), true);
+      CollectionChange(new InManifest(data, CollectionChange), true);
       CollectionChange(new InTopic(data, null, CollectionChange), true);
       InitializeComponent();
       lvValue.ItemsSource = _valueVC;

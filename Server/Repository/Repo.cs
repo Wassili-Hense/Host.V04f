@@ -200,7 +200,28 @@ namespace X13.Repository {
         r["_id"] = id;
         r["p"] = new BsonValue("/");
         _objects.Insert(r);
-
+        // Tests
+        {
+          var t1 = Topic.root.Get("Test");
+          var t2 = t1.Get("A");
+          t2.SetState(true);
+          t2.saved = true;
+          t2 = t1.Get("B");
+          t2.SetState(42);
+          t2.saved = true;
+          t2 = t1.Get("C");
+          t2.SetState(3.1415926);
+          t2.saved = true;
+          t2 = t1.Get("D");
+          t2.SetState("Alpha");
+          t2.saved = true;
+          t2 = t1.Get("E");
+          t2.SetState( JSValue.Marshal(DateTime.Now) );
+          t2.saved = true;
+          t2 = t1.Get("F");
+          t2.SetState(false);
+          t2.saved = true;
+        }
       }
       foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
         Topic.I.Create(obj, _states.FindById(obj["_id"]));
