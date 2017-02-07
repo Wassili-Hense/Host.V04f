@@ -18,21 +18,23 @@ namespace X13.UI {
     private InValue _parent;
     private JSC.JSValue _value;
     private string _path;
+    private bool _isManifest;
 
-    public InValue(DTopic data, bool meta, Action<InBase, bool> collFunc) {
+    public InValue(DTopic data, bool isManifest, Action<InBase, bool> collFunc) {
       _data = data;
       _parent = null;
       _collFunc = collFunc;
-      name = meta?"manifest":"state";
+      name = isManifest?"manifest":"state";
       _path = string.Empty;
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
-      base.IsGroupHeader = meta;
+      _isManifest = isManifest;
+      base.IsGroupHeader = isManifest;
       levelPadding = 5;
       _items = new List<InBase>();
-      _value = meta?_data.type:_data.value;
+      _value = isManifest?_data.type:_data.value;
       UpdateType(_data.type);
-      UpdateData(meta ? _data.type : _data.value);
+      UpdateData(isManifest ? _data.type : _data.value);
       _isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
     }

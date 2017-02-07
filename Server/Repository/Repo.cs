@@ -35,7 +35,7 @@ namespace X13.Repository {
       int i;
       for(i = 0; i < _prOp.Count; i++) {
         if(_prOp[i].EqualsGr(cmd)) {
-          if(_prOp[i].art == Perform.Art.changed) {
+          if(_prOp[i].art == Perform.Art.changedState) {
             cmd.old_o = _prOp[i].old_o;
           }
           _prOp.RemoveAt(i);
@@ -95,8 +95,8 @@ namespace X13.Repository {
         }
         break;
 
-      case Perform.Art.changed:
-      case Perform.Art.set:
+      case Perform.Art.changedState:
+      case Perform.Art.setState:
       case Perform.Art.setField:
       case Perform.Art.changedField:
       case Perform.Art.move:
@@ -110,11 +110,11 @@ namespace X13.Repository {
       }
     }
     private void TickStep2(Perform cmd) {
-      if(cmd.art == Perform.Art.remove || (cmd.art == Perform.Art.set && !object.ReferenceEquals(cmd.src.GetValue(), cmd.o))) {
-        cmd.old_o = cmd.src.GetValue();
+      if(cmd.art == Perform.Art.remove || (cmd.art == Perform.Art.setState && !object.ReferenceEquals(cmd.src.GetState(), cmd.o))) {
+        cmd.old_o = cmd.src.GetState();
         Topic.I.SetValue(cmd.src, cmd.o as JSValue);
         if(cmd.art != Perform.Art.remove) {
-          cmd.art = Perform.Art.changed;
+          cmd.art = Perform.Art.changedState;
         }
       }
       if(cmd.art == Perform.Art.setField) {
@@ -137,7 +137,7 @@ namespace X13.Repository {
       BsonDocument obj, state;
       Topic.I.ReqData(cmd.src, out obj, out state);
       switch(cmd.art) {
-      case Perform.Art.changed:
+      case Perform.Art.changedState:
         if(state != null) {
           _states.Upsert(state);
         }
@@ -147,7 +147,7 @@ namespace X13.Repository {
         _objects.Update(obj);
         if((cmd.o as string) == "s") {
           if(cmd.src.saved) {
-            Topic.I.SetValue(cmd.src, cmd.src.GetValue());
+            Topic.I.SetValue(cmd.src, cmd.src.GetState());
             if(state != null) {
               _states.Upsert(state);
             }
@@ -194,12 +194,17 @@ namespace X13.Repository {
       _states = _db.GetCollection<BsonDocument>("states");
       if(!exist) {
         _objects.EnsureIndex("p", true);
-      } else {
-        foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
-          Topic.I.Create(obj, _states.FindById(obj["_id"]));
-        }
-      }
+        // Fill root
+        BsonDocument r = new BsonDocument();
+        var id = ObjectId.NewObjectId();
+        r["_id"] = id;
+        r["p"] = new BsonValue("/");
+        _objects.Insert(r);
 
+      }
+      foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
+        Topic.I.Create(obj, _states.FindById(obj["_id"]));
+      }
     }
 
     public void Tick() {
@@ -223,7 +228,7 @@ namespace X13.Repository {
 
       for(_pfPos = 0; _pfPos < _prOp.Count; _pfPos++) {
         cmd = _prOp[_pfPos];
-        if(cmd.art != Perform.Art.set && cmd.art!=Perform.Art.setField) {
+        if(cmd.art != Perform.Art.setState && cmd.art!=Perform.Art.setField) {
           Topic.I.Publish(cmd);
         }
       }

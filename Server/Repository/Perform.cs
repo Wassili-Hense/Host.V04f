@@ -18,7 +18,7 @@ namespace X13.Repository {
     }
     internal static Perform Create(Topic src, JSValue val, Topic prim) {
       Perform r;
-      r = new Perform(Art.set, src, prim);
+      r = new Perform(Art.setState, src, prim);
       r.o = val;
       r.i = 0;
       return r;
@@ -49,7 +49,7 @@ namespace X13.Repository {
       this.layer = -1;  // TODO: layer
     }
     internal bool EqualsGr(Perform other) {
-      return (this.art == Art.set || this.art == Art.changed)
+      return (this.art == Art.setState || this.art == Art.changedState)
         && other != null
         && this.src == other.src
         && (((int)this.art) >> 2) == (((int)other.art) >> 2);
@@ -66,7 +66,7 @@ namespace X13.Repository {
       if(this.layer != other.layer) {
         return this.layer > other.layer ? 1 : -1;
       }
-      if(this.src == other.src && (this.art == Art.set || this.art == Art.changed)) {
+      if(this.src == other.src && (this.art == Art.setState || this.art == Art.changedState)) {
         return 0;
       }
       return -1;  // сохраняется порядок поступления
@@ -82,8 +82,8 @@ namespace X13.Repository {
       unsubscribe = 8,
       setField = 12,
       changedField = 14,
-      set = 16,
-      changed = 18,
+      setState = 16,
+      changedState = 18,
       remove = 20,
       subAck = 24,
     }

@@ -45,9 +45,9 @@ namespace SrvTest {
     public void T03() {
       Topic a = Topic.root.Get("A");
       var val = JSValue.Marshal(42);
-      a.SetValue(val);
+      a.SetState(val);
       _repo.Tick();
-      Assert.AreEqual(val, a.GetValue());
+      Assert.AreEqual(val, a.GetState());
     }
     [TestMethod]
     public void T04() {
@@ -87,9 +87,9 @@ namespace SrvTest {
     public void T07() {
       Topic a = Topic.root.Get("A");
       var val = JSValue.Marshal(new DateTime(2017, 1, 16, 10, 48, 15, 19, DateTimeKind.Local));
-      a.SetValue(val);
+      a.SetState(val);
       _repo.Tick();
-      Assert.AreEqual(val, a.GetValue());
+      Assert.AreEqual(val, a.GetState());
     }
 
     [TestMethod]
@@ -102,14 +102,14 @@ namespace SrvTest {
       Topic a = Topic.root.Get("A");
       var val = JSValue.Marshal(43);
       a.saved = true;
-      a.SetValue(val);
+      a.SetState(val);
 
       Topic b = Topic.root.Get("B");
-      b.SetValue(JSValue.Marshal(75));
+      b.SetState(JSValue.Marshal(75));
 
       Topic c = Topic.root.Get("C");
       c.saved = true;
-      c.SetValue(JSValue.Marshal(12.01));
+      c.SetState(JSValue.Marshal(12.01));
 
       _repo.Tick();
 
@@ -127,15 +127,15 @@ namespace SrvTest {
       _repo.Start();
       Assert.IsTrue(Topic.root.Exist("A", out a));
       Assert.IsTrue(a.saved);
-      Assert.AreEqual(43, (int)a.GetValue());
+      Assert.AreEqual(43, (int)a.GetState());
 
       Assert.IsTrue(Topic.root.Exist("B", out b));
       Assert.IsFalse(b.saved);
-      Assert.AreEqual(JSValue.Undefined, b.GetValue());
+      Assert.AreEqual(JSValue.Undefined, b.GetState());
 
       Assert.IsTrue(Topic.root.Exist("C", out c));
       Assert.IsFalse(c.saved);
-      Assert.AreEqual(JSValue.Undefined, c.GetValue());
+      Assert.AreEqual(JSValue.Undefined, c.GetState());
       _repo.Stop();
     }
 
@@ -215,12 +215,12 @@ namespace SrvTest {
       cmds.Clear();
 
       var t1 = t0.Get("ch_a");
-      t1.SetValue(new JST.String("Hi"));
+      t1.SetState(new JST.String("Hi"));
       _repo.Tick();
       Assert.AreEqual(0, cmds.Count);
 
       s1.Dispose();
-      t0.SetValue(new JST.Number(2.98));
+      t0.SetState(new JST.Number(2.98));
       _repo.Tick();
       Assert.AreEqual(0, cmds.Count);
     }
@@ -240,10 +240,10 @@ namespace SrvTest {
       Assert.AreEqual(t0, cmds[1].src);
       cmds.Clear();
 
-      t1.SetValue(new JST.String("Hi"));
+      t1.SetState(new JST.String("Hi"));
       _repo.Tick();
       Assert.AreEqual(1, cmds.Count);
-      Assert.AreEqual(Perform.Art.changed, cmds[0].art);
+      Assert.AreEqual(Perform.Art.changedState, cmds[0].art);
       Assert.AreEqual(t1, cmds[0].src);
       cmds.Clear();
 
@@ -274,7 +274,7 @@ namespace SrvTest {
       Assert.AreEqual(t0, cmds[1].src, "T15.05");
       cmds.Clear();
 
-      t0.SetValue(new JST.String("Gamma"));
+      t0.SetState(new JST.String("Gamma"));
       _repo.Tick();
       Assert.AreEqual(0, cmds.Count, "T15.06");
       cmds.Clear();
@@ -314,10 +314,10 @@ namespace SrvTest {
       Assert.AreEqual(t0, cmds[3].src, "T16.18");
       cmds.Clear();
 
-      t1.SetValue(new JST.String("Omega"));
+      t1.SetState(new JST.String("Omega"));
       _repo.Tick();
       Assert.AreEqual(1, cmds.Count, "T16.08");
-      Assert.AreEqual(Perform.Art.changed, cmds[0].art, "T16.09");
+      Assert.AreEqual(Perform.Art.changedState, cmds[0].art, "T16.09");
       Assert.AreEqual(t1, cmds[0].src, "T16.10");
       cmds.Clear();
 
@@ -390,7 +390,7 @@ namespace SrvTest {
       cmds1.Clear();
       cmds2.Clear();
 
-      b.SetValue(1);
+      b.SetState(1);
       _repo.Tick();
       Assert.AreEqual(1, cmds1.Count, "T18.03");
       Assert.AreEqual(1, cmds2.Count, "T18.04");
@@ -405,7 +405,7 @@ namespace SrvTest {
       cmds1.Clear();
       cmds2.Clear();
 
-      c.SetValue("Kappa");
+      c.SetState("Kappa");
       _repo.Tick();
       Assert.AreEqual(1, cmds1.Count, "T18.08");
       Assert.AreEqual(0, cmds2.Count, "T18.09");

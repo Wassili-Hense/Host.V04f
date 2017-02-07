@@ -20,10 +20,10 @@ namespace X13.Repository {
     private ConcurrentDictionary<string, Topic> _children;
     private List<SubRec> _subRecords;
 
-    private BsonDocument _state;
-    private BsonDocument _meta;
-    private JSValue _value;
-    private JSValue _object;
+    private BsonDocument _ps_state;
+    private BsonDocument _ps_manifest;
+    private JSValue _state;
+    private JSValue _manifest;
     private bool _saved;
 
     #endregion Member variables
@@ -31,7 +31,7 @@ namespace X13.Repository {
     private Topic(Topic parent, string name, bool fill) {
       _name = name;
       _parent = parent;
-      _value = JSValue.Undefined;
+      _state = JSValue.Undefined;
       disposed = false;
       if(parent == null) {
         _path = "/";
@@ -41,11 +41,11 @@ namespace X13.Repository {
         _path = parent._path + "/" + name;
       }
       if(fill) {
-        _meta = new BsonDocument();
+        _ps_manifest = new BsonDocument();
         var id = ObjectId.NewObjectId();
-        _meta["_id"] = id;
-        _meta["p"] = new BsonValue(_path);
-        _object = I.Bs2Js(_meta);
+        _ps_manifest["_id"] = id;
+        _ps_manifest["p"] = new BsonValue(_path);
+        _manifest = I.Bs2Js(_ps_manifest);
       }
     }
 
@@ -67,7 +67,7 @@ namespace X13.Repository {
           _saved = value;
           Perform c;
           if(!_saved) {
-            _state = null;
+            _ps_state = null;
           }
           c = Perform.Create(this, "s", _saved ? new JST.Boolean(true) : null, null);
           _repo.DoCmd(c, false);
@@ -154,23 +154,23 @@ namespace X13.Repository {
       return sb;
     }
 
-    public JSValue GetValue() {
-      return _value;
+    public JSValue GetState() {
+      return _state;
     }
-    public void SetValue(JSValue val, Topic prim = null) {
+    public void SetState(JSValue val, Topic prim = null) {
       var c = Perform.Create(this, val, prim);
       _repo.DoCmd(c, false);
     }
 
     public JSValue GetField(string fPath) {
-      if(_object == null) {
+      if(_manifest == null) {
         return JSValue.Undefined;
       }
       if(string.IsNullOrEmpty(fPath)) {
-        return _object;
+        return _manifest;
       }
       var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
-      JSValue val=_object;
+      JSValue val=_manifest;
       for(int i = 0; i < ps.Length; i++) {
         if(val.ValueType != JSValueType.Object) {
           return JSValue.Undefined;
@@ -251,14 +251,14 @@ namespace X13.Repository {
 
       public static void Create(BsonDocument obj, BsonDocument state) {
         Topic t = I.Get(Topic.root, obj["p"].AsString, true, null, false, false);
-        t._meta = obj;
-        t._object = Bs2Js(obj);
+        t._ps_manifest = obj;
+        t._manifest = Bs2Js(obj);
         t._saved = obj["s"].AsBoolean;
         if(state != null) {
           if(t._saved) {
-            t._state = state;
+            t._ps_state = state;
           }
-          t._value = Bs2Js(state["v"]);
+          t._state = Bs2Js(state["v"]);
         }
       }
 
@@ -315,18 +315,18 @@ namespace X13.Repository {
         return home;
       }
       public static void SetValue(Topic t, JSValue val) {
-        t._value = val;
+        t._state = val;
         if(t._saved) {
-          if(t._state == null) {
-            t._state = new BsonDocument();
-            t._state["_id"] = t._meta["_id"];
+          if(t._ps_state == null) {
+            t._ps_state = new BsonDocument();
+            t._ps_state["_id"] = t._ps_manifest["_id"];
           }
-          t._state["v"] = Js2Bs(val);
+          t._ps_state["v"] = Js2Bs(val);
         }
       }
       public static void SetField(Topic t, string fPath, JSValue val) {
         var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
-        JSValue p = t._object, c;
+        JSValue p = t._manifest, c;
         for(int i = 0; i < ps.Length-1; i++) {
           c = p.GetProperty(ps[i]);
           if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
@@ -342,7 +342,7 @@ namespace X13.Repository {
         } else {
           p[ps[ps.Length - 1]] = val;
         }
-        t._meta.Set(fPath, Js2Bs(val));
+        t._ps_manifest.Set(fPath, Js2Bs(val));
       }
 
       public static void UpdatePath(Topic t) {
@@ -363,8 +363,8 @@ namespace X13.Repository {
         }
       }
       public static void ReqData(Topic t, out BsonDocument obj, out BsonDocument state) {
-        obj = t._meta;
-        state = t._state;
+        obj = t._ps_manifest;
+        state = t._ps_state;
       }
       public static void Publish(Perform cmd) {
         SubRec sb;
@@ -383,7 +383,7 @@ namespace X13.Repository {
             for(int i = 0; i < t._subRecords.Count; i++) {
               sb = t._subRecords[i];
               if(((sb.mask & SubRec.SubMask.OnceOrAll) != SubRec.SubMask.None || ((sb.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren && sb.setTopic == t.parent))
-                  && (cmd.art!=Perform.Art.changed || (sb.mask & SubRec.SubMask.Value)==SubRec.SubMask.Value) 
+                  && (cmd.art!=Perform.Art.changedState || (sb.mask & SubRec.SubMask.Value)==SubRec.SubMask.Value) 
                   && (cmd.art!=Perform.Art.changedField || ((sb.mask & SubRec.SubMask.Field)==SubRec.SubMask.Field && (tmp_s=cmd.o as string)!=null && tmp_s.StartsWith(sb.prefix))) ) {
                 try {
                   sb.func(cmd);
@@ -466,7 +466,6 @@ namespace X13.Repository {
         return fl;
       }
 
-
       public static BsonValue Js2Bs(JSValue val) {
         if(val == null) {
           return BsonValue.Null;
@@ -485,8 +484,13 @@ namespace X13.Repository {
           return new BsonValue((double)val);
         case JSValueType.Integer:
           return new BsonValue((int)val);
-        case JSValueType.String:
-          return new BsonValue(val.ToString());
+        case JSValueType.String:{
+          var s = val.Value as string;
+          if(s != null && s.StartsWith("¤ID")) {
+            return new ObjectId(s.Substring(3));
+          }
+          return new BsonValue(s);
+        }
         case JSValueType.Object:
           if(val.IsNull) {
             return BsonValue.Null;
@@ -522,7 +526,7 @@ namespace X13.Repository {
         }
         switch(val.Type) {
         case BsonType.ObjectId:
-          return new JSObjectId(val.AsObjectId);
+          return new JST.String("¤ID"+ val.AsObjectId.ToString() );
         case BsonType.Array: {
             var arr = val.AsArray;
             var r = new JST.Array(arr.Count);

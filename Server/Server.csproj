@@ -67,7 +67,6 @@
     <Compile Include="DeskHost\DeskHostPl.cs" />
     <Compile Include="DeskHost\DeskSocket.cs" />
     <Compile Include="IPlugModul.cs" />
-    <Compile Include="Repository\JSObjectId.cs" />
     <Compile Include="Repository\Perform.cs" />
     <Compile Include="Repository\Repo.cs" />
     <Compile Include="Repository\SubRec.cs" />

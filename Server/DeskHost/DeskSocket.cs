@@ -20,11 +20,13 @@ namespace X13.DeskHost {
     private static JSC.JSValue ConvertDate(JSC.JSValue thisBind, JSC.Arguments args) {
       if(args.Length == 2 && args[1].ValueType == JSC.JSValueType.String) {
         // 2015-09-16T14:15:18.994Z
-        var s = args[1].ToString();
-        if(s != null && s.Length == 24 && s[4] == '-' && s[7] == '-' && s[10] == 'T' && s[13] == ':' && s[16] == ':' && s[19] == '.') {
-          var a = new JSC.Arguments();
-          a.Add(args[1]);
-          return new JST.Date(a).valueOf();
+        var s = args[1].Value as string;
+        if(s != null) {
+          if(s.Length == 24 && s[4] == '-' && s[7] == '-' && s[10] == 'T' && s[13] == ':' && s[16] == ':' && s[19] == '.') {
+            var a = new JSC.Arguments();
+            a.Add(args[1]);
+            return new JST.Date(a).valueOf();
+          }
         }
       }
       return args[1];

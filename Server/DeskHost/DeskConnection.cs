@@ -30,7 +30,7 @@ namespace X13.DeskHost {
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
       _owner = Topic.root.Get("/system/Desk").Get(base.ToString());
-      _owner.SetValue(true, _owner);
+      _owner.SetState(true, _owner);
     }
     private void RcvMsg(DeskMessage msg) {
       if(msg.Count == 0) {
@@ -96,7 +96,7 @@ namespace X13.DeskHost {
           JSL.Array r;
           if((req & 1) == 1 && t == parent) {
             r = new JSL.Array(4);
-            r[2] = t.GetValue();
+            r[2] = t.GetState();
             r[3] = t.GetField(null);
           } else {
             r = new JSL.Array(2);
