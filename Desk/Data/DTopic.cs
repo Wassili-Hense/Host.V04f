@@ -39,8 +39,8 @@ namespace X13.Data {
     public JSC.JSValue type { get { return _meta; } }  // TODO: rename
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
-    public Task<DTopic> CreateAsync(string name, string typeName, JSC.JSValue value) {
-      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), typeName, value.Defined ? value : null);
+    public Task<DTopic> CreateAsync(string name, JSC.JSValue value) {
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), value.Defined ? value : null);
       App.PostMsg(req);
       return req.Task;
     }
@@ -150,7 +150,6 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
-      private string _typeName;
       private JSC.JSValue _value;
       private TaskCompletionSource<DTopic> _tcs;
 
@@ -160,11 +159,10 @@ namespace X13.Data {
         this._create = false;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
-      public TopicReq(DTopic cur, string path, string typeName, JSC.JSValue value) {
+      public TopicReq(DTopic cur, string path, JSC.JSValue value) {
         this._cur = cur;
         this._path = path;
         this._create = true;
-        _typeName = typeName;
         _value = value;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
@@ -204,9 +202,9 @@ namespace X13.Data {
           if(_create) {
             _create = false;
             if(_path.Length <= idx2) {
-              _cur._client.Create(_path.Substring(0, idx2), _typeName, _value, this);
+              _cur._client.Create(_path.Substring(0, idx2), _value, this);
             } else {
-              _cur._client.Create(_path.Substring(0, idx2), null, null, this);
+              _cur._client.Create(_path.Substring(0, idx2), null, this);
             }
           } else {
             _tcs.SetResult(null);
@@ -281,7 +279,7 @@ namespace X13.Data {
           if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
             _tcs.SetResult(true);
           } else {
-            _topic._client.Publish(_topic.path, _value, this);
+            _topic._client.SetState(_topic.path, _value, this);
           }
         }
       }

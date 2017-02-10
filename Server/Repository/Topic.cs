@@ -332,7 +332,7 @@ namespace X13.Repository {
           if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
             c = JSObject.CreateObject();
             p[ps[i]]=c;
-          } else if(val.ValueType != JSValueType.Object) {
+          } else if(c.ValueType != JSValueType.Object) {
             return;
           }
           p = c;

@@ -102,7 +102,7 @@ namespace X13.UI {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
           //base.name = name;
-          var td = _parent._owner.CreateAsync(name, _cStruct["type"].Value as string, _cStruct["default"]);
+          var td = _parent._owner.CreateAsync(name, _cStruct["default"]);
           //td.ContinueWith(SetNameComplete);
         }
         _parent._items.Remove(this);
@@ -283,7 +283,7 @@ namespace X13.UI {
       if(decl != null) {
         var mName = decl["name"];
         if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
-          _owner.CreateAsync(mName.Value as string, decl["type"].Value as string, decl["default"]);
+          _owner.CreateAsync(mName.Value as string, decl["default"]);
         } else {
           if(_items == null) {
             lock(this) {

@@ -58,18 +58,19 @@ namespace X13.Data {
       arr[3] = mask;
       this.Send(new ClRequest(mid, arr, req));
     }
-    public void Create(string path, string typeName, JSC.JSValue value, INotMsg req) {
+    public void Create(string path, JSC.JSValue value, INotMsg req) {
+      int mid = Interlocked.Increment(ref _msgId);
       JSL.Array arr;
       arr = new JSL.Array(value == null ? 3 : 4);
       arr[0] = 8;
-      arr[1] = path;
-      arr[2] = typeName;
+      arr[1] = mid;
+      arr[2] = path;
       if(value != null) {
         arr[3] = value;
       }
-      this.Send(new ClRequest(0, arr, req));
+      this.Send(new ClRequest(mid, arr, req));
     }
-    public void Publish(string path, JSC.JSValue value, INotMsg req) {
+    public void SetState(string path, JSC.JSValue value, INotMsg req) {
       int mid = Interlocked.Increment(ref _msgId);
       var arr = new JSL.Array(4);
       arr[0] = 6;
@@ -159,6 +160,33 @@ namespace X13.Data {
           App.PostMsg(req);
         }
         break;
+      case 7:  // [SetStateAck, msgIs, success<bool>, [oldValue] ]
+        msgId = (int)msg[1];
+        lock(_reqs) {
+          req=_reqs.FirstOrDefault(z => z.msgId == msgId);
+          if(req != null) {
+            _reqs.Remove(req);
+          }
+        }
+        if(req != null) {
+          req.Response(null, (bool)msg[2], msg.Count>3?msg[3]:null);
+          App.PostMsg(req);
+        }
+        break;
+      case 9:  // [CreateAck, msgId, success]
+        msgId = (int)msg[1];
+        lock(_reqs) {
+          req=_reqs.FirstOrDefault(z => z.msgId == msgId);
+          if(req != null) {
+            _reqs.Remove(req);
+          }
+        }
+        if(req != null) {
+          req.Response(null, (bool)msg[2], null);
+          App.PostMsg(req);
+        }
+        break;
+
       }
     }
 

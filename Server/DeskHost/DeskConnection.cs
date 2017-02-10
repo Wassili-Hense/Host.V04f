@@ -29,8 +29,20 @@ namespace X13.DeskHost {
       arr[0] = 1;
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
-      _owner = Topic.root.Get("/system/Desk").Get(base.ToString());
-      _owner.SetState(true, _owner);
+      _owner = Topic.root.Get("/$SYS/Desk").Get(base.ToString());
+      
+      _owner.SetField("Desk.Address", EndPoint.Address.ToString(), _owner);
+      _owner.SetField("Desk.Port", EndPoint.Port, _owner);
+      System.Net.Dns.BeginGetHostEntry(EndPoint.Address, EndDnsReq, null);
+    }
+    private void EndDnsReq(IAsyncResult ar) {
+      try {
+        var h = Dns.EndGetHostEntry(ar);
+        _owner.SetState(h.HostName, _owner);
+      }
+      catch(SocketException) {
+        _owner.SetState(EndPoint.ToString(), _owner);
+      }
     }
     private void RcvMsg(DeskMessage msg) {
       if(msg.Count == 0) {
@@ -42,10 +54,16 @@ namespace X13.DeskHost {
           case 4:
             this.Subscribe(msg);
             break;
+          case 6:
+            this.SetState(msg);
+            break;
+          case 8:
+            this.Create(msg);
+            break;
           case 99: {
               var o = Interlocked.Exchange(ref _owner, null);
               if(o != null) {
-                Log.Warning("{0} connection dropped", o.path);
+                Log.Info("{0} connection dropped", o.path);
                 o.Remove(o);
               }
             }
@@ -69,11 +87,6 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || !msg[3].IsNumber) {
-        Log.Warning("Syntax error: {0}", msg);
-        return;
-      }
-
       string path = msg[2].ToString();
       int req = (int)msg[3];
       Topic parent;
@@ -109,6 +122,38 @@ namespace X13.DeskHost {
       } else {
         msg.Response(5, msg[1], null);
       }
+    }
+    /// <summary>set topics state</summary>
+    /// <param name="args">
+    /// REQUEST: [6, msgId, path, value]
+    /// RESPONSE: [7, msgId, success, [oldvalue] ]
+    /// </param> 
+    private void SetState(DeskMessage msg) {
+      if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
+        Log.Warning("Syntax error: {0}", msg);
+        return;
+      }
+      string path = msg[2].ToString();
+
+      Topic t = Topic.root.Get(path, false, _owner);
+      t.SetState(msg[3], _owner);
+      msg.Response(7, msg[1], true);
+    }
+    /// <summary>Create topic</summary>
+    /// <param name="args">
+    /// REQUEST: [8, msgId, path[, value]]
+    /// RESPONSE: [9, msgId, success]
+    /// </param>
+    private void Create(DeskMessage msg) {
+      if(msg.Count < 3 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
+        Log.Warning("Syntax error: {0}", msg);
+        return;
+      }
+      string path = msg[2].ToString();
+
+      Topic t = Topic.root.Get(path, true, _owner);
+      t.SetState(msg[3], _owner);
+      msg.Response(9, msg[1], true);
     }
 
     private void SubscriptionChanged(Perform p) {
