@@ -49,34 +49,15 @@ namespace X13.Data {
       }
       return true;
     }
-    public void Request(string path, int mask, INotMsg req) {
+
+    public void SendReq(int cmd, INotMsg req, params JSC.JSValue[] arg) {
       int mid = Interlocked.Increment(ref _msgId);
-      var arr = new JSL.Array(4);
-      arr[0] = 4;
+      var arr = new JSL.Array(arg.Length+2);
+      arr[0] = cmd;
       arr[1] = mid;
-      arr[2] = path;
-      arr[3] = mask;
-      this.Send(new ClRequest(mid, arr, req));
-    }
-    public void Create(string path, JSC.JSValue value, INotMsg req) {
-      int mid = Interlocked.Increment(ref _msgId);
-      JSL.Array arr;
-      arr = new JSL.Array(value == null ? 3 : 4);
-      arr[0] = 8;
-      arr[1] = mid;
-      arr[2] = path;
-      if(value != null) {
-        arr[3] = value;
+      for(int i=0; i<arg.Length; i++) {
+        arr[i+2]=arg[i];
       }
-      this.Send(new ClRequest(mid, arr, req));
-    }
-    public void SetState(string path, JSC.JSValue value, INotMsg req) {
-      int mid = Interlocked.Increment(ref _msgId);
-      var arr = new JSL.Array(4);
-      arr[0] = 6;
-      arr[1] = mid;
-      arr[2] = path;
-      arr[3] = value;
       this.Send(new ClRequest(mid, arr, req));
     }
 

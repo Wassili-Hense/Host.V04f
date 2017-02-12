@@ -64,11 +64,11 @@ namespace X13.Data {
       App.PostMsg(ds);
       return ds.Task;
     }
-    public void Move(DTopic dTopic, string name) {
-      throw new NotImplementedException();
+    public void Move(DTopic nParent, string nName) {
+      _client.SendReq(10, null, this.path, nParent.path, nName);
     }
     public void Delete() {
-      throw new NotImplementedException();
+      _client.SendReq(12, null, this.path);
     }
 
     public event Action<Art, DTopic> changed;
@@ -179,7 +179,7 @@ namespace X13.Data {
           } else if(_cur._disposed) {
             _tcs.SetResult(null);
           } else {
-            _cur._client.Request(_cur.path, 3, this);
+            _cur._client.SendReq(4, this, _cur.path, 3);
           }
           return;
         }
@@ -192,7 +192,7 @@ namespace X13.Data {
 
         if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
           if(_cur._children == null) {
-            _cur._client.Request(_cur.path, 2, this);
+            _cur._client.SendReq(4, this, _cur.path, 2);
             return;
           }
 
@@ -202,9 +202,9 @@ namespace X13.Data {
           if(_create) {
             _create = false;
             if(_path.Length <= idx2) {
-              _cur._client.Create(_path.Substring(0, idx2), _value, this);
+              _cur._client.SendReq(8, this, _path.Substring(0, idx2), _value);
             } else {
-              _cur._client.Create(_path.Substring(0, idx2), null, this);
+              _cur._client.SendReq(8, this, _path.Substring(0, idx2));
             }
           } else {
             _tcs.SetResult(null);
@@ -279,7 +279,7 @@ namespace X13.Data {
           if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
             _tcs.SetResult(true);
           } else {
-            _topic._client.SetState(_topic.path, _value, this);
+            _topic._client.SendReq(6, this, _topic.path, _value);
           }
         }
       }

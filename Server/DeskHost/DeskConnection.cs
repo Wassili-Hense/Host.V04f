@@ -30,7 +30,7 @@ namespace X13.DeskHost {
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
       _owner = Topic.root.Get("/$SYS/Desk").Get(base.ToString());
-      
+
       _owner.SetField("Desk.Address", EndPoint.Address.ToString(), _owner);
       _owner.SetField("Desk.Port", EndPoint.Port, _owner);
       System.Net.Dns.BeginGetHostEntry(EndPoint.Address, EndDnsReq, null);
@@ -51,23 +51,29 @@ namespace X13.DeskHost {
       try {
         if(msg[0].IsNumber) {
           switch((int)msg[0]) {
-          case 4:
-            this.Subscribe(msg);
-            break;
-          case 6:
-            this.SetState(msg);
-            break;
-          case 8:
-            this.Create(msg);
-            break;
-          case 99: {
-              var o = Interlocked.Exchange(ref _owner, null);
-              if(o != null) {
-                Log.Info("{0} connection dropped", o.path);
-                o.Remove(o);
+            case 4:
+              this.Subscribe(msg);
+              break;
+            case 6:
+              this.SetState(msg);
+              break;
+            case 8:
+              this.Create(msg);
+              break;
+            case 10:
+              this.Move(msg);
+              break;
+            case 12:
+              this.Remove(msg);
+              break;
+            case 99: {
+                var o = Interlocked.Exchange(ref _owner, null);
+                if(o != null) {
+                  Log.Info("{0} connection dropped", o.path);
+                  o.Remove(o);
+                }
               }
-            }
-            break;    // Disconnect
+              break;    // Disconnect
           }
         } else {
           _basePl.AddRMsg(msg);
@@ -93,13 +99,13 @@ namespace X13.DeskHost {
       List<Topic> resp = new List<Topic>();
       if(Topic.root.Exist(path, out parent)) {
         resp.Add(parent);
-        if((req & 2) == 2) {
+        if(( req & 2 ) == 2) {
           resp.AddRange(parent.children);
         }
         var arr = new JSL.Array();
         foreach(var t in resp) {
           if(_subscriptions.Contains(t)) {
-            if((req & 1) != 1 || t != parent) {
+            if(( req & 1 ) != 1 || t != parent) {
               continue;
             }
           } else {
@@ -107,7 +113,7 @@ namespace X13.DeskHost {
             t.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Chldren, SubscriptionChanged);
           }
           JSL.Array r;
-          if((req & 1) == 1 && t == parent) {
+          if(( req & 1 ) == 1 && t == parent) {
             r = new JSL.Array(4);
             r[2] = t.GetState();
             r[3] = t.GetField(null);
@@ -154,6 +160,37 @@ namespace X13.DeskHost {
       Topic t = Topic.root.Get(path, true, _owner);
       t.SetState(msg[3], _owner);
       msg.Response(9, msg[1], true);
+    }
+    /// <summary>Move topic</summary>
+    /// <param name="args">
+    /// REQUEST: [10, msgId, path source, path destinations parent, new name(optional rename)]
+    /// </param>
+    private void Move(DeskMessage msg) {
+      if(msg.Count < 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String 
+        || ( msg.Count>5 && msg[4].ValueType != JSC.JSValueType.String )) {
+        Log.Warning("Syntax error: {0}", msg);
+        return;
+      }
+      Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
+      Topic p = Topic.root.Get(msg[3].Value as string, false, _owner);
+      if(t!=null && p!=null) {
+        string nname = msg.Count < 5?t.name:( msg[4].Value as string );
+        t.Move(p, nname, _owner);
+      }
+    }
+    /// <summary>Remove topic</summary>
+    /// <param name="args">
+    /// REQUEST: [12, msgId, path]
+    /// </param>
+    private void Remove(DeskMessage msg) {
+      if(msg.Count != 3 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
+        Log.Warning("Syntax error: {0}", msg);
+        return;
+      }
+      Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
+      if(t!=null) {
+        t.Remove(_owner);
+      }
     }
 
     private void SubscriptionChanged(Perform p) {
