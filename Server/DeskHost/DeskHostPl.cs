@@ -40,7 +40,8 @@ namespace X13.DeskHost {
     }
 
     #endregion internal Members
-
+    public Topic Types { get; private set; }
+    public Topic TypesCore { get; private set; }
     public DeskHostPl() {
       _connections = new System.Collections.Concurrent.ConcurrentBag<DeskConnection>();
       _msgs = new System.Collections.Concurrent.ConcurrentBag<DeskMessage>();
@@ -53,6 +54,8 @@ namespace X13.DeskHost {
       _tcp.Start();
     }
     public void Start() {
+      Types=Topic.root.Get("/$SYS/TYPES", true);
+      TypesCore = Types.Get("Core", true);
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
     public void Tick() {

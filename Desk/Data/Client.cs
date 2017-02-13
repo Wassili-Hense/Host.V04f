@@ -24,6 +24,7 @@ namespace X13.Data {
     public readonly string password;
     public string alias { get; set; }
     public DTopic root { get; private set; }
+    public DTopic TypeManifest { get; private set; }
 
     public Client(string server, int port, string userName, string password) {
       this.server = server;
@@ -115,6 +116,7 @@ namespace X13.Data {
           }
           Log.Info("{0} connected as {1}", this.ToString(), alias);
           _st = State.Ready;
+          this.root.GetAsync("/$SYS/TYPES/Core/Manifest").ContinueWith(z => { if(z.IsCompleted) { this.TypeManifest = z.Result; } });
           lock(_connEvnt) {
             foreach(var ce in _connEvnt) {
               ce.Response(null, true, null);

@@ -20,7 +20,7 @@ namespace X13.UI {
   internal class veDefault : TextBlock, IValueEditor {
     public veDefault(InBase owner, JSC.JSValue type) {
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-      base.Padding = new System.Windows.Thickness(10, 2, 10, 0);
+      base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
       ValueChanged(owner.value);
     }
 

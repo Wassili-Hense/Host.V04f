@@ -272,7 +272,7 @@ namespace X13.Data {
       private JSC.JSValue _manifest;
 
       public ClientEvent(DTopic root, string path, int flags, JSC.JSValue state, JSC.JSValue manifest) {
-        if(_root == null) {
+        if(root == null) {
           throw new ArgumentNullException("root");
         }
         if(path == null) {

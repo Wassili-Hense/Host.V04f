@@ -98,15 +98,11 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      int req = (int)msg[3];
       Topic parent = Topic.root.Get(msg[2].Value as string, false, _owner);
       if(parent != null) {
-        SubRec.SubMask m = parent == Topic.root ? SubRec.SubMask.Once : SubRec.SubMask.None;
-        if((req & 2) != 0) {
-          m |= SubRec.SubMask.Chldren;
-        }
-        if((req & 1) != 0) {
-          m |= SubRec.SubMask.Value | SubRec.SubMask.Field;
+        SubRec.SubMask m = SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren;
+        if(parent == Topic.root) {
+          m |= SubRec.SubMask.Once;
         }
         var sr = parent.Subscribe(m, string.Empty, _subCB);
         _subscriptions.Add(new Tuple<SubRec,DeskMessage>(sr, msg));
@@ -132,7 +128,7 @@ namespace X13.DeskHost {
     }
     /// <summary>Create topic</summary>
     /// <param name="args">
-    /// REQUEST: [8, msgId, path[, value]]
+    /// REQUEST: [8, msgId, path[, prototype]]
     /// RESPONSE: [9, msgId, success]
     /// </param>
     private void Create(DeskMessage msg) {
@@ -140,11 +136,23 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      string path = msg[2].ToString();
-
-      Topic t = Topic.root.Get(path, true, _owner);
-      t.SetState(msg[3], _owner);
+      Topic p, t = Topic.root.Get(msg[2].Value as string, true, _owner);
+      string pn;
+      JSC.JSValue jsp;
+      if(msg.Count==4 && msg[3].ValueType==JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)){
+        if(( _basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p) ) && ( jsp = p.GetState() ).ValueType==JSC.JSValueType.Object && jsp.Value!=null) {
+          t.SetState(jsp["default"], _owner);
+          jsp = jsp["prototype"];
+          if(jsp.ValueType==JSC.JSValueType.Object && jsp.Value!=null) {
+            t.SetField("__proto__", jsp, _owner);
+          }
+        } else {
+          Log.Warning("Create({0}, {1}) - unknown prototype", t.path, pn);
+        }
+      }
       msg.Response(9, msg[1], true);
+      var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
+      _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, null));
     }
     /// <summary>Move topic</summary>
     /// <param name="args">
@@ -194,7 +202,7 @@ namespace X13.DeskHost {
       case Perform.Art.subAck: {
           var sr = p.o as SubRec;
           if(sr != null) {
-            foreach(var msg in _subscriptions.Where(z => z.Item1 == sr).Select(z => z.Item2)) {
+            foreach(var msg in _subscriptions.Where(z => z.Item1 == sr && z.Item2!=null).Select(z => z.Item2)) {
               msg.Response(5, msg[1], true, true);
             }
           }
