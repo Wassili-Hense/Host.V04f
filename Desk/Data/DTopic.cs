@@ -11,6 +11,22 @@ using System.Collections.ObjectModel;
 namespace X13.Data {
   public class DTopic {
     private static char[] FIELDS_SEPARATOR = new char[] { '.' };
+    private static char[] PATH_SEPARATOR = new char[] { '/' };
+
+    internal static void SubscribeResp(DTopic root, string path, int flags, JSC.JSValue state, JSC.JSValue manifest) {
+      if(root == null || string.IsNullOrEmpty(path) || flags == 0) {
+        return;
+      }
+      var ps = path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+      DTopic cur = root, next;
+      for(int i = 0; i < ps.Length; i++) {
+        next = cur.GetChild(ps[i], true);
+        cur = next;
+      }
+      cur.ValuePublished(state);
+      cur.MetaPublished(manifest);
+    }
+
     private Client _client;
 
     private int _flags;  //  16 - hat children
@@ -150,6 +166,7 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
+      private bool _ack;
       private JSC.JSValue _value;
       private TaskCompletionSource<DTopic> _tcs;
 
@@ -174,10 +191,8 @@ namespace X13.Data {
           idx1++;
         }
         if(_path == null || _path.Length <= _cur.path.Length) {
-          if(_cur._value != null) {
-            _tcs.SetResult(_cur);
-          } else if(_cur._disposed) {
-            _tcs.SetResult(null);
+          if(_ack) {
+            _tcs.SetResult(_cur._disposed?null:_cur);
           } else {
             _cur._client.SendReq(4, this, _cur.path, 3);
           }
@@ -216,41 +231,9 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
-          DTopic next;
-          if(value.IsNull) {
+          _ack = true;
+          if(value.ValueType!=JSC.JSValueType.Boolean || !((bool)value)) {
             _cur._disposed = true;
-            return;
-          }
-          JSL.Array ca = value.Value as JSL.Array;
-          if(ca == null) {
-            _tcs.SetException(new ApplicationException("TopicReq bad answer:" + (value == null ? string.Empty : string.Join(", ", value))));
-            return;
-          }
-          string aName, aPath;
-          int aFlags;
-          foreach(var cb in ca.Select(z => z.Value.Value as JSL.Array)) {
-            if(cb == null || (int)cb.length < 2 || cb[0].ValueType != JSC.JSValueType.String || !cb[1].IsNumber) {
-              continue;
-            }
-            aPath = cb[0].Value as string;
-            aFlags = (int)cb[1];
-            if(aPath != _cur.path) {
-              if(!aPath.StartsWith(_cur.path)) {
-                continue;
-              }
-              aName = aPath.Substring(_cur.path.Length == 1 ? 1 : (_cur.path.Length + 1));
-              next = _cur.GetChild(aName, true);
-            } else {
-              next = _cur;
-            }
-            next._flags = aFlags;
-            if((int)cb.length > 2) {
-              next.ValuePublished(cb[2]);
-              if((int)cb.length == 4) {
-                next.MetaPublished(cb[3]);
-              }
-            }
-            //Log.Debug("Resp({0}, {1})", next.path, (int)cb.length);
           }
         } else {
           _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
@@ -300,9 +283,5 @@ namespace X13.Data {
       addChild,
       RemoveChild,
     }
-
-
-
-
   }
 }

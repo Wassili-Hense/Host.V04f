@@ -124,36 +124,17 @@ namespace X13.Data {
           }
         }
         break;
-      case 5:  // [SubAck, msgId, [ [ path, flags [, state, object] ] ]
-        if(msg.Count != 3 || !msg[1].IsNumber) {
-          Log.Warning("Synax error {0}", msg);
-          break;
-        }
-        msgId = (int)msg[1];
-        lock(_reqs) {
-          req=_reqs.FirstOrDefault(z => z.msgId == msgId);
-          if(req != null) {
-            _reqs.Remove(req);
+      case 4:  // [SubscribeResp, path, flags, state, manifest]
+        {
+          if(msg.Count != 5 || msg[1].ValueType!=JSC.JSValueType.String || !msg[2].IsNumber) {
+            Log.Warning("Synax error {0}", msg);
+            break;
           }
-        }
-        if(req != null) {
-          req.Response(null, true, msg[2]);
-          App.PostMsg(req);
+          DTopic.SubscribeResp(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]);
         }
         break;
+      case 5:  // [SubAck, msgId, exist]
       case 7:  // [SetStateAck, msgIs, success<bool>, [oldValue] ]
-        msgId = (int)msg[1];
-        lock(_reqs) {
-          req=_reqs.FirstOrDefault(z => z.msgId == msgId);
-          if(req != null) {
-            _reqs.Remove(req);
-          }
-        }
-        if(req != null) {
-          req.Response(null, (bool)msg[2], msg.Count>3?msg[3]:null);
-          App.PostMsg(req);
-        }
-        break;
       case 9:  // [CreateAck, msgId, success]
         msgId = (int)msg[1];
         lock(_reqs) {
@@ -163,11 +144,14 @@ namespace X13.Data {
           }
         }
         if(req != null) {
-          req.Response(null, (bool)msg[2], null);
+          if(cmd == 5) {
+            req.Response(null, true, msg[2]);
+          } else {
+            req.Response(null, (bool)msg[2], msg.Count > 3 ? msg[3] : null);
+          }
           App.PostMsg(req);
         }
         break;
-
       }
     }
 
@@ -234,6 +218,5 @@ namespace X13.Data {
         return "WaitConnect: " + _success.ToString();
       }
     }
-
   }
 }

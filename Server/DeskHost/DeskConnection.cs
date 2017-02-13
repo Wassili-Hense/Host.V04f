@@ -14,14 +14,14 @@ using X13.Repository;
 namespace X13.DeskHost {
   internal class DeskConnection : DeskSocket {
     private DeskHostPl _basePl;
-    private SortedSet<Topic> _subscriptions;
     private Topic _owner;
+    private Dictionary<SubRec, DeskMessage> _subscriptions;
 
     public DeskConnection(DeskHostPl pl, TcpClient tcp)
       : base(tcp, null) { //
       base._callback = new Action<DeskMessage>(RcvMsg);
       this._basePl = pl;
-      this._subscriptions = new SortedSet<Topic>();
+      this._subscriptions = new Dictionary<SubRec, DeskMessage>();
       base.verbose = true;
 
       // Hello
@@ -51,29 +51,29 @@ namespace X13.DeskHost {
       try {
         if(msg[0].IsNumber) {
           switch((int)msg[0]) {
-            case 4:
-              this.Subscribe(msg);
-              break;
-            case 6:
-              this.SetState(msg);
-              break;
-            case 8:
-              this.Create(msg);
-              break;
-            case 10:
-              this.Move(msg);
-              break;
-            case 12:
-              this.Remove(msg);
-              break;
-            case 99: {
-                var o = Interlocked.Exchange(ref _owner, null);
-                if(o != null) {
-                  Log.Info("{0} connection dropped", o.path);
-                  o.Remove(o);
-                }
+          case 4:
+            this.Subscribe(msg);
+            break;
+          case 6:
+            this.SetState(msg);
+            break;
+          case 8:
+            this.Create(msg);
+            break;
+          case 10:
+            this.Move(msg);
+            break;
+          case 12:
+            this.Remove(msg);
+            break;
+          case 99: {
+              var o = Interlocked.Exchange(ref _owner, null);
+              if(o != null) {
+                Log.Info("{0} connection dropped", o.path);
+                o.Remove(o);
               }
-              break;    // Disconnect
+            }
+            break;    // Disconnect
           }
         } else {
           _basePl.AddRMsg(msg);
@@ -93,40 +93,20 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      string path = msg[2].ToString();
       int req = (int)msg[3];
-      Topic parent;
-      List<Topic> resp = new List<Topic>();
-      if(Topic.root.Exist(path, out parent)) {
-        resp.Add(parent);
-        if(( req & 2 ) == 2) {
-          resp.AddRange(parent.children);
+      Topic parent = Topic.root.Get(msg[2].Value as string, false, _owner);
+      if(parent != null) {
+        SubRec.SubMask m = parent == Topic.root ? SubRec.SubMask.Once : SubRec.SubMask.None;
+        if((req & 2) != 0) {
+          m |= SubRec.SubMask.Chldren;
         }
-        var arr = new JSL.Array();
-        foreach(var t in resp) {
-          if(_subscriptions.Contains(t)) {
-            if(( req & 1 ) != 1 || t != parent) {
-              continue;
-            }
-          } else {
-            _subscriptions.Add(t);
-            t.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Chldren, SubscriptionChanged);
-          }
-          JSL.Array r;
-          if(( req & 1 ) == 1 && t == parent) {
-            r = new JSL.Array(4);
-            r[2] = t.GetState();
-            r[3] = t.GetField(null);
-          } else {
-            r = new JSL.Array(2);
-          }
-          r[0] = new JSL.String(t.path);
-          r[1] = new JSL.Number(t.children.Any() ? 17 : 1);
-          arr.Add(r);
+        if((req & 1) != 0) {
+          m |= SubRec.SubMask.Value | SubRec.SubMask.Field;
         }
-        msg.Response(5, msg[1], arr);
+        var sr = parent.Subscribe(m, SubscriptionChanged);
+        _subscriptions[sr] = msg;
       } else {
-        msg.Response(5, msg[1], null);
+        msg.Response(5, msg[1], false);
       }
     }
     /// <summary>set topics state</summary>
@@ -166,15 +146,15 @@ namespace X13.DeskHost {
     /// REQUEST: [10, msgId, path source, path destinations parent, new name(optional rename)]
     /// </param>
     private void Move(DeskMessage msg) {
-      if(msg.Count < 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String 
-        || ( msg.Count>5 && msg[4].ValueType != JSC.JSValueType.String )) {
+      if(msg.Count < 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String
+        || (msg.Count > 5 && msg[4].ValueType != JSC.JSValueType.String)) {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
       Topic p = Topic.root.Get(msg[3].Value as string, false, _owner);
-      if(t!=null && p!=null) {
-        string nname = msg.Count < 5?t.name:( msg[4].Value as string );
+      if(t != null && p != null) {
+        string nname = msg.Count < 5 ? t.name : (msg[4].Value as string);
         t.Move(p, nname, _owner);
       }
     }
@@ -188,12 +168,33 @@ namespace X13.DeskHost {
         return;
       }
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
-      if(t!=null) {
+      if(t != null) {
         t.Remove(_owner);
       }
     }
 
     private void SubscriptionChanged(Perform p) {
+      JSL.Array arr;
+      switch(p.art) {
+      case Perform.Art.subscribe: {
+          arr = new JSL.Array(5);
+          arr[0] = new JSL.Number(4);
+          arr[1] = new JSL.String(p.src.path);
+          arr[2] = new JSL.Number(p.src.children.Any() ? 17 : 1);
+          arr[3] = p.src.GetState();
+          arr[4] = p.src.GetField(null);
+          base.SendArr(arr);
+        }
+        break;
+      case Perform.Art.subAck: {
+          DeskMessage msg;
+          var sr = p.o as SubRec;
+          if(sr != null && _subscriptions.TryGetValue(sr, out msg) && msg != null) {
+            msg.Response(5, msg[1], true);
+          }
+        }
+        break;
+      }
     }
   }
 }
