@@ -13,20 +13,6 @@ namespace X13.Data {
     private static char[] FIELDS_SEPARATOR = new char[] { '.' };
     private static char[] PATH_SEPARATOR = new char[] { '/' };
 
-    internal static void SubscribeResp(DTopic root, string path, int flags, JSC.JSValue state, JSC.JSValue manifest) {
-      if(root == null || string.IsNullOrEmpty(path) || flags == 0) {
-        return;
-      }
-      var ps = path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
-      DTopic cur = root, next;
-      for(int i = 0; i < ps.Length; i++) {
-        next = cur.GetChild(ps[i], true);
-        cur = next;
-      }
-      cur.ValuePublished(state);
-      cur.MetaPublished(manifest);
-    }
-
     private Client _client;
 
     private int _flags;  //  16 - hat children
@@ -91,9 +77,11 @@ namespace X13.Data {
 
     private void ValuePublished(JSC.JSValue value) {
       _value = value;
+      ChangedReise(Art.value, this);
     }
     private void MetaPublished(JSC.JSValue meta) {
       _meta = meta;
+      ChangedReise(Art.type, this);
     }
     private void ChangedReise(Art art, DTopic src) {
       if(changed != null) {
@@ -166,7 +154,6 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
-      private bool _ack;
       private JSC.JSValue _value;
       private TaskCompletionSource<DTopic> _tcs;
 
@@ -191,8 +178,10 @@ namespace X13.Data {
           idx1++;
         }
         if(_path == null || _path.Length <= _cur.path.Length) {
-          if(_ack) {
-            _tcs.SetResult(_cur._disposed?null:_cur);
+          if(_cur._disposed) {
+            _tcs.SetResult(null);
+          } else if(_cur._value != null && ((_cur._flags & 16) == 0 || _cur._children != null)) {
+            _tcs.SetResult(_cur);
           } else {
             _cur._client.SendReq(4, this, _cur.path, 3);
           }
@@ -207,7 +196,7 @@ namespace X13.Data {
 
         if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
           if(_cur._children == null) {
-            _cur._client.SendReq(4, this, _cur.path, 2);
+            _cur._client.SendReq(4, this, _cur.path, 3);
             return;
           }
 
@@ -231,8 +220,7 @@ namespace X13.Data {
       }
       public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
         if(success) {
-          _ack = true;
-          if(value.ValueType!=JSC.JSValueType.Boolean || !((bool)value)) {
+          if(value.ValueType != JSC.JSValueType.Boolean || !((bool)value)) {
             _cur._disposed = true;
           }
         } else {
@@ -274,6 +262,48 @@ namespace X13.Data {
           _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));
         }
         _complete = true;
+      }
+    }
+    internal class ClientEvent : INotMsg {
+      private DTopic _root;
+      private string _path;
+      private int _flags;
+      private JSC.JSValue _state;
+      private JSC.JSValue _manifest;
+
+      public ClientEvent(DTopic root, string path, int flags, JSC.JSValue state, JSC.JSValue manifest) {
+        if(_root == null) {
+          throw new ArgumentNullException("root");
+        }
+        if(path == null) {
+          throw new ArgumentNullException("path");
+        }
+
+        _root = root;
+        _path = path;
+        _flags = flags;
+        _state = state;
+        _manifest = manifest;
+      }
+      public void Process(DWorkspace ws) {
+        var ps = _path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+        DTopic cur = _root, next;
+        for(int i = 0; i < ps.Length; i++) {
+          next = cur.GetChild(ps[i], true);
+          cur = next;
+        }
+        if(_flags > 0) {
+          cur._flags = _flags;
+        }
+        if(_state != null) {
+          cur.ValuePublished(_state);
+        }
+        if(_manifest != null) {
+          cur.MetaPublished(_manifest);
+        }
+      }
+      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+        throw new NotImplementedException();
       }
     }
 

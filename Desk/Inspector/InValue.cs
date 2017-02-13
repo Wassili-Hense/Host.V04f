@@ -159,7 +159,6 @@ namespace X13.UI {
         UpdateType(_data.type);
       } else if(art==DTopic.Art.value) {
         _value = _data.value;
-        UpdateType(_data.type);
         UpdateData(_data.value);
       }
     }

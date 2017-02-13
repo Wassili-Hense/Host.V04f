@@ -15,13 +15,15 @@ namespace X13.DeskHost {
   internal class DeskConnection : DeskSocket {
     private DeskHostPl _basePl;
     private Topic _owner;
-    private Dictionary<SubRec, DeskMessage> _subscriptions;
+    private List<Tuple<SubRec, DeskMessage>> _subscriptions;
+    private Action<Perform> _subCB;
 
     public DeskConnection(DeskHostPl pl, TcpClient tcp)
       : base(tcp, null) { //
       base._callback = new Action<DeskMessage>(RcvMsg);
       this._basePl = pl;
-      this._subscriptions = new Dictionary<SubRec, DeskMessage>();
+      this._subCB = new Action<Perform>(SubscriptionChanged);
+      this._subscriptions = new List<Tuple<SubRec, DeskMessage>>();
       base.verbose = true;
 
       // Hello
@@ -71,6 +73,9 @@ namespace X13.DeskHost {
               if(o != null) {
                 Log.Info("{0} connection dropped", o.path);
                 o.Remove(o);
+                foreach(var sr in _subscriptions) {
+                  sr.Item1.Dispose();
+                }
               }
             }
             break;    // Disconnect
@@ -86,7 +91,7 @@ namespace X13.DeskHost {
     /// <summary>Subscribe topics</summary>
     /// <param name="args">
     /// REQUEST:  [4, msgId, path, mask], mask: 1 - data, 2 - children
-    /// RESPONSE: [5, msgId, [topics]], topic -  array of [path, flags [, state, object]], flags: 1 - present, 16 - hat children
+    /// RESPONSE: [5, msgId, success, exist]
     /// </param>
     private void Subscribe(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || !msg[3].IsNumber) {
@@ -103,10 +108,10 @@ namespace X13.DeskHost {
         if((req & 1) != 0) {
           m |= SubRec.SubMask.Value | SubRec.SubMask.Field;
         }
-        var sr = parent.Subscribe(m, SubscriptionChanged);
-        _subscriptions[sr] = msg;
+        var sr = parent.Subscribe(m, string.Empty, _subCB);
+        _subscriptions.Add(new Tuple<SubRec,DeskMessage>(sr, msg));
       } else {
-        msg.Response(5, msg[1], false);
+        msg.Response(5, msg[1], true, false);
       }
     }
     /// <summary>set topics state</summary>
@@ -187,12 +192,25 @@ namespace X13.DeskHost {
         }
         break;
       case Perform.Art.subAck: {
-          DeskMessage msg;
           var sr = p.o as SubRec;
-          if(sr != null && _subscriptions.TryGetValue(sr, out msg) && msg != null) {
-            msg.Response(5, msg[1], true);
+          if(sr != null) {
+            foreach(var msg in _subscriptions.Where(z => z.Item1 == sr).Select(z => z.Item2)) {
+              msg.Response(5, msg[1], true, true);
+            }
           }
         }
+        break;
+      case Perform.Art.changedState:
+        if(p.prim != _owner) {
+          arr = new JSL.Array(3);
+          arr[0] = new JSL.Number(6);
+          arr[1] = new JSL.String(p.src.path);
+          arr[2] = p.src.GetState();
+          base.SendArr(arr);
+        }
+        break;
+      default:
+        Log.Debug("Desk.Sub = {0}", p);
         break;
       }
     }

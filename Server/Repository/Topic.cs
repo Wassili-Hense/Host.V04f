@@ -134,6 +134,7 @@ namespace X13.Repository {
         throw new ArgumentNullException(this.path + ".Subscribe(func == NULL, "+mask.ToString()+(prefix==null?string.Empty:", "+prefix)+")");
       }
       SubRec sb;
+      bool exist = true;
       if(_subRecords == null) {
         lock(this) {
           if(_subRecords == null) {
@@ -144,13 +145,16 @@ namespace X13.Repository {
       lock(_subRecords){
         sb = _subRecords.FirstOrDefault(z => z.func == func && z.setTopic == this && z.mask == mask && ((z.mask & SubRec.SubMask.Field)==SubRec.SubMask.None || z.prefix==prefix));
         if(sb == null) {
+          exist = false;
           sb = new SubRec(this, func, mask, prefix);
           _subRecords.Add(sb);
         }
       }
-      var c = Perform.Create(this, Perform.Art.subscribe, this);
-      c.o = sb;
-      _repo.DoCmd(c, false);
+      if(!exist) {
+        var c = Perform.Create(this, Perform.Art.subscribe, this);
+        c.o = sb;
+        _repo.DoCmd(c, false);
+      }
       return sb;
     }
 

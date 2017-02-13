@@ -124,16 +124,21 @@ namespace X13.Data {
           }
         }
         break;
-      case 4:  // [SubscribeResp, path, flags, state, manifest]
-        {
+      case 4:  // [SubscribeResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
           if(msg.Count != 5 || msg[1].ValueType!=JSC.JSValueType.String || !msg[2].IsNumber) {
             Log.Warning("Synax error {0}", msg);
             break;
           }
-          DTopic.SubscribeResp(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]);
-        }
+          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]));
         break;
-      case 5:  // [SubAck, msgId, exist]
+      case 6:  // [Publish, path, state]
+          if(msg.Count != 3 || msg[1].ValueType!=JSC.JSValueType.String) {
+            Log.Warning("Synax error {0}", msg);
+            break;
+          }
+          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
+        break;
+      case 5:  // [SubAck, msgId, success, exist]
       case 7:  // [SetStateAck, msgIs, success<bool>, [oldValue] ]
       case 9:  // [CreateAck, msgId, success]
         msgId = (int)msg[1];
@@ -144,11 +149,7 @@ namespace X13.Data {
           }
         }
         if(req != null) {
-          if(cmd == 5) {
-            req.Response(null, true, msg[2]);
-          } else {
-            req.Response(null, (bool)msg[2], msg.Count > 3 ? msg[3] : null);
-          }
+          req.Response(null, (bool)msg[2], msg.Count > 3 ? msg[3] : null);
           App.PostMsg(req);
         }
         break;
