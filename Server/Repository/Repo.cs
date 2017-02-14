@@ -221,6 +221,21 @@ namespace X13.Repository {
           t2 = t1.Get("F");
           t2.SetState(false);
           t2.saved = true;
+
+          t1 = Topic.root.Get("/$YS/TYPES/Core/Boolean");
+          t1.saved = true;
+          var to = JSObject.CreateObject();
+          to["default"] = false;
+          to["proto"] = JSObject.CreateObject();
+          t1.SetState(to);
+
+          t1 = Topic.root.Get("/$YS/TYPES/Core/Manifest");
+          t1.saved = true;
+          to = JSObject.CreateObject();
+          to["default"] = JSObject.CreateObject();
+          to["proto"] = JSObject.CreateObject();
+          t1.SetState(to);
+
         }
       }
       foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {

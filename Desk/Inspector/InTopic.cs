@@ -16,13 +16,13 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.UI {
   internal class InTopic : InBase, IDisposable {
     #region default children
-    //private static JSC.JSObject DEFS_Bool;
+    private static JSC.JSObject DEFS_Bool;
     //private static JSC.JSObject DEFS_Double;
     //private static JSC.JSObject DEFS_String;
     //private static JSC.JSObject DEFS_Date;
-    //static InTopic() {
-    //  DEFS_Bool = JSC.JSObject.CreateObject();
-    //  DEFS_Bool["type"] = "Boolean";
+    static InTopic() {
+      DEFS_Bool = JSC.JSObject.CreateObject();
+      DEFS_Bool["type"] = "Boolean";
 
     //  DEFS_Double = JSC.JSObject.CreateObject();
     //  DEFS_Double["type"] = "Double";
@@ -32,7 +32,7 @@ namespace X13.UI {
 
     //  DEFS_Date = JSC.JSObject.CreateObject();
     //  DEFS_Date["type"] = "Date";
-    //}
+    }
     #endregion default children
 
     private InTopic _parent;
@@ -68,13 +68,14 @@ namespace X13.UI {
     private InTopic(JSC.JSValue cStruct, InTopic parent, Action<InBase, bool> collFunc) {
       _parent = parent;
       _cStruct = cStruct;
+      _collFunc = collFunc;
       name = string.Empty;
       IsEdited = true;
       levelPadding = _parent == null ? 5 : _parent.levelPadding + 7;
 
       JSC.JSValue sn;
       if(_cStruct != null && (sn = _cStruct["type"]).ValueType == JSC.JSValueType.String) {
-        parent._owner.GetAsync("/etc/type/" + (sn.Value as string)).ContinueWith(TypeLoaded, TaskScheduler.FromCurrentSynchronizationContext());
+        parent._owner.GetAsync("/$YS/TYPES/" + (sn.Value as string)).ContinueWith(TypeLoaded, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
 
@@ -102,8 +103,7 @@ namespace X13.UI {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
           //base.name = name;
-          var td = _parent._owner.CreateAsync(name, _cStruct["default"]);
-          //td.ContinueWith(SetNameComplete);
+          _parent._owner.CreateAsync(name, _cStruct["type"].Value as string).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
         }
         _parent._items.Remove(this);
         _parent._collFunc(this, false);
@@ -237,10 +237,10 @@ namespace X13.UI {
           }
           ma.Items.Add(mi);
         }
-      //} else {
-      //  mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
-      //  mi.Click += miAdd_Click;
-      //  ma.Items.Add(mi);
+      } else {
+        mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
+        mi.Click += miAdd_Click;
+        ma.Items.Add(mi);
       //  mi = new MenuItem() { Header = "Double",  Tag = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } };
       //  mi.Click += miAdd_Click;
       //  ma.Items.Add(mi);
@@ -283,7 +283,7 @@ namespace X13.UI {
       if(decl != null) {
         var mName = decl["name"];
         if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
-          _owner.CreateAsync(mName.Value as string, decl["default"]);
+          _owner.CreateAsync(mName.Value as string, decl["type"].Value as string);
         } else {
           if(_items == null) {
             lock(this) {

@@ -31,7 +31,7 @@ namespace X13.DeskHost {
       arr[0] = 1;
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
-      _owner = Topic.root.Get("/$SYS/Desk").Get(base.ToString());
+      _owner = Topic.root.Get("/$YS/Desk").Get(base.ToString());
 
       _owner.SetField("Desk.Address", EndPoint.Address.ToString(), _owner);
       _owner.SetField("Desk.Port", EndPoint.Port, _owner);
@@ -150,9 +150,8 @@ namespace X13.DeskHost {
           Log.Warning("Create({0}, {1}) - unknown prototype", t.path, pn);
         }
       }
-      msg.Response(9, msg[1], true);
       var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
-      _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, null));
+      _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
     }
     /// <summary>Move topic</summary>
     /// <param name="args">
@@ -189,6 +188,7 @@ namespace X13.DeskHost {
     private void SubscriptionChanged(Perform p) {
       JSL.Array arr;
       switch(p.art) {
+      case Perform.Art.create:
       case Perform.Art.subscribe: {
           arr = new JSL.Array(5);
           arr[0] = new JSL.Number(4);
@@ -203,7 +203,7 @@ namespace X13.DeskHost {
           var sr = p.o as SubRec;
           if(sr != null) {
             foreach(var msg in _subscriptions.Where(z => z.Item1 == sr && z.Item2!=null).Select(z => z.Item2)) {
-              msg.Response(5, msg[1], true, true);
+              msg.Response(1+(int)msg[0], msg[1], true, true);
             }
           }
         }

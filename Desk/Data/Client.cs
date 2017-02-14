@@ -8,6 +8,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace X13.Data {
   internal class Client {
@@ -53,11 +54,11 @@ namespace X13.Data {
 
     public void SendReq(int cmd, INotMsg req, params JSC.JSValue[] arg) {
       int mid = Interlocked.Increment(ref _msgId);
-      var arr = new JSL.Array(arg.Length+2);
+      var arr = new JSL.Array(arg.Length + 2);
       arr[0] = cmd;
       arr[1] = mid;
-      for(int i=0; i<arg.Length; i++) {
-        arr[i+2]=arg[i];
+      for(int i = 0; i < arg.Length; i++) {
+        arr[i + 2] = arg[i];
       }
       this.Send(new ClRequest(mid, arr, req));
     }
@@ -90,7 +91,7 @@ namespace X13.Data {
         var arr = new JSL.Array(2);
         arr[0] = this.ToString();
         arr[1] = "Bad username or password";
-        msg.Response(null, false, arr);
+        msg.Response(false, arr);
         App.PostMsg(msg);
       } else {
         lock(_connEvnt) {
@@ -116,45 +117,52 @@ namespace X13.Data {
           }
           Log.Info("{0} connected as {1}", this.ToString(), alias);
           _st = State.Ready;
-          this.root.GetAsync("/$SYS/TYPES/Core/Manifest").ContinueWith(z => { if(z.IsCompleted) { this.TypeManifest = z.Result; } });
-          lock(_connEvnt) {
-            foreach(var ce in _connEvnt) {
-              ce.Response(null, true, null);
-              App.PostMsg(ce);
-            }
-            _connEvnt.Clear();
-          }
+          this.root.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(HelloComplete);
         }
         break;
       case 4:  // [SubscribeResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
-          if(msg.Count != 5 || msg[1].ValueType!=JSC.JSValueType.String || !msg[2].IsNumber) {
-            Log.Warning("Synax error {0}", msg);
-            break;
-          }
-          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]));
+      case 8:  // [CreateResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
+        if(msg.Count != 5 || msg[1].ValueType != JSC.JSValueType.String || !msg[2].IsNumber) {
+          Log.Warning("Synax error {0}", msg);
+          break;
+        }
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]));
         break;
       case 6:  // [Publish, path, state]
-          if(msg.Count != 3 || msg[1].ValueType!=JSC.JSValueType.String) {
-            Log.Warning("Synax error {0}", msg);
-            break;
-          }
-          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
+        if(msg.Count != 3 || msg[1].ValueType != JSC.JSValueType.String) {
+          Log.Warning("Synax error {0}", msg);
+          break;
+        }
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
         break;
       case 5:  // [SubAck, msgId, success, exist]
       case 7:  // [SetStateAck, msgIs, success<bool>, [oldValue] ]
       case 9:  // [CreateAck, msgId, success]
         msgId = (int)msg[1];
         lock(_reqs) {
-          req=_reqs.FirstOrDefault(z => z.msgId == msgId);
+          req = _reqs.FirstOrDefault(z => z.msgId == msgId);
           if(req != null) {
             _reqs.Remove(req);
           }
         }
         if(req != null) {
-          req.Response(null, (bool)msg[2], msg.Count > 3 ? msg[3] : null);
+          req.Response((bool)msg[2], msg.Count > 3 ? msg[3] : null);
           App.PostMsg(req);
         }
         break;
+      }
+    }
+
+    private void HelloComplete(Task<DTopic> dt) {
+      if(dt.IsCompleted) {
+        this.TypeManifest = dt.Result;
+      }
+      lock(_connEvnt) {
+        foreach(var ce in _connEvnt) {
+          ce.Response(true, null);
+          App.PostMsg(ce);
+        }
+        _connEvnt.Clear();
       }
     }
 
@@ -178,13 +186,13 @@ namespace X13.Data {
         this.data = jo;
         this._req = req;
       }
-      public void Process(DWorkspace ws) {
+      public void Process() {
         if(_req != null) {
-          _req.Response(ws, _success, _resp);
+          _req.Response(_success, _resp);
           App.PostMsg(_req);
         }
       }
-      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+      public void Response(bool success, JSC.JSValue value) {
         _resp = value;
         _success = success;
       }
@@ -203,16 +211,13 @@ namespace X13.Data {
         _req = req;
         _client = client;
       }
-      public void Process(DWorkspace ws) {
+      public void Process() {
         if(_req != null) {
-          if(_success) {
-            _client.Send(_req);
-          } else {
-            _req.Response(ws, false, _value);
-          }
+          _req.Response(_success, _value);
+          App.PostMsg(_req);
         }
       }
-      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+      public void Response(bool success, JSC.JSValue value) {
         _success = success;
         _value = value;
       }

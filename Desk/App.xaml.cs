@@ -73,7 +73,7 @@ namespace X13 {
         if(_msgs.TryDequeue(out msg)) {
           try {
             //Log.Debug("Tick: {0}", msg.ToString());
-            msg.Process(Workspace);
+            msg.Process();
           }
           catch(Exception ex) {
             Log.Warning("App.ProcessMessage(0) - {1}", msg, ex.ToString());
@@ -86,7 +86,7 @@ namespace X13 {
 
   }
   internal interface INotMsg {
-    void Process(Data.DWorkspace ws);
-    void Response(Data.DWorkspace ws, bool success, JSC.JSValue value);
+    void Process();
+    void Response(bool success, JSC.JSValue value);
   }
 }

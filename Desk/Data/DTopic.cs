@@ -19,7 +19,7 @@ namespace X13.Data {
     private bool _disposed;
     private List<DTopic> _children;
     private JSC.JSValue _value;
-    private JSC.JSValue _meta;
+    private JSC.JSValue _manifest;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
@@ -38,11 +38,11 @@ namespace X13.Data {
     public string fullPath { get { return _client.ToString() + this.path; } }
     public DTopic parent { get; private set; }
     public JSC.JSValue value { get { return _value; } }
-    public JSC.JSValue type { get { return _meta; } }  // TODO: rename
+    public JSC.JSValue type { get { return _manifest; } }  // TODO: rename
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
-    public Task<DTopic> CreateAsync(string name, JSC.JSValue value) {
-      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), value.Defined ? value : null);
+    public Task<DTopic> CreateAsync(string name, string manifestStr) {
+      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), manifestStr);
       App.PostMsg(req);
       return req.Task;
     }
@@ -80,7 +80,7 @@ namespace X13.Data {
       ChangedReise(Art.value, this);
     }
     private void MetaPublished(JSC.JSValue meta) {
-      _meta = meta;
+      _manifest = meta;
       ChangedReise(Art.type, this);
     }
     private void ChangedReise(Art art, DTopic src) {
@@ -97,24 +97,20 @@ namespace X13.Data {
           return null;
         }
       }
-      int min = 0, max = _children.Count - 1, cmp, mid = 0;
-
-      while(min <= max) {
-        mid = (min + max) / 2;
+      int cmp, mid;
+      for(mid = _children.Count - 1; mid >= 0; mid--) {
         cmp = string.Compare(_children[mid].name, name);
-        if(cmp < 0) {
-          min = mid + 1;
-          mid = min;
-        } else if(cmp > 0) {
-          max = mid - 1;
-          mid = max;
-        } else {
+        if(cmp == 0) {
           return _children[mid];
         }
+        if(cmp < 0) {
+          break;
+        }
       }
+
       if(create) {
         var t = new DTopic(this, name);
-        this._children.Insert(mid, t);
+        this._children.Insert(mid+1, t);
         ChangedReise(Art.addChild, t);
         return t;
       }
@@ -154,7 +150,7 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
-      private JSC.JSValue _value;
+      private string _manifestStr;
       private TaskCompletionSource<DTopic> _tcs;
 
       public TopicReq(DTopic cur, string path) {
@@ -163,16 +159,16 @@ namespace X13.Data {
         this._create = false;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
-      public TopicReq(DTopic cur, string path, JSC.JSValue value) {
+      public TopicReq(DTopic cur, string path, string manifestStr) {
         this._cur = cur;
         this._path = path;
         this._create = true;
-        _value = value;
+        _manifestStr = manifestStr;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
       public Task<DTopic> Task { get { return _tcs.Task; } }
 
-      public void Process(DWorkspace ws) {
+      public void Process() {
         int idx1 = _cur.path.Length;
         if(idx1 > 1) {
           idx1++;
@@ -205,8 +201,8 @@ namespace X13.Data {
         if(next == null) {
           if(_create) {
             _create = false;
-            if(_path.Length <= idx2) {
-              _cur._client.SendReq(8, this, _path.Substring(0, idx2), _value);
+            if(_path.Length <= idx2 && !string.IsNullOrEmpty(_manifestStr)) {
+              _cur._client.SendReq(8, this, _path.Substring(0, idx2), _manifestStr);
             } else {
               _cur._client.SendReq(8, this, _path.Substring(0, idx2));
             }
@@ -218,9 +214,9 @@ namespace X13.Data {
         _cur = next;
         App.PostMsg(this);
       }
-      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
-        if(success) {
-          if(value.ValueType != JSC.JSValueType.Boolean || !((bool)value)) {
+      public void Response(bool success, JSC.JSValue value) {
+        if(success) {   // value == null aftre connect
+          if(value != null && (value.ValueType != JSC.JSValueType.Boolean || !((bool)value))) {
             _cur._disposed = true;
           }
         } else {
@@ -245,7 +241,7 @@ namespace X13.Data {
       }
       public Task<bool> Task { get { return _tcs.Task; } }
 
-      public void Process(DWorkspace ws) {
+      public void Process() {
         if(!_complete) {
           if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
             _tcs.SetResult(true);
@@ -254,7 +250,7 @@ namespace X13.Data {
           }
         }
       }
-      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+      public void Response(bool success, JSC.JSValue value) {
         if(success) {
           _topic.ValuePublished(this._value);
           _tcs.SetResult(true);
@@ -285,7 +281,7 @@ namespace X13.Data {
         _state = state;
         _manifest = manifest;
       }
-      public void Process(DWorkspace ws) {
+      public void Process() {
         var ps = _path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
         DTopic cur = _root, next;
         for(int i = 0; i < ps.Length; i++) {
@@ -302,7 +298,7 @@ namespace X13.Data {
           cur.MetaPublished(_manifest);
         }
       }
-      public void Response(DWorkspace ws, bool success, JSC.JSValue value) {
+      public void Response(bool success, JSC.JSValue value) {
         throw new NotImplementedException();
       }
     }

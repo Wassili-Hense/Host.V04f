@@ -131,7 +131,7 @@ namespace X13.Repository {
     }
     public SubRec Subscribe(SubRec.SubMask mask, string prefix, Action<Perform> func) {
       if(func == null) {
-        throw new ArgumentNullException(this.path + ".Subscribe(func == NULL, "+mask.ToString()+(prefix==null?string.Empty:", "+prefix)+")");
+        throw new ArgumentNullException(this.path + ".Subscribe(func == NULL, " + mask.ToString() + (prefix == null ? string.Empty : ", " + prefix) + ")");
       }
       SubRec sb;
       bool exist = true;
@@ -142,8 +142,8 @@ namespace X13.Repository {
           }
         }
       }
-      lock(_subRecords){
-        sb = _subRecords.FirstOrDefault(z => z.func == func && z.setTopic == this && z.mask == mask && ((z.mask & SubRec.SubMask.Field)==SubRec.SubMask.None || z.prefix==prefix));
+      lock(_subRecords) {
+        sb = _subRecords.FirstOrDefault(z => z.func == func && z.setTopic == this && z.mask == mask && ((z.mask & SubRec.SubMask.Field) == SubRec.SubMask.None || z.prefix == prefix));
         if(sb == null) {
           exist = false;
           sb = new SubRec(this, func, mask, prefix);
@@ -174,12 +174,12 @@ namespace X13.Repository {
         return _manifest;
       }
       var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
-      JSValue val=_manifest;
+      JSValue val = _manifest;
       for(int i = 0; i < ps.Length; i++) {
         if(val.ValueType != JSValueType.Object) {
           return JSValue.Undefined;
         }
-        val=val.GetProperty(ps[i]);
+        val = val.GetProperty(ps[i]);
       }
       return val;
     }
@@ -331,11 +331,11 @@ namespace X13.Repository {
       public static void SetField(Topic t, string fPath, JSValue val) {
         var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
         JSValue p = t._manifest, c;
-        for(int i = 0; i < ps.Length-1; i++) {
+        for(int i = 0; i < ps.Length - 1; i++) {
           c = p.GetProperty(ps[i]);
           if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
             c = JSObject.CreateObject();
-            p[ps[i]]=c;
+            p[ps[i]] = c;
           } else if(c.ValueType != JSValueType.Object) {
             return;
           }
@@ -387,8 +387,8 @@ namespace X13.Repository {
             for(int i = 0; i < t._subRecords.Count; i++) {
               sb = t._subRecords[i];
               if(((sb.mask & SubRec.SubMask.OnceOrAll) != SubRec.SubMask.None || ((sb.mask & SubRec.SubMask.Chldren) == SubRec.SubMask.Chldren && sb.setTopic == t.parent))
-                  && (cmd.art!=Perform.Art.changedState || (sb.mask & SubRec.SubMask.Value)==SubRec.SubMask.Value) 
-                  && (cmd.art!=Perform.Art.changedField || ((sb.mask & SubRec.SubMask.Field)==SubRec.SubMask.Field && (tmp_s=cmd.o as string)!=null && tmp_s.StartsWith(sb.prefix))) ) {
+                  && (cmd.art != Perform.Art.changedState || (sb.mask & SubRec.SubMask.Value) == SubRec.SubMask.Value)
+                  && (cmd.art != Perform.Art.changedField || ((sb.mask & SubRec.SubMask.Field) == SubRec.SubMask.Field && (tmp_s = cmd.o as string) != null && tmp_s.StartsWith(sb.prefix)))) {
                 try {
                   sb.func(cmd);
                 }
@@ -445,7 +445,7 @@ namespace X13.Repository {
           }
         }
         lock(t._subRecords) {
-          if(!t._subRecords.Any(z => z.func == sr.func && z.setTopic == sr.setTopic && z.mask == sr.mask && ((z.mask & SubRec.SubMask.Field)==SubRec.SubMask.None || z.prefix==sr.prefix))) {
+          if(!t._subRecords.Any(z => z.func == sr.func && z.setTopic == sr.setTopic && z.mask == sr.mask && ((z.mask & SubRec.SubMask.Field) == SubRec.SubMask.None || z.prefix == sr.prefix))) {
             t._subRecords.Add(sr);
           }
         }
@@ -488,13 +488,13 @@ namespace X13.Repository {
           return new BsonValue((double)val);
         case JSValueType.Integer:
           return new BsonValue((int)val);
-        case JSValueType.String:{
-          var s = val.Value as string;
-          if(s != null && s.StartsWith("¤ID")) {
-            return new ObjectId(s.Substring(3));
+        case JSValueType.String: {
+            var s = val.Value as string;
+            if(s != null && s.StartsWith("¤ID")) {
+              return new ObjectId(s.Substring(3));
+            }
+            return new BsonValue(s);
           }
-          return new BsonValue(s);
-        }
         case JSValueType.Object:
           if(val.IsNull) {
             return BsonValue.Null;
@@ -511,15 +511,16 @@ namespace X13.Repository {
             }
             return r;
           }
-          var obj = val as JSObject;
-          if(obj != null) {
+          {
+            var obj = val as JSObject;
             var r = new BsonDocument();
-            foreach(var f in obj) {
-              r[f.Key] = Js2Bs(f.Value);
+            if(obj != null) {
+              foreach(var f in obj) {
+                r[f.Key] = Js2Bs(f.Value);
+              }
             }
             return r;
           }
-          throw new NotImplementedException("js2Bs(" + val.ToString() + ")");
         default:
           throw new NotImplementedException("js2Bs(" + val.ValueType.ToString() + ")");
         }
@@ -530,7 +531,7 @@ namespace X13.Repository {
         }
         switch(val.Type) {
         case BsonType.ObjectId:
-          return new JST.String("¤ID"+ val.AsObjectId.ToString() );
+          return new JST.String("¤ID" + val.AsObjectId.ToString());
         case BsonType.Array: {
             var arr = val.AsArray;
             var r = new JST.Array(arr.Count);

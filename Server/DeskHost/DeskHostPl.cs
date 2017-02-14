@@ -54,7 +54,7 @@ namespace X13.DeskHost {
       _tcp.Start();
     }
     public void Start() {
-      Types=Topic.root.Get("/$SYS/TYPES", true);
+      Types=Topic.root.Get("/$YS/TYPES", true);
       TypesCore = Types.Get("Core", true);
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
