@@ -267,20 +267,17 @@ namespace X13.Repository {
       }
       public static void Fill(Topic t, JSValue state, JSValue manifest, Topic prim) {
         t._manifest = manifest??JSObject.CreateObject();
-        t._saved = manifest["s"].ValueType == JSValueType.Boolean && ((bool)manifest["s"]);
+        t._saved = t._manifest["s"].ValueType == JSValueType.Boolean && ((bool)t._manifest["s"]);
         var id = ObjectId.NewObjectId();
         t._manifest["_id"] = Bs2Js(id);
         t._manifest["p"] = t._path;
         t._ps_manifest = Js2Bs(t._manifest) as BsonDocument;
 
-        var c = Perform.Create(t, Perform.Art.changedField, prim);
-        c.o = string.Empty;
+        var c = Perform.Create(t, Perform.Art.create, prim);
         _repo.DoCmd(c, false);
 
         if(state != null) {
           SetValue(t, state);
-          c = Perform.Create(t, Perform.Art.changedState, prim);
-          _repo.DoCmd(c, false);
         }
       }
 
@@ -530,10 +527,9 @@ namespace X13.Repository {
             return r;
           }
           {
-            var obj = val as JSObject;
             var r = new BsonDocument();
-            if(obj != null) {
-              foreach(var f in obj) {
+            if(val != null) {
+              foreach(var f in val) {
                 r[f.Key] = Js2Bs(f.Value);
               }
             }

@@ -1,18 +1,18 @@
-<xst path='/' ver="0.417.215.1">
-  <i n='$YS' m='{ "s":true }'>
-    <i n='TYPES'  m='{ "s":true }'>
-      <i n='Core'  m='{ "s":true }'>
-        <i n='Boolean' s='{"default":false,"proto":{}}' m='{ "s":true }' />
-        <i n='Manifest' s='{"default":{},"proto":{}}' m='{ "s":true }' />
+<xst path='/' ver="0.417.215.2">
+  <i n='$YS'>
+    <i n='TYPES'>
+      <i n='Core'>
+        <i n='Boolean' s='{"default":false,"manifest":{"editor":"Boolean"}}' m='{"s":true}' />
+        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"p":{"readonly":true}}}' m='{"s":true}' />
       </i>
     </i>
   </i>
-  <i n='Test' m='{ "s":true }'>
-    <i n='A' s='true' m='{ "s":true }' />
-    <i n='B' s='42' m='{ "s":true }' />
-    <i n='C' s='3.1415926' m='{ "s":true }' />
-    <i n='D' s='"Alpha"' m='{ "s":true }' />
-    <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{ "s":true }' />
-    <i n='F' s='false' m='{ "s":true }' />
+  <i n='Test' m='{"s":true}'>
+    <i n='A' s='true' m='{"s":true}' />
+    <i n='B' s='42' m='{"s":true}' />
+    <i n='C' s='3.1415926' m='{"s":true}' />
+    <i n='D' s='"Alpha"' m='{"s":true}' />
+    <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{"s":true}' />
+    <i n='F' s='false' m='{"s":true}' />
   </i>
 </xst>

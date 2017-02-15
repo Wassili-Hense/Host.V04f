@@ -29,7 +29,7 @@ namespace X13.UI {
       base.levelPadding = 5;
       base._items = new List<InBase>();
       this._value = _data.type;
-      UpdateType(null);
+      UpdateType(_data.Connection.TypeManifest.value);
       UpdateData(_data.type);
       base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
@@ -84,7 +84,7 @@ namespace X13.UI {
             JSC.JSValue cs;
             {
               JSC.JSValue pr;
-              if(_manifest == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object) {
+              if(_manifest == null || _manifest.Value == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || pr.Value == null || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
                 cs = null;
               }
             }
@@ -134,7 +134,7 @@ namespace X13.UI {
     }
 
     public override List<Control> MenuItems(FrameworkElement src) {
-      throw new NotImplementedException();
+      return new List<Control>();  //TODO: 
     }
 
     public override int CompareTo(InBase other) {

@@ -40,6 +40,17 @@ namespace X13.UI {
     }
 
     public void TypeChanged(JSC.JSValue type) {
+      if(type==null){
+        return;
+      }
+      var jRo = type["readonly"];
+      if(jRo.ValueType == JSC.JSValueType.Boolean && (bool)jRo) {
+        base.IsReadOnly = true;
+        base.Background = System.Windows.Media.Brushes.White;
+      } else {
+        base.IsReadOnly = false;
+        base.Background = System.Windows.Media.Brushes.Azure;
+      }
     }
 
     private void Publish() {

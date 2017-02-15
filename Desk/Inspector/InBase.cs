@@ -84,16 +84,30 @@ namespace X13.UI {
       string nv = null;
       //BitmapSource ni = null;
 
-      //if(_type != null && _type.Value != null) {
-      //  var vv = _type["view"];
-      //  if(vv.ValueType == JSC.JSValueType.String) {
-      //    nv = vv.Value as string;
-      //  }
+      if(_manifest != null && _manifest.ValueType==JSC.JSValueType.Object && !_manifest.IsNull) {
+        var vv = _manifest["editor"];
+        if(vv.ValueType == JSC.JSValueType.String) {
+          nv = vv.Value as string;
+        }
       //  var iv = _type["icon"];
       //  if(iv.ValueType == JSC.JSValueType.String) {
       //    ni = App.GetIcon(iv.Value as string);
       //  }
-      //}
+      }
+      if(nv == null){
+        string v;
+        if(value.ValueType == JSC.JSValueType.String && (v = value.Value as string) != null && v.Length > 3 && v[0] == '¤') {
+          switch(v.Substring(1, 2)) {
+          case "ID":
+            nv = "ObjectId";
+            break;
+          case "VR":
+            nv = "Version";
+            break;
+          }
+        }
+
+      }
       if(nv == null) {
         nv = value.ValueType.ToString();
       }

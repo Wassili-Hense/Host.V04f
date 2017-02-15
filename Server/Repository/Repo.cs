@@ -159,6 +159,9 @@ namespace X13.Repository {
         break;
       case Perform.Art.create:
         _objects.Upsert(obj);
+        if(cmd.src.saved && state != null) {
+          _states.Upsert(state);
+        }
         break;
       case Perform.Art.remove:
         _states.Delete(obj["_id"]);
@@ -212,9 +215,6 @@ namespace X13.Repository {
           if(ov_js.ValueType == JSValueType.String && (ov_s = ov_js.Value as string) != null && ov_s.StartsWith("¤VR") && Version.TryParse(ov_s.Substring(3), out oldVer) && oldVer >= ver) {
             return; // don't import older version
           }
-          if(cur != Topic.root) {
-            cur.Remove();
-          }
         }
         setVersion = true;
       } else {
@@ -249,10 +249,10 @@ namespace X13.Repository {
       } else {
         cur = Topic.I.Get(owner, xElement.Attribute("n").Value, true, null, false, false);
       }
+      Topic.I.Fill(cur, state, manifest, null);
       foreach(var xNext in xElement.Elements("i")) {
         Import(xNext, cur, null);
       }
-      Topic.I.Fill(cur, state, manifest, null);
     }
     #endregion Import
 

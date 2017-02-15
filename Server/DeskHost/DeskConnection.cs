@@ -136,19 +136,19 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      Topic p, t = Topic.root.Get(msg[2].Value as string, true, _owner);
+      Topic p, t=null;
       string pn;
       JSC.JSValue jsp;
-      if(msg.Count==4 && msg[3].ValueType==JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)){
-        if(( _basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p) ) && ( jsp = p.GetState() ).ValueType==JSC.JSValueType.Object && jsp.Value!=null) {
-          t.SetState(jsp["default"], _owner);
-          jsp = jsp["prototype"];
-          if(jsp.ValueType==JSC.JSValueType.Object && jsp.Value!=null) {
-            t.SetField("__proto__", jsp, _owner);
-          }
+      if(msg.Count == 4 && msg[3].ValueType == JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)) {
+        if((_basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p)) && (jsp = p.GetState()).ValueType == JSC.JSValueType.Object && jsp.Value != null) {
+          t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
+          Topic.I.Fill(t, jsp["default"], jsp["manifest"], _owner);
         } else {
           Log.Warning("Create({0}, {1}) - unknown prototype", t.path, pn);
         }
+      }
+      if(t==null){
+        t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, true);
       }
       var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
       _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));

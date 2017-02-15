@@ -13,7 +13,7 @@ namespace X13.Data {
     private static char[] FIELDS_SEPARATOR = new char[] { '.' };
     private static char[] PATH_SEPARATOR = new char[] { '/' };
 
-    private Client _client;
+    internal readonly Client Connection;
 
     private int _flags;  //  16 - hat children
     private bool _disposed;
@@ -23,26 +23,26 @@ namespace X13.Data {
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
-      this._client = this.parent._client;
+      this.Connection = this.parent.Connection;
       this.name = name;
-      this.path = this.parent == _client.root ? ("/" + name) : (this.parent.path + "/" + name);
+      this.path = this.parent == Connection.root ? ("/" + name) : (this.parent.path + "/" + name);
     }
     internal DTopic(Client cl) {
-      _client = cl;
-      this.name = _client.ToString();
+      Connection = cl;
+      this.name = Connection.ToString();
       this.path = "/";
     }
 
     public virtual string name { get; protected set; }
     public string path { get; private set; }
-    public string fullPath { get { return _client.ToString() + this.path; } }
+    public string fullPath { get { return Connection.ToString() + this.path; } }
     public DTopic parent { get; private set; }
     public JSC.JSValue value { get { return _value; } }
     public JSC.JSValue type { get { return _manifest; } }  // TODO: rename
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
     public Task<DTopic> CreateAsync(string name, string manifestStr) {
-      var req = new TopicReq(this, this == _client.root ? ("/" + name) : (this.path + "/" + name), manifestStr);
+      var req = new TopicReq(this, this == Connection.root ? ("/" + name) : (this.path + "/" + name), manifestStr);
       App.PostMsg(req);
       return req.Task;
     }
@@ -51,10 +51,10 @@ namespace X13.Data {
       if(string.IsNullOrEmpty(p)) {
         ts = this;
       } else if(p[0] == '/') {
-        ts = _client.root;
+        ts = Connection.root;
       } else {
         ts = this;
-        p = this == _client.root ? ("/" + p) : (this.path + "/" + p);
+        p = this == Connection.root ? ("/" + p) : (this.path + "/" + p);
       }
       var req = new TopicReq(ts, p);
       App.PostMsg(req);
@@ -67,10 +67,10 @@ namespace X13.Data {
       return ds.Task;
     }
     public void Move(DTopic nParent, string nName) {
-      _client.SendReq(10, null, this.path, nParent.path, nName);
+      Connection.SendReq(10, null, this.path, nParent.path, nName);
     }
     public void Delete() {
-      _client.SendReq(12, null, this.path);
+      Connection.SendReq(12, null, this.path);
     }
 
     public event Action<Art, DTopic> changed;
@@ -179,7 +179,7 @@ namespace X13.Data {
           } else if(_cur._value != null && ((_cur._flags & 16) == 0 || _cur._children != null)) {
             _tcs.SetResult(_cur);
           } else {
-            _cur._client.SendReq(4, this, _cur.path, 3);
+            _cur.Connection.SendReq(4, this, _cur.path, 3);
           }
           return;
         }
@@ -192,7 +192,7 @@ namespace X13.Data {
 
         if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
           if(_cur._children == null) {
-            _cur._client.SendReq(4, this, _cur.path, 3);
+            _cur.Connection.SendReq(4, this, _cur.path, 3);
             return;
           }
 
@@ -202,9 +202,9 @@ namespace X13.Data {
           if(_create) {
             _create = false;
             if(_path.Length <= idx2 && !string.IsNullOrEmpty(_manifestStr)) {
-              _cur._client.SendReq(8, this, _path.Substring(0, idx2), _manifestStr);
+              _cur.Connection.SendReq(8, this, _path.Substring(0, idx2), _manifestStr);
             } else {
-              _cur._client.SendReq(8, this, _path.Substring(0, idx2));
+              _cur.Connection.SendReq(8, this, _path.Substring(0, idx2));
             }
           } else {
             _tcs.SetResult(null);
@@ -246,7 +246,7 @@ namespace X13.Data {
           if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
             _tcs.SetResult(true);
           } else {
-            _topic._client.SendReq(6, this, _topic.path, _value);
+            _topic.Connection.SendReq(6, this, _topic.path, _value);
           }
         }
       }

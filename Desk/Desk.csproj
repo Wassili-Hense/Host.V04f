@@ -114,8 +114,8 @@
     </Compile>
     <Compile Include="Inspector\InTopic.cs" />
     <Compile Include="Inspector\InValue.cs" />
-    <Compile Include="Inspector\IValueEditor.cs" />
-    <Compile Include="Inspector\veDefault.cs" />
+    <Compile Include="UI\IValueEditor.cs" />
+    <Compile Include="UI\veDefault.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
     <Compile Include="UI\IBaseForm.cs" />
@@ -124,6 +124,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UI\veDateTimePicker.cs" />
+    <Compile Include="UI\veObjectId.cs" />
     <Compile Include="UI\veDouble.cs" />
     <Compile Include="UI\veInteger.cs" />
     <Compile Include="UI\veSliderBool.xaml.cs">
