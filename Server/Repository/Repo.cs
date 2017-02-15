@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Xml.Linq;
 
 namespace X13.Repository {
   [System.ComponentModel.Composition.Export(typeof(IPlugModul))]
@@ -173,6 +174,88 @@ namespace X13.Repository {
       _prOp = new List<Perform>(128);
     }
 
+    #region Import
+    public static bool Import(string fileName, string path = null) {
+      if(string.IsNullOrEmpty(fileName) || !File.Exists(fileName)) {
+        return false;
+      }
+      X13.Log.Debug("Import {0}", fileName);
+      using(StreamReader reader = File.OpenText(fileName)) {
+        Import(reader, path);
+      }
+      return true;
+    }
+    public static void Import(StreamReader reader, string path) {
+      XDocument doc;
+      using(var r = new System.Xml.XmlTextReader(reader)) {
+        doc = XDocument.Load(r);
+      }
+
+      if(string.IsNullOrEmpty(path) && doc.Root.Attribute("path") != null) {
+        path = doc.Root.Attribute("path").Value;
+      }
+
+      Import(doc.Root, null, path);
+    }
+    private static void Import(XElement xElement, Topic owner, string path) {
+      if(xElement == null || ((xElement.Attribute("n") == null || owner==null) && path==null)) {
+        return;
+      }
+      Version ver;
+      Topic cur = null;
+      bool setVersion;
+      if(xElement.Attribute("ver") != null && Version.TryParse(xElement.Attribute("ver").Value, out ver)) {
+        if(owner == null ? Topic.root.Exist(path, out cur) : owner.Exist(xElement.Attribute("n").Value, out cur)) {
+          Version oldVer;
+          var ov_js = cur.GetField("$PS.ver");
+          string ov_s;
+          if(ov_js.ValueType == JSValueType.String && (ov_s = ov_js.Value as string) != null && ov_s.StartsWith("¤VR") && Version.TryParse(ov_s.Substring(3), out oldVer) && oldVer >= ver) {
+            return; // don't import older version
+          }
+          if(cur != Topic.root) {
+            cur.Remove();
+          }
+        }
+        setVersion = true;
+      } else {
+        ver = default(Version);
+        setVersion = false;
+      }
+      JSValue state = null, manifest = null;
+      if(xElement.Attribute("m") != null) {
+        try {
+          manifest =  DeskHost.DeskSocket.ParseJson(xElement.Attribute("m").Value);
+        }
+        catch(Exception ex) {
+          Log.Warning("Import({0}).m - {1}", xElement.ToString(), ex.Message);
+        }
+      }
+      if(setVersion) {
+        JsLib.SetField(ref manifest, "$PS.ver", "¤VR" + ver.ToString());
+      }
+
+      if(xElement.Attribute("s") != null) {
+        try {
+          state = DeskHost.DeskSocket.ParseJson(xElement.Attribute("s").Value);
+        }
+        catch(Exception ex) {
+          Log.Warning("Import({0}).s - {1}", xElement.ToString(), ex.Message);
+        }
+      }
+
+
+      if(owner == null) {
+        cur = Topic.I.Get(Topic.root, path, true, null, false, false);
+      } else {
+        cur = Topic.I.Get(owner, xElement.Attribute("n").Value, true, null, false, false);
+      }
+      foreach(var xNext in xElement.Elements("i")) {
+        Import(xNext, cur, null);
+      }
+      Topic.I.Fill(cur, state, manifest, null);
+    }
+    #endregion Import
+
     #region IPlugModul Members
 
     public void Init() {
@@ -194,52 +277,13 @@ namespace X13.Repository {
       _states = _db.GetCollection<BsonDocument>("states");
       if(!exist) {
         _objects.EnsureIndex("p", true);
-        // Fill root
-        BsonDocument r = new BsonDocument();
-        var id = ObjectId.NewObjectId();
-        r["_id"] = id;
-        r["p"] = new BsonValue("/");
-        _objects.Insert(r);
-        // Tests
-        {
-          var t1 = Topic.root.Get("Test");
-          var t2 = t1.Get("A");
-          t2.SetState(true);
-          t2.saved = true;
-          t2 = t1.Get("B");
-          t2.SetState(42);
-          t2.saved = true;
-          t2 = t1.Get("C");
-          t2.SetState(3.1415926);
-          t2.saved = true;
-          t2 = t1.Get("D");
-          t2.SetState("Alpha");
-          t2.saved = true;
-          t2 = t1.Get("E");
-          t2.SetState( JSValue.Marshal(DateTime.Now) );
-          t2.saved = true;
-          t2 = t1.Get("F");
-          t2.SetState(false);
-          t2.saved = true;
 
-          t1 = Topic.root.Get("/$YS/TYPES/Core/Boolean");
-          t1.saved = true;
-          var to = JSObject.CreateObject();
-          to["default"] = false;
-          to["proto"] = JSObject.CreateObject();
-          t1.SetState(to);
+        Import("../data/base.xst");
 
-          t1 = Topic.root.Get("/$YS/TYPES/Core/Manifest");
-          t1.saved = true;
-          to = JSObject.CreateObject();
-          to["default"] = JSObject.CreateObject();
-          to["proto"] = JSObject.CreateObject();
-          t1.SetState(to);
-
+      } else {
+        foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
+          Topic.I.Create(obj, _states.FindById(obj["_id"]));
         }
-      }
-      foreach(var obj in _objects.FindAll().OrderBy(z => z["p"])) {
-        Topic.I.Create(obj, _states.FindById(obj["_id"]));
       }
     }
 
@@ -264,7 +308,7 @@ namespace X13.Repository {
 
       for(_pfPos = 0; _pfPos < _prOp.Count; _pfPos++) {
         cmd = _prOp[_pfPos];
-        if(cmd.art != Perform.Art.setState && cmd.art!=Perform.Art.setField) {
+        if(cmd.art != Perform.Art.setState && cmd.art != Perform.Art.setField) {
           Topic.I.Publish(cmd);
         }
       }

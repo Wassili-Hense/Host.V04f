@@ -265,6 +265,24 @@ namespace X13.Repository {
           t._state = Bs2Js(state["v"]);
         }
       }
+      public static void Fill(Topic t, JSValue state, JSValue manifest, Topic prim) {
+        t._manifest = manifest??JSObject.CreateObject();
+        t._saved = manifest["s"].ValueType == JSValueType.Boolean && ((bool)manifest["s"]);
+        var id = ObjectId.NewObjectId();
+        t._manifest["_id"] = Bs2Js(id);
+        t._manifest["p"] = t._path;
+        t._ps_manifest = Js2Bs(t._manifest) as BsonDocument;
+
+        var c = Perform.Create(t, Perform.Art.changedField, prim);
+        c.o = string.Empty;
+        _repo.DoCmd(c, false);
+
+        if(state != null) {
+          SetValue(t, state);
+          c = Perform.Create(t, Perform.Art.changedState, prim);
+          _repo.DoCmd(c, false);
+        }
+      }
 
       public static Topic Get(Topic home, string path, bool create, Topic prim, bool inter, bool fill) {
         if(string.IsNullOrEmpty(path)) {
