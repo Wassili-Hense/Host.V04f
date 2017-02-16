@@ -76,8 +76,10 @@ namespace X13.DeskHost {
               if(o != null) {
                 Log.Info("{0} connection dropped", o.path);
                 o.Remove(o);
-                foreach(var sr in _subscriptions) {
-                  sr.Item1.Dispose();
+                lock(_subscriptions) {
+                  foreach(var sr in _subscriptions) {
+                    sr.Item1.Dispose();
+                  }
                 }
               }
             }
@@ -109,7 +111,9 @@ namespace X13.DeskHost {
           m |= SubRec.SubMask.Once;
         }
         var sr = parent.Subscribe(m, string.Empty, _subCB);
-        _subscriptions.Add(new Tuple<SubRec,DeskMessage>(sr, msg));
+        lock(_subscriptions) {
+          _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
+        }
       } else {
         msg.Response(3, msg[1], true, false);
       }
@@ -147,7 +151,7 @@ namespace X13.DeskHost {
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
       if(t != null) {
         if(t.TrySetField(msg[3].Value as string, msg[4], _owner)) {
-          msg.Response(15, msg[1], true);
+          msg.Response(3, msg[1], true);
         } else {
           msg.Response(3, msg[1], false, "FieldAccessError");
         }
@@ -180,7 +184,9 @@ namespace X13.DeskHost {
         t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, true);
       }
       var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
-      _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
+      lock(_subscriptions) {
+        _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
+      }
     }
     /// <summary>Move topic</summary>
     /// <param name="args">
@@ -231,8 +237,10 @@ namespace X13.DeskHost {
       case Perform.Art.subAck: {
           var sr = p.o as SubRec;
           if(sr != null) {
-            foreach(var msg in _subscriptions.Where(z => z.Item1 == sr && z.Item2!=null).Select(z => z.Item2)) {
-              msg.Response(3, msg[1], true, true);
+            lock(_subscriptions) {
+              foreach(var msg in _subscriptions.Where(z => z.Item1 == sr && z.Item2 != null).Select(z => z.Item2)) {
+                msg.Response(3, msg[1], true, true);
+              }
             }
           }
         }
@@ -246,6 +254,22 @@ namespace X13.DeskHost {
           base.SendArr(arr);
         }
         break;
+      case Perform.Art.changedField:
+          arr = new JSL.Array(3);
+          arr[0] = new JSL.Number(14);
+          arr[1] = new JSL.String(p.src.path);
+          arr[2] = p.src.GetField(null);
+          base.SendArr(arr);
+          break;
+      case Perform.Art.remove:
+          arr = new JSL.Array(2);
+          arr[0] = new JSL.Number(12);
+          arr[1] = new JSL.String(p.src.path);
+          base.SendArr(arr);
+          lock(_subscriptions) {
+            _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
+          }
+          break;
       default:
         Log.Debug("Desk.Sub = {0}", p);
         break;

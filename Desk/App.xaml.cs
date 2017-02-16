@@ -36,7 +36,9 @@ namespace X13 {
       }
     }
     private System.Reflection.Assembly CurrentDomain_AssemblyResolve(object sender, ResolveEventArgs args) {
-      Log.Error("AssemblyResolve failed: {0}", args.Name);
+      if(args.Name != null && !args.Name.Contains(".resources") && !args.Name.StartsWith("Xceed.Wpf.AvalonDock.XmlSerializers")) {
+        Log.Warning("AssemblyResolve failed: {0}", args.Name);
+      }
       return null;
     }
 

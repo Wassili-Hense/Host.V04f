@@ -168,8 +168,8 @@ namespace X13.UI {
       var l = new List<Control>();
       JSC.JSValue f;
       MenuItem mi;
-      if(_manifest != null && (f = _manifest["Properties"]).ValueType == JSC.JSValueType.Object) {
-        MenuItem ma = new MenuItem() { Header = "Add" };
+      MenuItem ma = new MenuItem() { Header = "Add" };
+      if(_manifest != null && (f = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
           if(_items.Any(z => z.name == kv.Key)) {
             continue;
@@ -183,11 +183,11 @@ namespace X13.UI {
           mi.Click += miAdd_Click;
           ma.Items.Add(mi);
         }
-        if(ma.HasItems) {
-          l.Add(ma);
-        }
       }
-      mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      if(ma.HasItems) {
+        l.Add(ma);
+      }
+      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       mi.IsEnabled = _parent != null && (_manifest == null || (f = _manifest["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
       mi.Click += miDelete_Click;
       l.Add(mi);

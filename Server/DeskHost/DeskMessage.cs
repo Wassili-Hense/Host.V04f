@@ -27,5 +27,8 @@ namespace X13.DeskHost {
     public void Response(params JSC.JSValue[] args) {
       _conn.SendArr(new JST.Array(args));
     }
+    public override string ToString() {
+      return _conn.ToString() + ">" + _request.ToString();
+    }
   }
 }

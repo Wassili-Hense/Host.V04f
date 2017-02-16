@@ -324,12 +324,24 @@ namespace X13.Data {
       public void Process() {
         var ps = _path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
         DTopic cur = _root, next;
+        bool remove = _flags == -32 && _state == null && _manifest == null;
         for(int i = 0; i < ps.Length; i++) {
-          next = cur.GetChild(ps[i], true);
+          next = cur.GetChild(ps[i], !remove);
+          if(next == null) {  // Topic not exist
+            return;
+          }
           cur = next;
         }
         if(_flags > 0) {
           cur._flags = _flags;
+        } else if(_flags == -32) {
+          cur._disposed = true;
+          var parent = cur.parent;
+          if(parent != null) {
+            parent.RemoveChild(cur);
+            parent.ChangedReise(Art.RemoveChild, cur);
+          }
+          return;
         }
         if(_state != null) {
           cur.ValuePublished(_state);

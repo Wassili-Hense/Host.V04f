@@ -148,6 +148,21 @@ namespace X13.Data {
         }
         App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
         break;
+      case 12:  // [Remove, path]
+        if(msg.Count != 2 || msg[1].ValueType != JSC.JSValueType.String) {
+          Log.Warning("Synax error {0}", msg);
+          break;
+        }
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, -32, null, null));
+        break;
+      case 14:  // [ManifestChanged, path, manifest]
+        if(msg.Count != 3 || msg[1].ValueType != JSC.JSValueType.String) {
+          Log.Warning("Synax error {0}", msg);
+          break;
+        }
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, null, msg[2]));
+        break;
+
       }
     }
 
