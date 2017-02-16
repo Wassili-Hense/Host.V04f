@@ -68,6 +68,9 @@ namespace X13.DeskHost {
           case 12:
             this.Remove(msg);
             break;
+          case 14:
+            this.SetField(msg);
+            break;
           case 99: {
               var o = Interlocked.Exchange(ref _owner, null);
               if(o != null) {
@@ -88,10 +91,11 @@ namespace X13.DeskHost {
         Log.Warning("{0} - {1}", msg, ex);
       }
     }
+
     /// <summary>Subscribe topics</summary>
     /// <param name="args">
     /// REQUEST:  [4, msgId, path, mask], mask: 1 - data, 2 - children
-    /// RESPONSE: [5, msgId, success, exist]
+    /// RESPONSE: [3, msgId, success, exist]
     /// </param>
     private void Subscribe(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || !msg[3].IsNumber) {
@@ -107,29 +111,54 @@ namespace X13.DeskHost {
         var sr = parent.Subscribe(m, string.Empty, _subCB);
         _subscriptions.Add(new Tuple<SubRec,DeskMessage>(sr, msg));
       } else {
-        msg.Response(5, msg[1], true, false);
+        msg.Response(3, msg[1], true, false);
       }
     }
     /// <summary>set topics state</summary>
     /// <param name="args">
     /// REQUEST: [6, msgId, path, value]
-    /// RESPONSE: [7, msgId, success, [oldvalue] ]
+    /// RESPONSE: [3, msgId, success, [errorMsg] ]
     /// </param> 
     private void SetState(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      string path = msg[2].ToString();
+      string path = msg[2].Value as string;
 
       Topic t = Topic.root.Get(path, false, _owner);
-      t.SetState(msg[3], _owner);
-      msg.Response(7, msg[1], true);
+      if(t != null) {
+        t.SetState(msg[3], _owner);
+        msg.Response(3, msg[1], true);
+      } else {
+        msg.Response(3, msg[1], false, "TopicNotExist");
+      }
+    }
+    /// <summary>set topics field</summary>
+    /// <param name="args">
+    /// REQUEST: [14, msgId, path, fieldName, value]
+    /// RESPONSE: [3, msgId, success, [errorMsg] ]
+    /// </param> 
+    private void SetField(DeskMessage msg) {
+      if(msg.Count != 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String) {
+        Log.Warning("Syntax error: {0}", msg);
+        return;
+      }
+      Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
+      if(t != null) {
+        if(t.TrySetField(msg[3].Value as string, msg[4], _owner)) {
+          msg.Response(15, msg[1], true);
+        } else {
+          msg.Response(3, msg[1], false, "FieldAccessError");
+        }
+      } else {
+        msg.Response(3, msg[1], false, "TopicNotExist");
+      }
     }
     /// <summary>Create topic</summary>
     /// <param name="args">
     /// REQUEST: [8, msgId, path[, prototype]]
-    /// RESPONSE: [9, msgId, success]
+    /// RESPONSE: [3, msgId, success, [errorMsg] ]
     /// </param>
     private void Create(DeskMessage msg) {
       if(msg.Count < 3 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
@@ -203,7 +232,7 @@ namespace X13.DeskHost {
           var sr = p.o as SubRec;
           if(sr != null) {
             foreach(var msg in _subscriptions.Where(z => z.Item1 == sr && z.Item2!=null).Select(z => z.Item2)) {
-              msg.Response(1+(int)msg[0], msg[1], true, true);
+              msg.Response(3, msg[1], true, true);
             }
           }
         }

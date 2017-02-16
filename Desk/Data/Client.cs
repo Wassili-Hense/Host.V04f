@@ -120,6 +120,19 @@ namespace X13.Data {
           this.root.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(HelloComplete);
         }
         break;
+      case 3:  // [Response, msgId, success, [parameter | error]]
+        msgId = (int)msg[1];
+        lock(_reqs) {
+          req = _reqs.FirstOrDefault(z => z.msgId == msgId);
+          if(req != null) {
+            _reqs.Remove(req);
+          }
+        }
+        if(req != null) {
+          req.Response((bool)msg[2], msg.Count > 3 ? msg[3] : null);
+          App.PostMsg(req);
+        }
+        break;
       case 4:  // [SubscribeResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
       case 8:  // [CreateResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
         if(msg.Count != 5 || msg[1].ValueType != JSC.JSValueType.String || !msg[2].IsNumber) {
@@ -134,21 +147,6 @@ namespace X13.Data {
           break;
         }
         App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
-        break;
-      case 5:  // [SubAck, msgId, success, exist]
-      case 7:  // [SetStateAck, msgIs, success<bool>, [oldValue] ]
-      case 9:  // [CreateAck, msgId, success]
-        msgId = (int)msg[1];
-        lock(_reqs) {
-          req = _reqs.FirstOrDefault(z => z.msgId == msgId);
-          if(req != null) {
-            _reqs.Remove(req);
-          }
-        }
-        if(req != null) {
-          req.Response((bool)msg[2], msg.Count > 3 ? msg[3] : null);
-          App.PostMsg(req);
-        }
         break;
       }
     }

@@ -66,6 +66,12 @@ namespace X13.Data {
       App.PostMsg(ds);
       return ds.Task;
     }
+    public Task<JSC.JSValue> SetField(string fPath, JSC.JSValue val) {
+      var ds = new TopicField(this, fPath, val);
+      App.PostMsg(ds);
+      return ds.Task;
+    }
+
     public void Move(DTopic nParent, string nName) {
       Connection.SendReq(10, null, this.path, nParent.path, nName);
     }
@@ -146,6 +152,7 @@ namespace X13.Data {
     public override string ToString() {
       return this.fullPath;
     }
+
     private class TopicReq : INotMsg {
       private DTopic _cur;
       private string _path;
@@ -220,7 +227,7 @@ namespace X13.Data {
             _cur._disposed = true;
           }
         } else {
-          _tcs.SetException(new ApplicationException("TopicReq failed:" + (value == null ? string.Empty : string.Join(", ", value))));
+          _tcs.SetException(new ApplicationException((value == null ? "TopicReqError" : value.ToString())));
         }
       }
 
@@ -255,7 +262,40 @@ namespace X13.Data {
           _topic.ValuePublished(this._value);
           _tcs.SetResult(true);
         } else {
-          _tcs.SetException(new ApplicationException("TopicSet failed:" + (value == null ? string.Empty : string.Join(", ", value))));
+          _tcs.SetException(new ApplicationException(value==null?"TopicSetError":value.ToString()));
+        }
+        _complete = true;
+      }
+    }
+    private class TopicField : INotMsg {
+      private TaskCompletionSource<JSC.JSValue> _tcs;
+      private DTopic _topic;
+      private string _fPath;
+      private JSC.JSValue _value;
+      private bool _complete;
+
+      public TopicField(DTopic t, string fPath, JSC.JSValue value) {
+        _topic = t;
+        _fPath = fPath;
+        _value = value;
+        _tcs = new TaskCompletionSource<JSC.JSValue>();
+      }
+      public Task<JSC.JSValue> Task { get { return _tcs.Task; } }
+
+      public void Process() {
+        if(!_complete) {
+          if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
+            _tcs.SetResult(true);
+          } else {
+            _topic.Connection.SendReq(14, this, _topic.path, _fPath, _value);
+          }
+        }
+      }
+      public void Response(bool success, JSC.JSValue value) {
+        if(success) {
+          _tcs.SetResult(true);
+        } else {
+          _tcs.SetException(new ApplicationException((value == null ? "FieldSetError" : value.ToString())));
         }
         _complete = true;
       }
@@ -309,5 +349,6 @@ namespace X13.Data {
       addChild,
       RemoveChild,
     }
+
   }
 }

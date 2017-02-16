@@ -184,12 +184,19 @@ namespace X13.Repository {
       return val;
     }
 
-    public void SetField(string fPath, JSValue value, Topic prim = null) {
-      if(string.IsNullOrEmpty(fPath) || fPath == "_id" || fPath == "p" || fPath == "s") {
-        throw new FieldAccessException(fPath);
+    public bool TrySetField(string fPath, JSValue value, Topic prim) {
+      if(string.IsNullOrEmpty(fPath) || fPath == "_id" || fPath == "p" || fPath == "$PS.ver") {
+        return false;
       }
       var c = Perform.Create(this, fPath, value, prim);
       _repo.DoCmd(c, false);
+      return true;
+    }
+
+    public void SetField(string fPath, JSValue value, Topic prim = null) {
+      if(!TrySetField(fPath, value, prim)) {
+        throw new FieldAccessException(fPath);
+      }
     }
 
     #region nested types

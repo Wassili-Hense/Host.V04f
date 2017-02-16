@@ -26,19 +26,21 @@ namespace X13.UI {
       base._isVisible = true;
       base._isExpanded = true; // fill _valueVC
       base.IsGroupHeader = true;
-      base.levelPadding = 5;
+      base.levelPadding = 1;
       base._items = new List<InBase>();
       this._value = _data.type;
       UpdateType(_data.Connection.TypeManifest.value);
       UpdateData(_data.type);
       base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
+      _data.Connection.TypeManifest.changed+=Manifest_changed;
     }
-    private InManifest(DTopic data, InManifest parent, string name, JSC.JSValue value, JSC.JSValue type, Action<InBase, bool> collFunc) {
-      this._data = data;
+
+    private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {
       this._parent = parent;
-      base._collFunc = collFunc;
-      this._path = _parent._path + "." + name;
+      this._data = _parent._data;
+      base._collFunc = _parent._collFunc;
+      this._path = string.IsNullOrEmpty(_parent._path)?name:(_parent._path + "." + name);
       base.name = name;
       base._items = new List<InBase>();
       base._isVisible = true;
@@ -53,7 +55,7 @@ namespace X13.UI {
 
     protected override void UpdateType(JSC.JSValue type) {
       base.UpdateType(type);
-      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value!=null) {
         var pr = _manifest["Fields"] as JSC.JSValue;
         if(pr != null) {
           InManifest vc;
@@ -84,11 +86,11 @@ namespace X13.UI {
             JSC.JSValue cs;
             {
               JSC.JSValue pr;
-              if(_manifest == null || _manifest.Value == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || pr.Value == null || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
+              if(_manifest == null || _manifest.ValueType != JSC.JSValueType.Object || _manifest.Value == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || pr.Value == null || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
                 cs = null;
               }
             }
-            var ni = new InManifest(_data, this, kv.Key, kv.Value, cs, _collFunc);
+            var ni = new InManifest(this, kv.Key, kv.Value, cs);
             _items.Insert(i + 1, ni);
             if(_isVisible && _isExpanded) {
               _collFunc(ni, true);
@@ -116,8 +118,13 @@ namespace X13.UI {
     private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
       if(art == DTopic.Art.type) {
         _value = _data.type;
-        UpdateType(null);
+        UpdateType(_data.Connection.TypeManifest.value);
         UpdateData(_data.type);
+      }
+    }
+    private void Manifest_changed(DTopic.Art art, DTopic src) {
+      if(art == DTopic.Art.value) {
+        UpdateType(_data.Connection.TypeManifest.value);
       }
     }
 
@@ -129,7 +136,16 @@ namespace X13.UI {
         return _value;
       }
       set {
-        throw new NotImplementedException();
+        _data.SetField(_path, value).ContinueWith(SetFieldResp, TaskScheduler.FromCurrentSynchronizationContext());
+      }
+    }
+
+    private void SetFieldResp(Task<JSC.JSValue> r) {
+      if(r.IsCompleted) {
+        if(r.IsFaulted) {
+          UpdateData(value);
+          Log.Warning("{0}.{1} - {2}", _data.fullPath, _path, r.Exception.InnerException );
+        }
       }
     }
 
@@ -153,5 +169,9 @@ namespace X13.UI {
       }
     }
     #endregion IDisposable Member
+
+    public override string ToString() {
+      return _data.fullPath + "." + _path;
+    }
   }
 }
