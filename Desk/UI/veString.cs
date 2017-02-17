@@ -40,11 +40,7 @@ namespace X13.UI {
     }
 
     public void TypeChanged(JSC.JSValue type) {
-      if(type==null){
-        return;
-      }
-      var jRo = type["readonly"];
-      if(jRo.ValueType == JSC.JSValueType.Boolean && (bool)jRo) {
+      if(_owner.IsReadonly) {
         base.IsReadOnly = true;
         base.Background = System.Windows.Media.Brushes.White;
       } else {
@@ -54,7 +50,7 @@ namespace X13.UI {
     }
 
     private void Publish() {
-      if(_oldValue != base.Text) {
+      if(!_owner.IsReadonly && _oldValue != base.Text) {
         _owner.value = new JSL.String(base.Text);
       }
     }

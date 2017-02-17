@@ -40,6 +40,7 @@ namespace X13.UI {
     }
 
     public void TypeChanged(NiL.JS.Core.JSValue type) {
+      tbBoolean.IsEnabled = !_owner.IsReadonly;
     }
 
     private void cbBool_Checked(object sender, RoutedEventArgs e) {

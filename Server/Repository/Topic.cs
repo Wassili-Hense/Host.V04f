@@ -24,7 +24,6 @@ namespace X13.Repository {
     private BsonDocument _ps_manifest;
     private JSValue _state;
     private JSValue _manifest;
-    private bool _saved;
 
     #endregion Member variables
 
@@ -58,22 +57,6 @@ namespace X13.Repository {
     }
     public string path { get { return _path; } }
     public bool disposed { get; private set; }
-    public bool saved {
-      get {
-        return _saved;
-      }
-      set {
-        if(_saved != value) {
-          _saved = value;
-          Perform c;
-          if(!_saved) {
-            _ps_state = null;
-          }
-          c = Perform.Create(this, "s", _saved ? new JST.Boolean(true) : null, null);
-          _repo.DoCmd(c, false);
-        }
-      }
-    }
     public Bill all { get { return new Bill(this, true); } }
     public Bill children { get { return new Bill(this, false); } }
 
@@ -183,7 +166,6 @@ namespace X13.Repository {
       }
       return val;
     }
-
     public bool TrySetField(string fPath, JSValue value, Topic prim) {
       if(string.IsNullOrEmpty(fPath) || fPath == "_id" || fPath == "p" || fPath == "$PS.ver") {
         return false;
@@ -192,11 +174,51 @@ namespace X13.Repository {
       _repo.DoCmd(c, false);
       return true;
     }
-
     public void SetField(string fPath, JSValue value, Topic prim = null) {
       if(!TrySetField(fPath, value, prim)) {
         throw new FieldAccessException(fPath);
       }
+    }
+
+    public bool CheckAttribute(Attribute mask, Attribute value = Attribute.None) {
+      if(value == Attribute.None) {
+        value = mask;
+      }
+      JSValue attr;
+      if(_manifest == null || _manifest.ValueType != JSValueType.Object || _manifest.Value == null || !(attr = _manifest["attr"]).IsNumber) {
+        return false;
+      }
+      return ((int)attr & (int)mask) == (int)value;
+    }
+    public void SetAttribute(Attribute value) {
+      JSValue attr;
+      if(_manifest == null || _manifest.ValueType != JSValueType.Object || _manifest.Value == null || !(attr = _manifest["attr"]).IsNumber) {
+        attr = new JST.Number((int)value);
+      } else {
+        attr = new JST.Number((int)value | (int)attr);
+      }
+      var c = Perform.Create(this, "attr", attr, null);
+      _repo.DoCmd(c, false);
+    }
+    public void ClearAttribute(Attribute value) {
+      JSValue attr;
+      if(_manifest == null || _manifest.ValueType != JSValueType.Object || _manifest.Value == null || !(attr = _manifest["attr"]).IsNumber) {
+        attr = new JST.Number((int)value);
+      } else {
+        attr = new JST.Number((int)attr & ~(int)value);
+      }
+      var c = Perform.Create(this, "attr", attr, null);
+      _repo.DoCmd(c, false);
+    }
+
+    public int CompareTo(Topic other) {
+      if(other == null) {
+        return 1;
+      }
+      return this._path.CompareTo(other._path);
+    }
+    public override string ToString() {
+      return _path;
     }
 
     #region nested types
@@ -264,9 +286,8 @@ namespace X13.Repository {
         Topic t = I.Get(Topic.root, obj["p"].AsString, true, null, false, false);
         t._ps_manifest = obj;
         t._manifest = Bs2Js(obj);
-        t._saved = obj["s"].AsBoolean;
         if(state != null) {
-          if(t._saved) {
+          if(t.CheckAttribute(Topic.Attribute.Saved)) {
             t._ps_state = state;
           }
           t._state = Bs2Js(state["v"]);
@@ -274,7 +295,6 @@ namespace X13.Repository {
       }
       public static void Fill(Topic t, JSValue state, JSValue manifest, Topic prim) {
         t._manifest = manifest??JSObject.CreateObject();
-        t._saved = t._manifest["s"].ValueType == JSValueType.Boolean && ((bool)t._manifest["s"]);
         var id = ObjectId.NewObjectId();
         t._manifest["_id"] = Bs2Js(id);
         t._manifest["p"] = t._path;
@@ -342,7 +362,7 @@ namespace X13.Repository {
       }
       public static void SetValue(Topic t, JSValue val) {
         t._state = val;
-        if(t._saved) {
+        if(t.CheckAttribute(Topic.Attribute.Saved)) {
           if(t._ps_state == null) {
             t._ps_state = new BsonDocument();
             t._ps_state["_id"] = t._ps_manifest["_id"];
@@ -589,16 +609,13 @@ namespace X13.Repository {
         throw new NotImplementedException("Bs2Js(" + val.Type.ToString() + ")");
       }
     }
+    [Flags]
+    public enum Attribute {
+      None = 0,
+      Required = 1,
+      Readonly = 2,
+      Saved = 4,
+    }
     #endregion nested types
-    public int CompareTo(Topic other) {
-      if(other == null) {
-        return 1;
-      }
-      return this._path.CompareTo(other._path);
-    }
-
-    public override string ToString() {
-      return _path;
-    }
   }
 }

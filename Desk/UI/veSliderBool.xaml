@@ -13,7 +13,7 @@
           <Border.Style>
             <Style TargetType="Border">
               <Setter Property="Background" Value="#CCDDCC" />
-              <Setter Property="BorderThickness" Value="1" />
+              <Setter Property="BorderThickness" Value="1,0" />
               <Setter Property="BorderBrush" Value="Black" />
             </Style>
           </Border.Style>
@@ -30,7 +30,7 @@
             <Setter TargetName="Border" Property="Background" Value="#00FF00" />
             <Setter TargetName="Caption" Property="Text" Value="On" />
           </Trigger>
-          <Trigger Property="IsTabStop" Value="False">
+          <Trigger Property="IsEnabled" Value="False">
             <Setter TargetName="Border" Property="CornerRadius" Value="9" />
             <Setter TargetName="Border" Property="BorderThickness" Value="0" />
           </Trigger>

@@ -61,6 +61,8 @@ namespace X13.UI {
     public string name { get; set; }
     public BitmapSource icon { get; protected set; }
     public IValueEditor editor { get; protected set; }
+    public bool IsReadonly { get; private set; }
+    public bool IsRequired { get; private set; }
 
     public abstract JSC.JSValue value { get; set; }
     public abstract List<Control> MenuItems(FrameworkElement src);
@@ -82,18 +84,25 @@ namespace X13.UI {
       this._manifest = manifest;
 
       string nv = null;
+      int attr = 0;
       //BitmapSource ni = null;
 
-      if(_manifest != null && _manifest.ValueType==JSC.JSValueType.Object && !_manifest.IsNull) {
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
         var vv = _manifest["editor"];
         if(vv.ValueType == JSC.JSValueType.String) {
           nv = vv.Value as string;
         }
-      //  var iv = _type["icon"];
-      //  if(iv.ValueType == JSC.JSValueType.String) {
-      //    ni = App.GetIcon(iv.Value as string);
-      //  }
+        //  var iv = _type["icon"];
+        //  if(iv.ValueType == JSC.JSValueType.String) {
+        //    ni = App.GetIcon(iv.Value as string);
+        //  }
+        JSC.JSValue js_attr;
+        if((js_attr = _manifest["attr"]).IsNumber) {
+          attr = (int)js_attr;
+        }
       }
+      IsReadonly = (attr&2)!=0;
+      IsRequired = (attr&1)!=0;
       if(nv == null){
         string v;
         if(value.ValueType == JSC.JSValueType.String && (v = value.Value as string) != null && v.Length > 3 && v[0] == '¤') {

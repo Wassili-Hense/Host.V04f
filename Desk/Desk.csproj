@@ -115,6 +115,9 @@
     <Compile Include="Inspector\InTopic.cs" />
     <Compile Include="Inspector\InValue.cs" />
     <Compile Include="UI\IValueEditor.cs" />
+    <Compile Include="UI\veAttribute.xaml.cs">
+      <DependentUpon>veAttribute.xaml</DependentUpon>
+    </Compile>
     <Compile Include="UI\veDefault.cs" />
     <Compile Include="Properties\VersionInfo.cs" />
     <Compile Include="UI\ActiveDocumentConverter.cs" />
@@ -148,6 +151,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Page Include="UI\UIDocument.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="UI\veAttribute.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

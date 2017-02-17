@@ -25,6 +25,7 @@ namespace X13.UI {
     private static SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>> _editors;
     static InspectorForm() {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
+      _editors["Attribute"] = veAttribute.Create;
       _editors["Boolean"] = veSliderBool.Create;
       _editors["Integer"] = veInteger.Create;
       _editors["Double"] = veDouble.Create;

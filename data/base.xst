@@ -2,17 +2,17 @@
   <i n='$YS'>
     <i n='TYPES'>
       <i n='Core'>
-        <i n='Boolean' s='{"default":false,"manifest":{"editor":"Boolean"}}' m='{"s":true}' />
-        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"p":{"readonly":true}}}' m='{"s":true}' />
+        <i n='Boolean' s='{"default":false,"manifest":{"editor":"Boolean"}}' m='{"attr":4}' />
+        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"attr":{"editor":"Attribute","attr":1},"p":{"attr":3}}}' m='{"attr":5}' />
       </i>
     </i>
   </i>
-  <i n='Test' m='{"s":true}'>
-    <i n='A' s='true' m='{"s":true}' />
-    <i n='B' s='42' m='{"s":true}' />
-    <i n='C' s='3.1415926' m='{"s":true}' />
-    <i n='D' s='"Alpha"' m='{"s":true}' />
-    <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{"s":true}' />
-    <i n='F' s='false' m='{"s":true}' />
+  <i n='Test' m='{"attr":4}'>
+    <i n='A' s='true' m='{"attr":4}' />
+    <i n='B' s='42' m='{"attr":4}' />
+    <i n='C' s='3.1415926' m='{"attr":4}' />
+    <i n='D' s='"Alpha"' m='{"attr":4}' />
+    <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{"attr":4}' />
+    <i n='F' s='false' m='{"attr":4}' />
   </i>
 </xst>

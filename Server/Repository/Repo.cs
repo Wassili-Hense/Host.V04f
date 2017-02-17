@@ -144,10 +144,9 @@ namespace X13.Repository {
         }
         break;
       case Perform.Art.changedField:
-      case Perform.Art.move:
         _objects.Update(obj);
-        if((cmd.o as string) == "s") {
-          if(cmd.src.saved) {
+        if((cmd.o as string) == "attr") {
+          if(cmd.src.CheckAttribute(Topic.Attribute.Saved) ) {
             Topic.I.SetValue(cmd.src, cmd.src.GetState());
             if(state != null) {
               _states.Upsert(state);
@@ -157,9 +156,12 @@ namespace X13.Repository {
           }
         }
         break;
+      case Perform.Art.move:
+        _objects.Update(obj);
+        break;
       case Perform.Art.create:
         _objects.Upsert(obj);
-        if(cmd.src.saved && state != null) {
+        if(cmd.src.CheckAttribute(Topic.Attribute.Saved) && state != null) {
           _states.Upsert(state);
         }
         break;

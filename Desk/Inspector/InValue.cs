@@ -188,7 +188,7 @@ namespace X13.UI {
         l.Add(ma);
       }
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = _parent != null && (_manifest == null || (f = _manifest["required"]).ValueType != JSC.JSValueType.Boolean || true != (bool)f);
+      mi.IsEnabled = _parent != null && !IsRequired;
       mi.Click += miDelete_Click;
       l.Add(mi);
       return l;

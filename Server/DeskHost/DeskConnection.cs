@@ -177,7 +177,7 @@ namespace X13.DeskHost {
           t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
           Topic.I.Fill(t, jsp["default"], jsp["manifest"], _owner);
         } else {
-          Log.Warning("Create({0}, {1}) - unknown prototype", t.path, pn);
+          Log.Warning("Create({0}, {1}) - unknown prototype", msg[2].Value as string, pn);
         }
       }
       if(t==null){
