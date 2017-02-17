@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace X13.UI {
   class veString : TextBox, IValueEditor {
@@ -21,8 +22,7 @@ namespace X13.UI {
       _owner = owner;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
-      base.BorderThickness = new System.Windows.Thickness(0);
-      base.Background = System.Windows.Media.Brushes.Azure;
+      base.BorderBrush = Brushes.Black;
       base.GotFocus += ve_GotFocus;
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
@@ -42,10 +42,12 @@ namespace X13.UI {
     public void TypeChanged(JSC.JSValue type) {
       if(_owner.IsReadonly) {
         base.IsReadOnly = true;
-        base.Background = System.Windows.Media.Brushes.White;
+        base.Background = Brushes.White;
+        base.BorderThickness = new System.Windows.Thickness(0, 0, 0, 0);
       } else {
         base.IsReadOnly = false;
-        base.Background = System.Windows.Media.Brushes.Azure;
+        base.Background = Brushes.Azure;
+        base.BorderThickness = new System.Windows.Thickness(1, 0, 1, 0);
       }
     }
 

@@ -28,7 +28,7 @@ namespace X13.UI {
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
       base.IsGroupHeader = true;
-      levelPadding = 5;
+      levelPadding = 1;
       _items = new List<InBase>();
       _value = isManifest?_data.type:_data.value;
       UpdateType(_data.type);
@@ -47,7 +47,7 @@ namespace X13.UI {
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
       base.IsGroupHeader = false;
-      levelPadding = _parent.levelPadding + 7;
+      levelPadding = _parent.levelPadding + 5;
       _value = value;
       UpdateType(type);
       UpdateData(value);

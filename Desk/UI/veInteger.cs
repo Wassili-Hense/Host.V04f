@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace X13.UI {
   internal class veInteger: Xceed.Wpf.Toolkit.LongUpDown, IValueEditor {
@@ -21,11 +22,12 @@ namespace X13.UI {
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
-      base.BorderThickness = new System.Windows.Thickness(0);
+      base.BorderThickness = new System.Windows.Thickness(1, 0, 1, 0);
+      base.BorderBrush = Brushes.Black;
       base.GotFocus += ve_GotFocus;
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
-      base.Background = System.Windows.Media.Brushes.Azure;
+      base.Background = Brushes.Azure;
       ValueChanged(_owner.value);
       TypeChanged(type);
     }

@@ -24,7 +24,7 @@ namespace X13.UI {
       this.name = "Manifest";
       this._path = string.Empty;
       base._isVisible = true;
-      base._isExpanded = true; // fill _valueVC
+      base._isExpanded = true;
       base.IsGroupHeader = true;
       base.levelPadding = 1;
       base._items = new List<InBase>();
@@ -44,9 +44,9 @@ namespace X13.UI {
       base.name = name;
       base._items = new List<InBase>();
       base._isVisible = true;
-      base._isExpanded = true; // fill _valueVC
+      base._isExpanded = true;
       base.IsGroupHeader = false;
-      levelPadding = _parent.levelPadding + 7;
+      levelPadding = _parent.levelPadding + 5;
       this._value = value;
       UpdateType(type);
       UpdateData(value);

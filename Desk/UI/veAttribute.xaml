@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" 
+             TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Arial" FontSize="14"
              mc:Ignorable="d" 
              d:DesignHeight="16" d:DesignWidth="400" GotFocus="UserControl_GotFocus_1">
   <Grid>
@@ -16,31 +16,33 @@
     <Grid.Resources>
       <Style TargetType="ToggleButton">
         <Setter Property="Margin" Value="10,0" />
+        <Setter Property="Width" Value="90" />
         <Setter Property="Template">
           <Setter.Value>
             <ControlTemplate TargetType="ToggleButton">
               <Border Name="boTempl" BorderBrush="Black" BorderThickness="1,0">
                 <Border.Style>
                   <Style TargetType="Border">
-                    <Setter Property="Background" Value="White" />
+                    <Setter Property="Background" Value="Azure" />
                   </Style>
                 </Border.Style>
-                <TextBlock Name="tbTempl" Text="{TemplateBinding Property=ContentControl.Content}" Margin="7,0" FontStretch="Expanded" FontWeight="Bold">
+                <TextBlock Name="tbTempl" Text="{TemplateBinding Property=ContentControl.Content}" HorizontalAlignment="Center" FontStretch="Expanded">
                   <TextBlock.Style>
                     <Style TargetType="TextBlock">
-                      <Setter Property="Foreground" Value="LightGray" />
+                      <Setter Property="Foreground" Value="DarkGray" />
                     </Style>
                   </TextBlock.Style>
                 </TextBlock>
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsChecked" Value="True">
-                  <Setter TargetName="boTempl" Property="Background" Value="#E0FFE0" />
                   <Setter TargetName="tbTempl" Property="Foreground" Value="#00FF00" />
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                   <Setter TargetName="boTempl" Property="CornerRadius" Value="9" />
                   <Setter TargetName="boTempl" Property="BorderThickness" Value="0" />
+                  <Setter TargetName="boTempl" Property="Background" Value="White" />
+
                 </Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate>

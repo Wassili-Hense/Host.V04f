@@ -52,7 +52,7 @@ namespace X13.UI {
         name = "children";
         icon = App.GetIcon("children");
         editor = null;
-        levelPadding = 5;
+        levelPadding = 1;
         _populated = true;
         if(_owner.children != null) {
           InsertItems(_owner.children);
@@ -60,7 +60,7 @@ namespace X13.UI {
       } else {
         name = _owner.name;
         base.UpdateType(_owner.type);
-        levelPadding = _parent.levelPadding + 7;
+        levelPadding = _parent.levelPadding + 5;
       }
       base._isExpanded = _root && _owner.children!=null && _owner.children.Any();
       base._isVisible = _root || (_parent._isVisible && _parent._isExpanded);
@@ -71,7 +71,7 @@ namespace X13.UI {
       _collFunc = collFunc;
       name = string.Empty;
       IsEdited = true;
-      levelPadding = _parent == null ? 5 : _parent.levelPadding + 7;
+      levelPadding = _parent == null ? 1 : _parent.levelPadding + 5;
 
       JSC.JSValue sn;
       if(_cStruct != null && (sn = _cStruct["type"]).ValueType == JSC.JSValueType.String) {
