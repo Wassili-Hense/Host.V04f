@@ -127,7 +127,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="UI\veDateTimePicker.cs" />
-    <Compile Include="UI\veObjectId.cs" />
+    <Compile Include="UI\veTopicReference.cs" />
     <Compile Include="UI\veDouble.cs" />
     <Compile Include="UI\veInteger.cs" />
     <Compile Include="UI\veSliderBool.xaml.cs">

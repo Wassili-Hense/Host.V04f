@@ -107,8 +107,8 @@ namespace X13.UI {
         string v;
         if(value.ValueType == JSC.JSValueType.String && (v = value.Value as string) != null && v.Length > 3 && v[0] == '¤') {
           switch(v.Substring(1, 2)) {
-          case "ID":
-            nv = "ObjectId";
+          case "TR":
+            nv = "TopicReference";
             break;
           case "VR":
             nv = "Version";

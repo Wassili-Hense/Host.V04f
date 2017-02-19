@@ -32,6 +32,7 @@ namespace X13.DeskHost {
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
       _owner = Topic.root.Get("/$YS/Desk").Get(base.ToString());
+      _owner.SetAttribute(Topic.Attribute.Readonly | Topic.Attribute.Required);
 
       _owner.SetField("Desk.Address", EndPoint.Address.ToString(), _owner);
       _owner.SetField("Desk.Port", EndPoint.Port, _owner);

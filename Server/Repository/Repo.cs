@@ -135,8 +135,8 @@ namespace X13.Repository {
       if(_objects == null) {
         return;
       }
-      BsonDocument obj, state;
-      Topic.I.ReqData(cmd.src, out obj, out state);
+      BsonDocument manifest, state;
+      Topic.I.ReqData(cmd.src, out manifest, out state);
       switch(cmd.art) {
       case Perform.Art.changedState:
         if(state != null) {
@@ -144,7 +144,7 @@ namespace X13.Repository {
         }
         break;
       case Perform.Art.changedField:
-        _objects.Update(obj);
+        _objects.Update(manifest);
         if((cmd.o as string) == "attr") {
           if(cmd.src.CheckAttribute(Topic.Attribute.Saved) ) {
             Topic.I.SetValue(cmd.src, cmd.src.GetState());
@@ -152,24 +152,33 @@ namespace X13.Repository {
               _states.Upsert(state);
             }
           } else {
-            _states.Delete(obj["_id"]);
+            _states.Delete(manifest["_id"]);
           }
         }
         break;
       case Perform.Art.move:
-        _objects.Update(obj);
+        _objects.Update(manifest);
         break;
       case Perform.Art.create:
-        _objects.Upsert(obj);
+        _objects.Upsert(manifest);
         if(cmd.src.CheckAttribute(Topic.Attribute.Saved) && state != null) {
           _states.Upsert(state);
         }
         break;
       case Perform.Art.remove:
-        _states.Delete(obj["_id"]);
-        _objects.Delete(obj["_id"]);
+        _states.Delete(manifest["_id"]);
+        _objects.Delete(manifest["_id"]);
         break;
       }
+    }
+
+    internal string Id2Topic(ObjectId id) {
+      var d = _objects.FindById(id);
+      BsonValue p;
+      if(d!=null && ( p=d["p"] )!=null && p.IsString) {
+        return p.AsString;
+      }
+      return null;
     }
 
     #endregion internal Members
@@ -212,7 +221,7 @@ namespace X13.Repository {
       if(xElement.Attribute("ver") != null && Version.TryParse(xElement.Attribute("ver").Value, out ver)) {
         if(owner == null ? Topic.root.Exist(path, out cur) : owner.Exist(xElement.Attribute("n").Value, out cur)) {
           Version oldVer;
-          var ov_js = cur.GetField("$PS.ver");
+          var ov_js = cur.GetField("version");
           string ov_s;
           if(ov_js.ValueType == JSValueType.String && (ov_s = ov_js.Value as string) != null && ov_s.StartsWith("¤VR") && Version.TryParse(ov_s.Substring(3), out oldVer) && oldVer >= ver) {
             return; // don't import older version
@@ -233,7 +242,7 @@ namespace X13.Repository {
         }
       }
       if(setVersion) {
-        JsLib.SetField(ref manifest, "$PS.ver", "¤VR" + ver.ToString());
+        JsLib.SetField(ref manifest, "version", "¤VR" + ver.ToString());
       }
 
       if(xElement.Attribute("s") != null) {

@@ -77,11 +77,8 @@ namespace SrvTest {
     [TestMethod]
     public void T06() {
       Topic a = Topic.root.Get("A");
-      var id = a.GetField("_id");
-      Assert.IsTrue(id.Value is JSObjectId);
-      var path = a.GetField("p");
-      Assert.AreEqual(JSValueType.String, path.ValueType);
-      Assert.AreEqual("/A", path.ToString());
+      var attr = a.GetField("attr");
+      Assert.IsTrue(attr.IsNumber);
     }
     [TestMethod]
     public void T07() {
@@ -91,7 +88,6 @@ namespace SrvTest {
       _repo.Tick();
       Assert.AreEqual(val, a.GetState());
     }
-
     [TestMethod]
     public void T08() {
       if(File.Exists(dbPath)) {
@@ -101,19 +97,19 @@ namespace SrvTest {
 
       Topic a = Topic.root.Get("A");
       var val = JSValue.Marshal(43);
-      a.saved = true;
+      a.SetAttribute(Topic.Attribute.Saved);
       a.SetState(val);
 
       Topic b = Topic.root.Get("B");
       b.SetState(JSValue.Marshal(75));
 
       Topic c = Topic.root.Get("C");
-      c.saved = true;
+      c.SetAttribute(Topic.Attribute.Saved);
       c.SetState(JSValue.Marshal(12.01));
 
       _repo.Tick();
 
-      c.saved = false;
+      c.ClearAttribute(Topic.Attribute.Saved);
 
       _repo.Tick();
 
@@ -126,26 +122,25 @@ namespace SrvTest {
       _repo.Init();
       _repo.Start();
       Assert.IsTrue(Topic.root.Exist("A", out a));
-      Assert.IsTrue(a.saved);
+      Assert.IsTrue(a.CheckAttribute(Topic.Attribute.Saved) );
       Assert.AreEqual(43, (int)a.GetState());
 
       Assert.IsTrue(Topic.root.Exist("B", out b));
-      Assert.IsFalse(b.saved);
+      Assert.IsFalse(b.CheckAttribute(Topic.Attribute.Saved));
       Assert.AreEqual(JSValue.Undefined, b.GetState());
 
       Assert.IsTrue(Topic.root.Exist("C", out c));
-      Assert.IsFalse(c.saved);
+      Assert.IsFalse(c.CheckAttribute(Topic.Attribute.Saved));
       Assert.AreEqual(JSValue.Undefined, c.GetState());
       _repo.Stop();
     }
-
     [TestMethod]
     public void T09() {
       Topic c = Topic.root.Get("C");
-      c.saved = true;
+      c.SetAttribute(Topic.Attribute.Saved);
       c.SetField("MQTT.path", "/dev/Node1");
       _repo.Tick();
-      Assert.IsTrue((bool)c.GetField("s"));
+      Assert.AreEqual((int)Topic.Attribute.Saved, (int)c.GetField("attr"));
       Assert.AreEqual("/dev/Node1", c.GetField("MQTT.path").ToString());
     }
     [TestMethod]

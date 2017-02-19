@@ -31,7 +31,7 @@ namespace X13.UI {
       _editors["Double"] = veDouble.Create;
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
-      _editors["ObjectId"] = veObjectId.Create;
+      _editors["TopicReference"] = veTopicReference.Create;
     }
     public static IValueEditor GetEdititor(string editor, InBase owner, JSC.JSValue manifest) {
       IValueEditor rez;

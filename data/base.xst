@@ -1,9 +1,9 @@
-<xst path='/' ver="0.417.215.2">
+<xst path='/' ver="0.417.219.3">
   <i n='$YS' m='{"attr":1}'>
     <i n='TYPES' m='{"attr":1}'>
       <i n='Core' m='{"attr":1}'>
         <i n='Boolean' s='{"default":false,"manifest":{"editor":"Boolean"}}' m='{"attr":4}' />
-        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"attr":{"editor":"Attribute","attr":1},"p":{"attr":3}}}' m='{"attr":5}' />
+        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"attr":{"editor":"Attribute","attr":1},"Desk":{"Fields":{"Address":{"attr":2},"Port":{"attr":2}}}}}' m='{"attr":5}' />
       </i>
     </i>
   </i>

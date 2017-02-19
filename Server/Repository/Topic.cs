@@ -44,7 +44,10 @@ namespace X13.Repository {
         var id = ObjectId.NewObjectId();
         _ps_manifest["_id"] = id;
         _ps_manifest["p"] = new BsonValue(_path);
-        _manifest = I.Bs2Js(_ps_manifest);
+        var m_v = new BsonDocument();
+        m_v["attr"] = new BsonValue(0);
+        _ps_manifest["v"] = m_v;
+        _manifest = I.Bs2Js(m_v);
       }
     }
 
@@ -285,7 +288,7 @@ namespace X13.Repository {
       public static void Create(BsonDocument obj, BsonDocument state) {
         Topic t = I.Get(Topic.root, obj["p"].AsString, true, null, false, false);
         t._ps_manifest = obj;
-        t._manifest = Bs2Js(obj);
+        t._manifest = Bs2Js(t._ps_manifest["v"]);
         if(state != null) {
           if(t.CheckAttribute(Topic.Attribute.Saved)) {
             t._ps_state = state;
@@ -295,10 +298,14 @@ namespace X13.Repository {
       }
       public static void Fill(Topic t, JSValue state, JSValue manifest, Topic prim) {
         t._manifest = manifest??JSObject.CreateObject();
+        if(!t._manifest["attr"].IsNumber) {
+          t._manifest["attr"] = new JST.Number(0);
+        }
+        t._ps_manifest = new BsonDocument();
         var id = ObjectId.NewObjectId();
-        t._manifest["_id"] = Bs2Js(id);
-        t._manifest["p"] = t._path;
-        t._ps_manifest = Js2Bs(t._manifest) as BsonDocument;
+        t._ps_manifest["_id"] = id;
+        t._ps_manifest["p"] = new BsonValue(t._path);
+        t._ps_manifest["v"] = Js2Bs(t._manifest) as BsonDocument;
 
         var c = Perform.Create(t, Perform.Art.create, prim);
         _repo.DoCmd(c, false);
@@ -388,7 +395,7 @@ namespace X13.Repository {
         } else {
           p[ps[ps.Length - 1]] = val;
         }
-        t._ps_manifest.Set(fPath, Js2Bs(val));
+        t._ps_manifest.Set("v." + fPath, Js2Bs(val));
       }
 
       public static void UpdatePath(Topic t) {
@@ -532,8 +539,13 @@ namespace X13.Repository {
           return new BsonValue((int)val);
         case JSValueType.String: {
             var s = val.Value as string;
-            if(s != null && s.StartsWith("¤ID")) {
-              return new ObjectId(s.Substring(3));
+            if(s != null && s.StartsWith("¤TR")) {
+              var t = Get(Topic.root, s.Substring(3), false, null, false, false);
+              if(t!=null) {
+                return t._ps_manifest["_id"];
+              } else {
+                throw new ArgumentException("TopicRefernce("+s.Substring(3)+") NOT FOUND");
+              }
             }
             return new BsonValue(s);
           }
@@ -571,8 +583,14 @@ namespace X13.Repository {
           return JSValue.Undefined;
         }
         switch(val.Type) {
-        case BsonType.ObjectId:
-          return new JST.String("¤ID" + val.AsObjectId.ToString());
+          case BsonType.ObjectId: {
+              var p = _repo.Id2Topic(val.AsObjectId);
+              if(p!=null) {
+                return new JST.String("¤TR" + p);
+              } else {
+                throw new ArgumentException("Unknown ObjectId: " + val.AsObjectId.ToString());
+              }
+            }
         case BsonType.Array: {
             var arr = val.AsArray;
             var r = new JST.Array(arr.Count);

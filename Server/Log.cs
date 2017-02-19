@@ -26,7 +26,7 @@ namespace X13 {
         Directory.CreateDirectory("../log");
       }
       useFile = true;
-      _lfMask = "../log/{0}_" + Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetEntryAssembly().Location) + ".log";
+      _lfMask = "../log/{0}_" + Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetCallingAssembly().Location) + ".log";
       _records = new System.Collections.Concurrent.ConcurrentQueue<LogRecord>();
       _kickEv = new AutoResetEvent(false);
       _wh = ThreadPool.RegisterWaitForSingleObject(_kickEv, Process, null, -1, false);

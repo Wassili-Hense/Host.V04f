@@ -21,16 +21,17 @@ namespace X13.UI {
   /// Interaction logic for veAttribute.xaml
   /// </summary>
   public partial class veAttribute : UserControl, IValueEditor {
-    public static IValueEditor Create(InBase owner, JSC.JSValue type) {
-      return new veAttribute(owner, type);
+    public static IValueEditor Create(InBase owner, JSC.JSValue manifest) {
+      return new veAttribute(owner, manifest);
     }
 
     private InBase _owner;
 
-    public veAttribute(InBase owner, JSC.JSValue type) {
+    public veAttribute(InBase owner, JSC.JSValue manifest) {
       _owner = owner;
       InitializeComponent();
       ValueChanged(_owner.value);
+      TypeChanged(manifest);
     }
 
     public void ValueChanged(NiL.JS.Core.JSValue value) {
@@ -45,7 +46,8 @@ namespace X13.UI {
         tbRequired.IsChecked = (a & 1) != 0;
       }
     }
-    public void TypeChanged(NiL.JS.Core.JSValue type) {
+    public void TypeChanged(NiL.JS.Core.JSValue manifest) {
+      tbSaved.Visibility = _owner.levelPadding>7?System.Windows.Visibility.Hidden:System.Windows.Visibility.Visible;
       tbSaved.IsEnabled = !_owner.IsReadonly;
       tbReadonly.IsEnabled = !_owner.IsReadonly;
       tbRequired.IsEnabled = !_owner.IsReadonly;

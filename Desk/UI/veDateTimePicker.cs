@@ -16,7 +16,7 @@ namespace X13.UI {
 
     private InBase _owner;
     private DateTime _oldValue;
-    public veDateTimePicker(InBase owner, JSC.JSValue type) {
+    public veDateTimePicker(InBase owner, JSC.JSValue manifest) {
       _owner = owner;
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
@@ -28,7 +28,7 @@ namespace X13.UI {
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
       ValueChanged(_owner.value);
-      TypeChanged(type);
+      TypeChanged(manifest);
     }
     public new void ValueChanged(JSC.JSValue value) {
       if(value.ValueType == JSC.JSValueType.Date) {
@@ -39,16 +39,27 @@ namespace X13.UI {
       }
     }
 
-    public void TypeChanged(JSC.JSValue type) {
+    public void TypeChanged(JSC.JSValue manifest) {
+      if(_owner.IsReadonly) {
+        base.IsReadOnly = true;
+        base.Background = Brushes.White;
+        base.BorderThickness = new System.Windows.Thickness(0, 0, 0, 0);
+      } else {
+        base.IsReadOnly = false;
+        base.Background = Brushes.Azure;
+        base.BorderThickness = new System.Windows.Thickness(1, 0, 1, 0);
+      }
     }
 
     private void Publish() {
-      if(base.Value.HasValue) {
-        if(_oldValue != base.Value.Value) {
-          _owner.value = JSC.JSValue.Marshal(base.Value.Value);
+      if(!_owner.IsReadonly) {
+        if(base.Value.HasValue) {
+          if(_oldValue != base.Value.Value) {
+            _owner.value = JSC.JSValue.Marshal(base.Value.Value);
+          }
+        } else {
+          _owner.value = JSC.JSValue.Undefined;
         }
-      } else {
-        _owner.value = JSC.JSValue.Undefined;
       }
     }
     private void ve_KeyUp(object sender, System.Windows.Input.KeyEventArgs e) {

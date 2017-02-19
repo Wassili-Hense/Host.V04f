@@ -17,13 +17,13 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace X13.UI {
-  internal class veObjectId : TextBlock, IValueEditor {
+  internal class veTopicReference : TextBlock, IValueEditor {
     public static IValueEditor Create(InBase owner, JSC.JSValue type) {
-      return new veObjectId(owner, type);
+      return new veTopicReference(owner, type);
     }
 
 
-    public veObjectId(InBase owner, JSC.JSValue type) {
+    public veTopicReference(InBase owner, JSC.JSValue type) {
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
       ValueChanged(owner.value);
@@ -31,7 +31,7 @@ namespace X13.UI {
 
     public void ValueChanged(JSC.JSValue value) {
       string rez;
-      if(value != null && value.ValueType==JSC.JSValueType.String && (rez= value.Value as string)!=null && rez.StartsWith("¤ID")) {
+      if(value != null && value.ValueType==JSC.JSValueType.String && (rez= value.Value as string)!=null && rez.StartsWith("¤TR")) {
         this.Text = rez.Substring(3);
         base.Foreground = Brushes.LightGray;
       } else {
