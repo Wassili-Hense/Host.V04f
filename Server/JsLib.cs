@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 
 namespace X13 {
-  internal static class JsLib {
+  public static class JsLib {
     public static readonly char[] SPLITTER_OBJ = new char[] { '.' };
 
     public static void SetField(ref JSValue obj, string path, JSValue val) {
@@ -24,11 +24,24 @@ namespace X13 {
         }
         p = c;
       }
-      if(val == null) {
+      if(val == null || val.IsNull) {
         p.DeleteProperty(ps[ps.Length - 1]);
       } else {
         p[ps[ps.Length - 1]] = val;
       }
+    }
+    public static JSValue Clone(JSValue org) {
+      if(org==null || !org.Defined) {
+        return org;
+      }
+      if(org.ValueType==JSValueType.Object) {
+        var ret = JSObject.CreateObject();
+        foreach(var kv in org) {
+          ret[kv.Key] = Clone(kv.Value);
+        }
+        return ret;
+      }
+      return JSValue.Marshal(org.Value);
     }
   }
 }

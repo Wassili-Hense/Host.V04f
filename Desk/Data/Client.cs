@@ -58,7 +58,7 @@ namespace X13.Data {
       arr[0] = cmd;
       arr[1] = mid;
       for(int i = 0; i < arg.Length; i++) {
-        arr[i + 2] = arg[i];
+        arr[i + 2] = arg[i]??JSC.JSValue.Undefined;
       }
       this.Send(new ClRequest(mid, arr, req));
     }

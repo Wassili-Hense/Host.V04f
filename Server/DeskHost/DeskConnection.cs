@@ -33,18 +33,26 @@ namespace X13.DeskHost {
       this.SendArr(arr);
       _owner = Topic.root.Get("/$YS/Desk").Get(base.ToString());
       _owner.SetAttribute(Topic.Attribute.Readonly | Topic.Attribute.Required);
-
-      _owner.SetField("Desk.Address", EndPoint.Address.ToString(), _owner);
-      _owner.SetField("Desk.Port", EndPoint.Port, _owner);
+      var v = JSC.JSObject.CreateObject();
+      v["Address"] = EndPoint.Address.ToString();
+      v["Port"] = EndPoint.Port;
+      var m = JSC.JSObject.CreateObject();
+      m["attr"] = 3;
+      _owner.SetField("Fields.Address", m, _owner);
+      _owner.SetField("Fields.Port", m, _owner);
+      _owner.SetField("Fields.Dns", m, _owner);
       System.Net.Dns.BeginGetHostEntry(EndPoint.Address, EndDnsReq, null);
     }
     private void EndDnsReq(IAsyncResult ar) {
       try {
         var h = Dns.EndGetHostEntry(ar);
-        _owner.SetState(h.HostName, _owner);
+        var v = JSC.JSObject.CreateObject();
+        v["Address"] = EndPoint.Address.ToString();
+        v["Port"] = EndPoint.Port;
+        v["Dns"] = h.HostName;
+        _owner.SetState(v, _owner);
       }
       catch(SocketException) {
-        _owner.SetState(EndPoint.ToString(), _owner);
       }
     }
     private void RcvMsg(DeskMessage msg) {
@@ -176,7 +184,8 @@ namespace X13.DeskHost {
       if(msg.Count == 4 && msg[3].ValueType == JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)) {
         if((_basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p)) && (jsp = p.GetState()).ValueType == JSC.JSValueType.Object && jsp.Value != null) {
           t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
-          Topic.I.Fill(t, jsp["default"], jsp["manifest"], _owner);
+          var m = jsp["manifest"];
+          Topic.I.Fill(t, jsp["default"], (m.ValueType==JSC.JSValueType.Object && m.Value!=null)?JsLib.Clone(m):null, _owner);
         } else {
           Log.Warning("Create({0}, {1}) - unknown prototype", msg[2].Value as string, pn);
         }

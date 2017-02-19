@@ -150,7 +150,35 @@ namespace X13.UI {
     }
 
     public override List<Control> MenuItems(FrameworkElement src) {
-      return new List<Control>();  //TODO: 
+      var l = new List<Control>();
+      JSC.JSValue f;
+      MenuItem mi;
+      if(!base.IsReadonly && ( !_value.Defined || _value.ValueType==JSC.JSValueType.Object )) {
+        MenuItem ma = new MenuItem() { Header = "Add" };
+        if(_manifest != null && ( f = _manifest["Fields"] ).ValueType == JSC.JSValueType.Object) {
+          foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+            if(_items.Any(z => z.name == kv.Key)) {
+              continue;
+            }
+            mi = new MenuItem();
+            mi.Header = kv.Key;
+            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+            }
+            mi.Tag = kv.Value;
+            mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
+          }
+        }
+        if(ma.HasItems) {
+          l.Add(ma);
+        }
+      }
+      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi.IsEnabled = _parent != null && !IsRequired;
+      mi.Click += miDelete_Click;
+      l.Add(mi);
+      return l;
     }
 
     public override int CompareTo(InBase other) {
@@ -161,6 +189,25 @@ namespace X13.UI {
       return this._path.CompareTo(o._path);
     }
     #endregion InBase Members
+
+    #region ContextMenu
+    private void miAdd_Click(object sender, RoutedEventArgs e) {
+      var mi = sender as MenuItem;
+      if(!IsReadonly && mi != null) {
+        var name = mi.Header as string;
+        var decl = mi.Tag as JSC.JSValue;
+        if(name != null && decl != null) {
+          var def=decl["default"];
+          _data.SetField(IsGroupHeader?name:_path+"."+name, def.Defined?def:JSC.JSValue.Null);
+        }
+      }
+    }
+    private void miDelete_Click(object sender, RoutedEventArgs e) {
+      if(!IsRequired && _parent != null) {
+        _data.SetField(_path, null);
+      }
+    }
+    #endregion ContextMenu
 
     #region IDisposable Member
     public void Dispose() {

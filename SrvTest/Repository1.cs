@@ -358,7 +358,6 @@ namespace SrvTest {
 
       s1.Dispose();
     }
-    
     [TestMethod]
     public void T18() {  // Move+Subscribe
       var cmds1 = new List<Perform>();
@@ -408,6 +407,16 @@ namespace SrvTest {
       s1.Dispose();
       s2.Dispose();
       s3.Dispose();
+    }
+
+    [TestMethod]
+    public void T99() {
+      var proto = JSObject.CreateObject();
+      proto["A"] = "ABC";
+      var obj=X13.JsLib.Clone(proto);
+      proto["A"] = 43;
+      var a = obj["A"];
+      Assert.AreEqual("ABC", a.Value as string);
     }
   }
 }

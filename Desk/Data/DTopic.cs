@@ -284,11 +284,7 @@ namespace X13.Data {
 
       public void Process() {
         if(!_complete) {
-          if(_value == null ? _topic.value != null : _value.Equals(_topic.value)) {
-            _tcs.SetResult(true);
-          } else {
-            _topic.Connection.SendReq(14, this, _topic.path, _fPath, _value);
-          }
+          _topic.Connection.SendReq(14, this, _topic.path, _fPath, _value);
         }
       }
       public void Response(bool success, JSC.JSValue value) {
