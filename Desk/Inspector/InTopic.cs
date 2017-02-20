@@ -15,31 +15,12 @@ using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.UI {
   internal class InTopic : InBase, IDisposable {
-    #region default children
-    private static JSC.JSObject DEFS_Bool;
-    private static JSC.JSObject DEFS_Double;
-    private static JSC.JSObject DEFS_String;
-    private static JSC.JSObject DEFS_Date;
-    static InTopic() {
-      DEFS_Bool = JSC.JSObject.CreateObject();
-      DEFS_Bool["type"] = "Boolean";
-
-      DEFS_Double = JSC.JSObject.CreateObject();
-      DEFS_Double["type"] = "Double";
-
-      DEFS_String = JSC.JSObject.CreateObject();
-      DEFS_String["type"] = "String";
-
-      DEFS_Date = JSC.JSObject.CreateObject();
-      DEFS_Date["type"] = "Date";
-    }
-    #endregion default children
-
     private InTopic _parent;
     private DTopic _owner;
+    private DTopic _coreTypes;
     private bool _root;
     private bool _populated;
-    private JSC.JSValue _cStruct;
+    private string _createType;
 
     public InTopic(DTopic owner, InTopic parent, Action<InBase, bool> collFunc) {
       _owner = owner;
@@ -62,21 +43,17 @@ namespace X13.UI {
         base.UpdateType(_owner.type);
         levelPadding = _parent.levelPadding + 5;
       }
-      base._isExpanded = _root && _owner.children!=null && _owner.children.Any();
+      base._isExpanded = _root && _owner.children != null && _owner.children.Any();
       base._isVisible = _root || (_parent._isVisible && _parent._isExpanded);
+      _owner.Connection.root.GetAsync("/$YS/TYPES/Core").ContinueWith(CoreTypesLoaded);
     }
-    private InTopic(JSC.JSValue cStruct, InTopic parent, Action<InBase, bool> collFunc) {
+    private InTopic(string type, InTopic parent) {
       _parent = parent;
-      _cStruct = cStruct;
-      _collFunc = collFunc;
+      _collFunc = parent._collFunc;
       name = string.Empty;
       IsEdited = true;
       levelPadding = _parent == null ? 1 : _parent.levelPadding + 5;
-
-      JSC.JSValue sn;
-      if(_cStruct != null && (sn = _cStruct["type"]).ValueType == JSC.JSValueType.String) {
-        parent._owner.GetAsync("/$YS/TYPES/" + (sn.Value as string)).ContinueWith(TypeLoaded, TaskScheduler.FromCurrentSynchronizationContext());
-      }
+      _createType = type;
     }
 
     public override bool IsExpanded {
@@ -103,7 +80,7 @@ namespace X13.UI {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
           //base.name = name;
-          _parent._owner.CreateAsync(name, _cStruct["type"].Value as string).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
+          _parent._owner.CreateAsync(name, _createType).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
         }
         _parent._items.Remove(this);
         _parent._collFunc(this, false);
@@ -187,9 +164,9 @@ namespace X13.UI {
         _collFunc(this, false);
       }
     }
-    private void TypeLoaded(Task<DTopic> dt) {
-      if(dt.IsCompleted && dt.Result != null) {
-        base.UpdateType(dt.Result.value);
+    private void CoreTypesLoaded(Task<DTopic> dt) {
+      if(dt.IsCompleted && !dt.IsFaulted) {
+        _coreTypes = dt.Result;
       }
     }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
@@ -238,18 +215,22 @@ namespace X13.UI {
           ma.Items.Add(mi);
         }
       } else {
-        mi = new MenuItem() { Header = "Boolean", Tag = InTopic.DEFS_Bool, Icon = new Image() { Source = App.GetIcon("Boolean") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "Double", Tag = InTopic.DEFS_Double, Icon = new Image() { Source = App.GetIcon("Double") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "String", Tag = InTopic.DEFS_String, Icon = new Image() { Source = App.GetIcon("String") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
-        mi = new MenuItem() { Header = "Date", Tag = InTopic.DEFS_Date, Icon = new Image() { Source = App.GetIcon("Date") } };
-        mi.Click += miAdd_Click;
-        ma.Items.Add(mi);
+        if(_coreTypes != null) {
+          foreach(var t in _coreTypes.children) {
+            if(t.name == "Manifest" || (tmp1 = t.value).ValueType != JSC.JSValueType.Object || tmp1.Value == null) {
+              continue;
+            }
+            mi = new MenuItem() { Header = t.name, Tag = tmp1 };
+            if(tmp1["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = new Image() { Source = App.GetIcon(tmp1["icon"].Value as string) };
+            } else {
+              mi.Icon = new Image() { Source = App.GetIcon(t.name) };
+            }
+            mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
+
+          }
+        }
       }
       if(ma.HasItems) {
         l.Add(ma);
@@ -261,12 +242,12 @@ namespace X13.UI {
         l.Add(mi);
         l.Add(new Separator());
       }
-      mi = new MenuItem() { Header="Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
+      mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       mi.IsEnabled = !_root && !IsRequired;
       mi.Click += miDelete_Click;
       l.Add(mi);
       if(!_root && !IsRequired) {
-        mi = new MenuItem() { Header="Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } };
+        mi = new MenuItem() { Header = "Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } };
         mi.Click += miRename_Click;
         l.Add(mi);
       }
@@ -274,17 +255,18 @@ namespace X13.UI {
     }
 
     private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {
+      var mi = sender as MenuItem;
+      if(mi == null) {
+        return;
+      }
       if(!IsExpanded) {
         IsExpanded = true;
         base.PropertyChangedReise("IsExpanded");
       }
       bool pc_items = false;
-      var decl = (sender as MenuItem).Tag as JSC.JSValue;
+      var decl = mi.Tag as JSC.JSValue;
       if(decl != null) {
-        var mName = decl["name"];
-        if(mName.ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(mName.Value as string)) {
-          _owner.CreateAsync(mName.Value as string, decl["type"].Value as string);
-        } else {
+        if((bool)decl["willful"]) {
           if(_items == null) {
             lock(this) {
               if(_items == null) {
@@ -293,10 +275,12 @@ namespace X13.UI {
               }
             }
           }
-          var ni = new InTopic(decl, this, _collFunc);
+          var ni = new InTopic((decl["type"].Value as string) ?? (mi.Header as string), this);
           _items.Insert(0, ni);
           _collFunc(ni, true);
         }
+      } else {
+        _owner.CreateAsync(mi.Header as string, decl["type"].Value as string);
       }
       if(pc_items) {
         PropertyChangedReise("items");
@@ -329,7 +313,7 @@ namespace X13.UI {
     #region IComparable<InBase> Members
     public override int CompareTo(InBase other) {
       var o = other as InTopic;
-      return o == null?1:this.path.CompareTo(o.path);
+      return o == null ? 1 : this.path.CompareTo(o.path);
     }
     private string path {
       get {

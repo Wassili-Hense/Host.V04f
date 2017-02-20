@@ -85,17 +85,17 @@ namespace X13.UI {
 
       string nv = null;
       int attr = 0;
-      //BitmapSource ni = null;
+      BitmapSource ni = null;
 
       if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
         var vv = _manifest["editor"];
         if(vv.ValueType == JSC.JSValueType.String) {
           nv = vv.Value as string;
         }
-        //  var iv = _type["icon"];
-        //  if(iv.ValueType == JSC.JSValueType.String) {
-        //    ni = App.GetIcon(iv.Value as string);
-        //  }
+        var iv = _manifest["icon"];
+        if(iv.ValueType == JSC.JSValueType.String) {
+          ni = App.GetIcon(iv.Value as string);
+        }
         JSC.JSValue js_attr;
         if((js_attr = _manifest["attr"]).IsNumber) {
           attr = (int)js_attr;
@@ -118,18 +118,22 @@ namespace X13.UI {
 
       }
       if(nv == null) {
-        nv = value.ValueType.ToString();
+        if(value.ValueType == JSC.JSValueType.Integer) {
+          nv = JSC.JSValueType.Double.ToString();
+        } else {
+          nv = value.ValueType.ToString();
+        }
       }
-      //if(ni == null) {
-      //  ni = App.GetIcon(nv);
-      //}
+      if(ni == null) {
+        ni = App.GetIcon(nv);
+      }
       //if(ni == null) {
       //  ni = App.GetIcon(null);
       //}
-      //if(ni != icon) {
-      //  icon = ni;
-      //  PropertyChangedReise("icon");
-      //}
+      if(ni != icon) {
+        icon = ni;
+        PropertyChangedReise("icon");
+      }
       if(nv != _editorName) {
         _editorName = nv;
         editor = InspectorForm.GetEdititor(_editorName, this, _manifest);

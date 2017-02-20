@@ -35,7 +35,6 @@ namespace X13.UI {
       _data.changed += _data_PropertyChanged;
       _data.Connection.TypeManifest.changed+=Manifest_changed;
     }
-
     private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {
       this._parent = parent;
       this._data = _parent._data;
@@ -53,21 +52,6 @@ namespace X13.UI {
       _isExpanded = this.HasChildren;
     }
 
-    protected override void UpdateType(JSC.JSValue type) {
-      base.UpdateType(type);
-      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value!=null) {
-        var pr = _manifest["Fields"] as JSC.JSValue;
-        if(pr != null) {
-          InManifest vc;
-          foreach(var kv in pr) {
-            vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
-            if(vc != null) {
-              vc.UpdateType(kv.Value);
-            }
-          }
-        }
-      }
-    }
     private void UpdateData(JSC.JSValue val) {
       _value = val;
       if(_value.ValueType == JSC.JSValueType.Object) {
@@ -114,7 +98,6 @@ namespace X13.UI {
         editor.ValueChanged(_value);
       }
     }
-
     private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
       if(art == DTopic.Art.type) {
         _value = _data.type;
@@ -127,10 +110,32 @@ namespace X13.UI {
         UpdateType(_data.Connection.TypeManifest.value);
       }
     }
+    private void SetFieldResp(Task<JSC.JSValue> r) {
+      if(r.IsCompleted) {
+        if(r.IsFaulted) {
+          UpdateData(value);
+          Log.Warning("{0}.{1} - {2}", _data.fullPath, _path, r.Exception.InnerException);
+        }
+      }
+    }
 
     #region InBase Members
+    protected override void UpdateType(JSC.JSValue type) {
+      base.UpdateType(type);
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
+        var pr = _manifest["Fields"] as JSC.JSValue;
+        if(pr != null) {
+          InManifest vc;
+          foreach(var kv in pr) {
+            vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
+            if(vc != null) {
+              vc.UpdateType(kv.Value);
+            }
+          }
+        }
+      }
+    }
     public override bool HasChildren { get { return _items.Any(); } }
-
     public override JSC.JSValue value {
       get {
         return _value;
@@ -139,16 +144,6 @@ namespace X13.UI {
         _data.SetField(_path, value).ContinueWith(SetFieldResp, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
-
-    private void SetFieldResp(Task<JSC.JSValue> r) {
-      if(r.IsCompleted) {
-        if(r.IsFaulted) {
-          UpdateData(value);
-          Log.Warning("{0}.{1} - {2}", _data.fullPath, _path, r.Exception.InnerException );
-        }
-      }
-    }
-
     public override List<Control> MenuItems(FrameworkElement src) {
       var l = new List<Control>();
       JSC.JSValue f;
@@ -180,7 +175,6 @@ namespace X13.UI {
       l.Add(mi);
       return l;
     }
-
     public override int CompareTo(InBase other) {
       var o = other as InManifest;
       if(o == null) {

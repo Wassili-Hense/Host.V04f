@@ -2,14 +2,19 @@
   <i n='$YS' m='{"attr":1}'>
     <i n='TYPES' m='{"attr":1}'>
       <i n='Core' m='{"attr":1}'>
-        <i n='Boolean' s='{"default":false,"manifest":{"editor":"Boolean"}}' m='{"attr":4}' />
-        <i n='Manifest' s='{"default":{},"manifest":{},"Fields":{"attr":{"editor":"Attribute","attr":1}}}' m='{"attr":5}' />
+        <i n='Boolean' s='{"default":false,"willful":true}' m='{"attr":4}' />
+        <i n='Date' s='{"manifest":{"editor":"Date"},"willful":true}' m='{"attr":4}' />
+        <i n='Double' s='{"default":0,"willful":true}' m='{"attr":4}' />
+        <i n='Integer' s='{"default":0,"manifest":{"editor":"Integer"},"willful":true}' m='{"attr":4}' />
+        <i n='Manifest' s='{"Fields":{"attr":{"editor":"Attribute","attr":1}}}' m='{"attr":5}' />
+        <i n='Object' s='{"default":{},"willful":true}' m='{"attr":4}' />
+        <i n='String' s='{"default":"","willful":true}' m='{"attr":4}' />
       </i>
     </i>
   </i>
   <i n='Test'>
     <i n='A' s='true' m='{"attr":4}' />
-    <i n='B' s='42' m='{"attr":4}' />
+    <i n='B' s='42' m='{"attr":4,"editor":"Integer"}' />
     <i n='C' s='3.1415926' m='{"attr":4}' />
     <i n='D' s='"Alpha"' m='{"attr":4}' />
     <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{"attr":4}' />
