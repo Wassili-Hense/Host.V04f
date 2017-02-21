@@ -50,8 +50,8 @@
         </Setter>
       </Style>
     </Grid.Resources>
-    <ToggleButton Grid.Column="0" Name="tbRequired" Content="Requred" Checked="tbChanged" Unchecked="tbChanged" />
-    <ToggleButton Grid.Column="1" Name="tbReadonly" Content="Readonly" Checked="tbChanged" Unchecked="tbChanged" />
-    <ToggleButton Grid.Column="2" Name="tbSaved" Content="Saved" Checked="tbChanged" Unchecked="tbChanged" />
+    <ToggleButton Grid.Column="0" Name="tbRequired" Content="Requred" />
+    <ToggleButton Grid.Column="1" Name="tbReadonly" Content="Readonly" />
+    <ToggleButton Grid.Column="2" Name="tbSaved" Content="Saved" />
   </Grid>
 </UserControl>

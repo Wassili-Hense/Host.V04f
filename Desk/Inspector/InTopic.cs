@@ -27,6 +27,7 @@ namespace X13.UI {
       _parent = parent;
       _collFunc = collFunc;
       _root = _parent == null;
+      _manifest = _owner.type;
       IsGroupHeader = _root;
       _owner.changed += _owner_PropertyChanged;
       if(_root) {
@@ -170,7 +171,11 @@ namespace X13.UI {
       }
     }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
-      if(!_root) {
+      if(_root) {
+        if(art == DTopic.Art.type) {
+          _manifest = _owner.type;
+        }
+      } else {
         if(art == DTopic.Art.type) {
           this.UpdateType(_owner.type);
         } else if(art == DTopic.Art.value) {

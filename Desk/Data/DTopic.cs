@@ -20,6 +20,7 @@ namespace X13.Data {
     private List<DTopic> _children;
     private JSC.JSValue _value;
     private JSC.JSValue _manifest;
+    private DTopic _typeTopic;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
@@ -85,13 +86,38 @@ namespace X13.Data {
       _value = value;
       ChangedReise(Art.value, this);
     }
-    private void MetaPublished(JSC.JSValue meta) {
-      _manifest = meta;
-      ChangedReise(Art.type, this);
+    private void ManifestPublished(JSC.JSValue manifest) {
+      _manifest = manifest;
+      bool send = true;
+      if(_manifest.ValueType==JSC.JSValueType.Object && _manifest.Value!=null){
+        var tt = _manifest["type"];
+        if(tt.ValueType == JSC.JSValueType.String && tt.Value != null) {
+          this.GetAsync("/$YS/TYPES/"+(tt.Value as string)).ContinueWith(TypeLoaded);
+          send = false;
+        }
+      }
+      if(send) {
+        ChangedReise(Art.type, this);
+      }
+    }
+    private void TypeLoaded(Task<DTopic> td) {
+      if(td.IsCompleted && !td.IsFaulted && td.Result != null) {
+        _typeTopic = td.Result;
+        _typeTopic.changed += _typeTopic_changed;
+      }
+      _typeTopic_changed(Art.value, _typeTopic);
+    }
+    private void _typeTopic_changed(DTopic.Art art, DTopic t) {
+      if(art == Art.value) {
+        if(_typeTopic.value.ValueType == JSC.JSValueType.Object && _typeTopic.value.Value != null) {
+          _manifest.__proto__ = (_typeTopic.value as JSC.JSObject) ?? (_typeTopic.value.Value as JSC.JSObject);
+          ChangedReise(Art.type, this);
+        }
+      }
     }
     private void ChangedReise(Art art, DTopic src) {
-      if(changed != null) {
-        changed(art, src);
+      if(changed != null && App.mainWindow!=null) {
+        App.mainWindow.Dispatcher.BeginInvoke(changed, System.Windows.Threading.DispatcherPriority.DataBind, art, src);
       }
     }
     private DTopic GetChild(string name, bool create) {
@@ -343,7 +369,7 @@ namespace X13.Data {
           cur.ValuePublished(_state);
         }
         if(_manifest != null) {
-          cur.MetaPublished(_manifest);
+          cur.ManifestPublished(_manifest);
         }
       }
       public void Response(bool success, JSC.JSValue value) {

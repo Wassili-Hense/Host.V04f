@@ -10,6 +10,9 @@
         <i n='Object' s='{"default":{},"willful":true}' m='{"attr":4}' />
         <i n='String' s='{"default":"","willful":true}' m='{"attr":4}' />
       </i>
+      <i n='Desk' m='{"attr":1}'>
+        <i n='Connection' s='{"Children":{},"Fields":{"Address":{"attr":3},"Dns":{"attr":3},"Port":{"attr":3}},"icon":"DeskConnection","manifest":{"attr":2}}' m='{"attr":4}' />
+      </i>
     </i>
   </i>
   <i n='Test'>

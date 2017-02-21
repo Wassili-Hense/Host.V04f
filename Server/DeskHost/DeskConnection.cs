@@ -32,15 +32,8 @@ namespace X13.DeskHost {
       arr[1] = Environment.MachineName;
       this.SendArr(arr);
       _owner = Topic.root.Get("/$YS/Desk").Get(base.ToString());
-      _owner.SetAttribute(Topic.Attribute.Readonly | Topic.Attribute.Required);
-      var v = JSC.JSObject.CreateObject();
-      v["Address"] = EndPoint.Address.ToString();
-      v["Port"] = EndPoint.Port;
-      var m = JSC.JSObject.CreateObject();
-      m["attr"] = 3;
-      _owner.SetField("Fields.Address", m, _owner);
-      _owner.SetField("Fields.Port", m, _owner);
-      _owner.SetField("Fields.Dns", m, _owner);
+      _owner.SetAttribute(Topic.Attribute.Required | Topic.Attribute.Readonly);
+      _owner.SetField("type", "Desk/Connection", _owner);
       System.Net.Dns.BeginGetHostEntry(EndPoint.Address, EndDnsReq, null);
     }
     private void EndDnsReq(IAsyncResult ar) {
@@ -53,6 +46,10 @@ namespace X13.DeskHost {
         _owner.SetState(v, _owner);
       }
       catch(SocketException) {
+        var v = JSC.JSObject.CreateObject();
+        v["Address"] = EndPoint.Address.ToString();
+        v["Port"] = EndPoint.Port;
+        _owner.SetState(v, _owner);
       }
     }
     private void RcvMsg(DeskMessage msg) {

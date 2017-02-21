@@ -87,13 +87,13 @@ namespace X13.UI {
       int attr = 0;
       BitmapSource ni = null;
 
-      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value!=null) {
         var vv = _manifest["editor"];
         if(vv.ValueType == JSC.JSValueType.String) {
           nv = vv.Value as string;
         }
         var iv = _manifest["icon"];
-        if(iv.ValueType == JSC.JSValueType.String) {
+        if(iv.ValueType == JSC.JSValueType.String && iv.Value!=null) {
           ni = App.GetIcon(iv.Value as string);
         }
         JSC.JSValue js_attr;
@@ -127,9 +127,6 @@ namespace X13.UI {
       if(ni == null) {
         ni = App.GetIcon(nv);
       }
-      //if(ni == null) {
-      //  ni = App.GetIcon(null);
-      //}
       if(ni != icon) {
         icon = ni;
         PropertyChangedReise("icon");

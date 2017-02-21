@@ -32,6 +32,13 @@ namespace X13.UI {
       InitializeComponent();
       ValueChanged(_owner.value);
       TypeChanged(manifest);
+      // subscribe on events after initialize
+      tbSaved.Checked += tbChanged;
+      tbSaved.Unchecked += tbChanged;
+      tbReadonly.Checked += tbChanged;
+      tbReadonly.Unchecked += tbChanged;
+      tbRequired.Checked += tbChanged;
+      tbRequired.Unchecked += tbChanged;
     }
 
     public void ValueChanged(NiL.JS.Core.JSValue value) {
@@ -54,7 +61,11 @@ namespace X13.UI {
     }
     private void tbChanged(object sender, RoutedEventArgs e) {
       if(!_owner.IsReadonly) {
-        _owner.value = new JSL.Number((tbSaved.IsChecked == true ? 4 : 0) + (tbRequired.IsChecked == true ? 1 : 0) + (tbReadonly.IsChecked == true ? 2 : 0));
+        int ov = _owner.value.IsNumber ? (int)_owner.value : -1;
+        int nv = (tbSaved.IsChecked == true ? 4 : 0) + (tbRequired.IsChecked == true ? 1 : 0) + (tbReadonly.IsChecked == true ? 2 : 0);
+        if(nv != ov) {
+          _owner.value = new JSL.Number(nv);
+        }
       }
     }
 

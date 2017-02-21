@@ -81,7 +81,9 @@ namespace X13 {
       LoadIcon(string.Empty, "ty_topic.png");
       LoadIcon("Attribute", "attr.png");
       LoadIcon("Boolean", "ty_bool.png");
+      LoadIcon("children", "children.png");
       LoadIcon("Date", "ty_dt.png");
+      LoadIcon("DeskConnection", "ty_desk.png");
       LoadIcon("Double", "ty_f02.png");
       LoadIcon("Integer", "ty_i64.png");
       LoadIcon("Object", "ty_obj.png");
