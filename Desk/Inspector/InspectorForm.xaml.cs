@@ -144,8 +144,8 @@ namespace X13.UI {
     }
     private void tbItemName_PreviewKeyDown(object sender, KeyEventArgs e) {
       TextBox tb;
-      InTopic tv;
-      if((tb = sender as TextBox) == null || (tv = tb.DataContext as InTopic) == null) {
+      InBase tv;
+      if((tb = sender as TextBox) == null || (tv = tb.DataContext as InBase) == null) {
         return;
       }
       if(e.Key == Key.Escape) {

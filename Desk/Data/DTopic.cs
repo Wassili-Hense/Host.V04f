@@ -109,7 +109,10 @@ namespace X13.Data {
     }
     private void _typeTopic_changed(DTopic.Art art, DTopic t) {
       if(art == Art.value) {
-        if(_typeTopic.value.ValueType == JSC.JSValueType.Object && _typeTopic.value.Value != null) {
+        if(_typeTopic == null && _manifest.__proto__ != null && _manifest.__proto__.Defined) {
+          _manifest.__proto__ = null;
+          ChangedReise(Art.type, this);
+        } else if(_typeTopic.value.ValueType == JSC.JSValueType.Object && _typeTopic.value.Value != null) {
           _manifest.__proto__ = (_typeTopic.value as JSC.JSObject) ?? (_typeTopic.value.Value as JSC.JSObject);
           ChangedReise(Art.type, this);
         }

@@ -17,8 +17,6 @@ namespace X13.UI {
   internal class InTopic : InBase, IDisposable {
     private InTopic _parent;
     private DTopic _owner;
-    private DTopic _coreTypes;
-    private bool _root;
     private bool _populated;
     private string _createType;
 
@@ -26,11 +24,10 @@ namespace X13.UI {
       _owner = owner;
       _parent = parent;
       _collFunc = collFunc;
-      _root = _parent == null;
-      _manifest = _owner.type;
-      IsGroupHeader = _root;
+      IsGroupHeader = _parent == null;
       _owner.changed += _owner_PropertyChanged;
-      if(_root) {
+      if(IsGroupHeader) {
+        _manifest = _owner.type;  // if(IsGroupHeader) don't use UpdateType(...)
         name = "children";
         icon = App.GetIcon("children");
         editor = null;
@@ -44,9 +41,8 @@ namespace X13.UI {
         base.UpdateType(_owner.type);
         levelPadding = _parent.levelPadding + 5;
       }
-      base._isExpanded = _root && _owner.children != null && _owner.children.Any();
-      base._isVisible = _root || (_parent._isVisible && _parent._isExpanded);
-      _owner.Connection.root.GetAsync("/$YS/TYPES/Core").ContinueWith(CoreTypesLoaded);
+      base._isExpanded = IsGroupHeader && _owner.children != null && _owner.children.Any();
+      base._isVisible = IsGroupHeader || (_parent._isVisible && _parent._isExpanded);
     }
     private InTopic(string type, InTopic parent) {
       _parent = parent;
@@ -77,7 +73,7 @@ namespace X13.UI {
       }
     }
     public override JSC.JSValue value { get { return _owner != null ? _owner.value : JSC.JSValue.NotExists; } set { if(_owner != null) { _owner.SetValue(value); } } }
-    public void FinishNameEdit(string name) {
+    public override void FinishNameEdit(string name) {
       if(_owner == null) {
         if(!string.IsNullOrEmpty(name)) {
           //base.name = name;
@@ -165,13 +161,8 @@ namespace X13.UI {
         _collFunc(this, false);
       }
     }
-    private void CoreTypesLoaded(Task<DTopic> dt) {
-      if(dt.IsCompleted && !dt.IsFaulted) {
-        _coreTypes = dt.Result;
-      }
-    }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
-      if(_root) {
+      if(IsGroupHeader) {
         if(art == DTopic.Art.type) {
           _manifest = _owner.type;
         }
@@ -203,31 +194,33 @@ namespace X13.UI {
     #region ContextMenu
     public override List<Control> MenuItems(System.Windows.FrameworkElement src) {
       var l = new List<Control>();
-      JSC.JSValue f, tmp1;
+      JSC.JSValue v1, v2;
       MenuItem mi;
       MenuItem ma = new MenuItem() { Header = "Add" };
-      if(_manifest != null && (f = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
-        foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-          // TODO: check resources
-          if(_items.Any(z => (tmp1 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == tmp1.Value as string)) {
+      if(_manifest != null && (v1 = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
+        foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+          if(_items.Any(z => (v2 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == v2.Value as string)) {
             continue;
           }
+          // TODO: check resources
           mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
-          mi.Click += miAdd_Click;
-          if(kv.Value["$type"].ValueType == JSC.JSValueType.String) {
-            mi.Icon = TypeName2Icon(kv.Value["$type"].Value as string);
+          if((v2 = kv.Value["icon"]).ValueType == JSC.JSValueType.String) {
+            mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
+          } else {
+            mi.Icon = new Image() { Source = App.GetIcon(kv.Key) };
           }
+          mi.Click += miAdd_Click;
           ma.Items.Add(mi);
         }
       } else {
-        if(_coreTypes != null) {
-          foreach(var t in _coreTypes.children) {
-            if(t.name == "Manifest" || (tmp1 = t.value).ValueType != JSC.JSValueType.Object || tmp1.Value == null) {
+        if(_owner.Connection.TypeManifest!= null) {
+          foreach(var t in _owner.Connection.TypeManifest.parent.children) {
+            if(t.name == "Manifest" || (v1 = t.value).ValueType != JSC.JSValueType.Object || v1.Value == null) {
               continue;
             }
-            mi = new MenuItem() { Header = t.name, Tag = tmp1 };
-            if(tmp1["icon"].ValueType == JSC.JSValueType.String) {
-              mi.Icon = new Image() { Source = App.GetIcon(tmp1["icon"].Value as string) };
+            mi = new MenuItem() { Header = t.name, Tag = v1 };
+            if((v2=v1["icon"]).ValueType == JSC.JSValueType.String) {
+              mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
             } else {
               mi.Icon = new Image() { Source = App.GetIcon(t.name) };
             }
@@ -241,17 +234,17 @@ namespace X13.UI {
         l.Add(ma);
         l.Add(new Separator());
       }
-      if(!_root) {
+      if(!IsGroupHeader) {
         mi = new MenuItem() { Header = "Open" };
         mi.Click += miOpen_Click;
         l.Add(mi);
         l.Add(new Separator());
       }
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
-      mi.IsEnabled = !_root && !IsRequired;
+      mi.IsEnabled = !IsGroupHeader && !IsRequired;
       mi.Click += miDelete_Click;
       l.Add(mi);
-      if(!_root && !IsRequired) {
+      if(!IsGroupHeader && !IsRequired) {
         mi = new MenuItem() { Header = "Rename", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Rename.png"), Width = 16, Height = 16 } };
         mi.Click += miRename_Click;
         l.Add(mi);
@@ -280,7 +273,7 @@ namespace X13.UI {
               }
             }
           }
-          var ni = new InTopic((decl["type"].Value as string) ?? (mi.Header as string), this);
+          var ni = new InTopic(decl["type"].Value as string, this);
           _items.Insert(0, ni);
           _collFunc(ni, true);
         }
@@ -302,11 +295,6 @@ namespace X13.UI {
       PropertyChangedReise("IsEdited");
     }
 
-    private Image TypeName2Icon(string sn) {
-      Image img = new Image();
-      this._owner.GetAsync("/etc/type/" + sn).ContinueWith(IconFromTypeLoaded, img, TaskScheduler.FromCurrentSynchronizationContext());
-      return img;
-    }
     private void IconFromTypeLoaded(Task<DTopic> td, object o) {
       var img = o as Image;
       if(img != null && td.IsCompleted && td.Result != null) {

@@ -2,16 +2,16 @@
   <i n='$YS' m='{"attr":1}'>
     <i n='TYPES' m='{"attr":1}'>
       <i n='Core' m='{"attr":1}'>
-        <i n='Boolean' s='{"default":false,"willful":true}' m='{"attr":4}' />
-        <i n='Date' s='{"manifest":{"editor":"Date"},"willful":true}' m='{"attr":4}' />
-        <i n='Double' s='{"default":0,"willful":true}' m='{"attr":4}' />
-        <i n='Integer' s='{"default":0,"manifest":{"editor":"Integer"},"willful":true}' m='{"attr":4}' />
-        <i n='Manifest' s='{"Fields":{"attr":{"editor":"Attribute","attr":1}}}' m='{"attr":5}' />
-        <i n='Object' s='{"default":{},"willful":true}' m='{"attr":4}' />
-        <i n='String' s='{"default":"","willful":true}' m='{"attr":4}' />
+        <i n='Boolean' s='{"default":false,"type":"Boolean","willful":true}' m='{"attr":5}' />
+        <i n='Date' s='{"manifest":{"editor":"Date"},"type":"Date","willful":true}' m='{"attr":5}' />
+        <i n='Double' s='{"default":0,"type":"Double","willful":true}' m='{"attr":5}' />
+        <i n='Integer' s='{"default":0,"manifest":{"editor":"Integer"},"type":"Integer","willful":true}' m='{"attr":5}' />
+        <i n='Manifest' s='{"Fields":{"attr":{"editor":"Attribute","attr":1},"editor":{"editor":"String"},"type":{"editor":"String"}}}' m='{"attr":5}' />
+        <i n='Object' s='{"default":{},"type":"Object","willful":true}' m='{"attr":5}' />
+        <i n='String' s='{"default":"","type":"String","willful":true}' m='{"attr":5}' />
       </i>
       <i n='Desk' m='{"attr":1}'>
-        <i n='Connection' s='{"Children":{},"Fields":{"Address":{"attr":3},"Dns":{"attr":3},"Port":{"attr":3}},"icon":"DeskConnection","manifest":{"attr":2}}' m='{"attr":4}' />
+        <i n='Connection' s='{"Children":{},"Fields":{"Address":{"attr":3},"Dns":{"attr":3},"Port":{"attr":3}},"icon":"DeskConnection"}' m='{"attr":5}' />
       </i>
     </i>
   </i>

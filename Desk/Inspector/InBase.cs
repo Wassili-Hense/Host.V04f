@@ -66,6 +66,7 @@ namespace X13.UI {
 
     public abstract JSC.JSValue value { get; set; }
     public abstract List<Control> MenuItems(FrameworkElement src);
+    public abstract void FinishNameEdit(string name);
     public void GotFocus(object sender, RoutedEventArgs e) {
       DependencyObject cur;
       ListViewItem parent;
@@ -115,7 +116,12 @@ namespace X13.UI {
             break;
           }
         }
+      }
+      if(ni == null) {
+        if(value.ValueType == JSC.JSValueType.Object && value.Value == null) {
 
+          ni = App.GetIcon((this is InTopic) ? string.Empty : "Null");  // Folder or Null
+        }
       }
       if(nv == null) {
         if(value.ValueType == JSC.JSValueType.Integer) {

@@ -52,7 +52,31 @@ namespace X13.UI {
       UpdateData(value);
       _isExpanded = this.HasChildren;
     }
+    private InValue(JSC.JSValue manifest, InValue parent) {
+      this._parent = parent;
+      base._manifest = manifest;
+      base._collFunc = parent._collFunc;
+      base.name = string.Empty;
+      this._path = _parent._path + ".";
+      base.levelPadding = _parent == null ? 1 : _parent.levelPadding + 5;
+      base._items = new List<InBase>();
+      base.IsEdited = true;
+    }
 
+    public override void FinishNameEdit(string name) {
+      if(_data == null) {
+        if(!string.IsNullOrEmpty(name)) {
+          var def = _manifest["default"];
+          _parent.ChangeValue(name, def.Defined ? def : JSC.JSValue.Null);
+        }
+        _parent._items.Remove(this);
+        _collFunc(this, false);
+      } else {
+        IsEdited = false;
+        PropertyChangedReise("IsEdited");
+        throw new NotImplementedException("InValue.Move");
+      }
+    }
     public override NiL.JS.Core.JSValue value {
       get {
         return _value;
@@ -102,7 +126,7 @@ namespace X13.UI {
                 cs = null;
               }
             }
-            var ni= new InValue(_data, this, kv.Key, kv.Value, cs, _collFunc);
+            var ni = new InValue(_data, this, kv.Key, kv.Value, cs, _collFunc);
             _items.Insert(i + 1, ni);
             if(_isVisible && _isExpanded) {
               _collFunc(ni, true);
@@ -154,9 +178,9 @@ namespace X13.UI {
       }
     }
     private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
-      if(art==DTopic.Art.type) {
+      if(art == DTopic.Art.type) {
         UpdateType(_data.type);
-      } else if(art==DTopic.Art.value) {
+      } else if(art == DTopic.Art.value) {
         _value = _data.value;
         UpdateData(_data.value);
       }
@@ -165,26 +189,45 @@ namespace X13.UI {
     #region ContextMenu
     public override List<Control> MenuItems(System.Windows.FrameworkElement src) {
       var l = new List<Control>();
-      JSC.JSValue f;
+      JSC.JSValue v1, v2;
       MenuItem mi;
-      MenuItem ma = new MenuItem() { Header = "Add" };
-      if(_manifest != null && (f = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
-        foreach(var kv in f.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-          if(_items.Any(z => z.name == kv.Key)) {
-            continue;
+      if(!base.IsReadonly && _value.ValueType == JSC.JSValueType.Object) {
+        MenuItem ma = new MenuItem() { Header = "Add" };
+        if(_manifest != null && (v1 = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
+          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+            if(_items.Any(z => z.name == kv.Key)) {
+              continue;
+            }
+            mi = new MenuItem();
+            mi.Header = kv.Key;
+            if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
+              mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+            }
+            mi.Tag = kv.Value;
+            mi.Click += miAdd_Click;
+            ma.Items.Add(mi);
           }
-          mi = new MenuItem();
-          mi.Header = kv.Key;
-          if(kv.Value["icon"].ValueType == JSC.JSValueType.String) {
-            mi.Icon = App.GetIcon(kv.Value["icon"].Value as string);
+        } else {
+          if(_data.Connection.TypeManifest != null) {
+            foreach(var t in _data.Connection.TypeManifest.parent.children) {
+              if(t.name == "Manifest" || (v1 = t.value).ValueType != JSC.JSValueType.Object || v1.Value == null) {
+                continue;
+              }
+              mi = new MenuItem() { Header = t.name, Tag = v1 };
+              if((v2 = v1["icon"]).ValueType == JSC.JSValueType.String) {
+                mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
+              } else {
+                mi.Icon = new Image() { Source = App.GetIcon(t.name) };
+              }
+              mi.Click += miAdd_Click;
+              ma.Items.Add(mi);
+            }
           }
-          mi.Tag = kv.Value;
-          mi.Click += miAdd_Click;
-          ma.Items.Add(mi);
         }
-      }
-      if(ma.HasItems) {
-        l.Add(ma);
+        if(ma.HasItems) {
+          l.Add(ma);
+          l.Add(new Separator());
+        }
       }
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       mi.IsEnabled = _parent != null && !IsRequired;
@@ -195,17 +238,38 @@ namespace X13.UI {
 
     private void miAdd_Click(object sender, RoutedEventArgs e) {
       var mi = sender as MenuItem;
-      if(mi != null) {
-        var name = mi.Header as string;
-        var decl = mi.Tag as JSC.JSValue;
-        if(name != null && decl != null) {
-          var def=decl["default"];
-          this.ChangeValue(name, def.Defined?def:JSC.JSValue.Null);
+      JSC.JSValue decl;
+      if(!IsReadonly && mi != null && (decl = mi.Tag as JSC.JSValue) != null) {
+        if(!IsExpanded) {
+          IsExpanded = true;
+          base.PropertyChangedReise("IsExpanded");
+        }
+        bool pc_items = false;
+        if((bool)decl["willful"]) {
+          if(_items == null) {
+            lock(this) {
+              if(_items == null) {
+                _items = new List<InBase>();
+                pc_items = true;
+              }
+            }
+          }
+          var ni = new InValue(decl, this);
+          _items.Insert(0, ni);
+          _collFunc(ni, true);
+        } else {
+          if(decl != null) {
+            var def = decl["default"];
+            this.ChangeValue(mi.Header as string, def.Defined ? def : JSC.JSValue.Null);
+          }
+        }
+        if(pc_items) {
+          PropertyChangedReise("items");
         }
       }
     }
     private void miDelete_Click(object sender, RoutedEventArgs e) {
-      if(_parent != null) {
+      if(_parent != null && !IsRequired) {
         _parent.ChangeValue(name, null);
       }
     }
@@ -230,7 +294,7 @@ namespace X13.UI {
     #endregion IComparable<InBase> Members
 
     public override string ToString() {
-      return _data.fullPath+":"+_path;
+      return _data.fullPath + ":" + _path;
     }
   }
 }
