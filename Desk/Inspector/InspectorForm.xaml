@@ -112,7 +112,7 @@
                     </ControlTemplate>
                   </ToggleButton.Template>
                 </ToggleButton>
-                <Image Grid.Column="2" Source="{Binding icon, TargetNullValue={StaticResource NullImage}}" VerticalAlignment="Top"  Focusable="False" Width="16" Height="16" Margin="0,1" />
+                <Image Grid.Column="2" Source="{Binding icon, TargetNullValue={StaticResource NullImage}}" Focusable="False" Width="16" Height="16" Margin="0,1" VerticalAlignment="Center" />
                 <ContentPresenter Grid.Column="3" Content="{Binding}">
                   <ContentPresenter.Style>
                     <Style TargetType="{x:Type ContentPresenter}">

@@ -42,14 +42,11 @@ namespace X13.UI {
       this._path = string.IsNullOrEmpty(_parent._path)?name:(_parent._path + "." + name);
       base.name = name;
       base._items = new List<InBase>();
-      base._isVisible = true;
-      base._isExpanded = true;
       base.IsGroupHeader = false;
       levelPadding = _parent.levelPadding + 5;
       this._value = value;
       UpdateType(type);
       UpdateData(value);
-      _isExpanded = this.HasChildren;
     }
     private InManifest(JSC.JSValue manifest, InManifest parent) {
       this._parent = parent;
@@ -117,7 +114,7 @@ namespace X13.UI {
         }
       }
       if(editor == null) {
-        editor = InspectorForm.GetEdititor(_editorName, this, _manifest);
+        editor = InspectorForm.GetEditor(_editorName, this, _manifest);
         PropertyChangedReise("editor");
       } else {
         editor.ValueChanged(_value);
@@ -277,7 +274,7 @@ namespace X13.UI {
     #endregion IDisposable Member
 
     public override string ToString() {
-      return _data.fullPath + "." + _path;
+      return (_data!=null?_data.fullPath:"<new>") + "." + _path;
     }
   }
 }

@@ -139,7 +139,7 @@ namespace X13.UI {
       }
       if(nv != _editorName) {
         _editorName = nv;
-        editor = InspectorForm.GetEdititor(_editorName, this, _manifest);
+        editor = InspectorForm.GetEditor(_editorName, this, _manifest);
         PropertyChangedReise("editor");
       }
       this.editor.TypeChanged(_manifest);

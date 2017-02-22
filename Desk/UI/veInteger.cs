@@ -22,12 +22,10 @@ namespace X13.UI {
       base.TabIndex = 5;
       base.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
-      base.BorderThickness = new System.Windows.Thickness(1, 0, 1, 0);
       base.BorderBrush = Brushes.Black;
       base.GotFocus += ve_GotFocus;
       base.LostFocus += ve_LostFocus;
       base.KeyUp += ve_KeyUp;
-      base.Background = Brushes.Azure;
       ValueChanged(_owner.value);
       TypeChanged(manifest);
     }

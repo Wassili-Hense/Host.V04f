@@ -27,13 +27,15 @@ namespace X13.UI {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Attribute"] = veAttribute.Create;
       _editors["Boolean"] = veSliderBool.Create;
-      _editors["Integer"] = veInteger.Create;
       _editors["Double"] = veDouble.Create;
+      _editors["Editor"] = veEditor.Create;
+      _editors["Integer"] = veInteger.Create;
       _editors["String"] = veString.Create;
       _editors["Date"] = veDateTimePicker.Create;
       _editors["TopicReference"] = veTopicReference.Create;
+      _editors["Version"] = veVersion.Create;
     }
-    public static IValueEditor GetEdititor(string editor, InBase owner, JSC.JSValue manifest) {
+    public static IValueEditor GetEditor(string editor, InBase owner, JSC.JSValue manifest) {
       IValueEditor rez;
       Func<InBase, JSC.JSValue, IValueEditor> ct;
       if(editor!=null && _editors.TryGetValue(editor, out ct) && ct != null) {
@@ -43,7 +45,9 @@ namespace X13.UI {
       }
       return rez;
     }
-
+    public static IList<string> GetEditors() {
+      return _editors.Keys;
+    }
     private DTopic _data;
     private ObservableCollection<InBase> _valueVC;
 

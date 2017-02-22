@@ -144,7 +144,7 @@ namespace X13.UI {
         }
       }
       if(editor == null) {
-        editor = InspectorForm.GetEdititor(_editorName, this, _manifest);
+        editor = InspectorForm.GetEditor(_editorName, this, _manifest);
         PropertyChangedReise("editor");
       } else {
         editor.ValueChanged(_value);
@@ -294,7 +294,7 @@ namespace X13.UI {
     #endregion IComparable<InBase> Members
 
     public override string ToString() {
-      return _data.fullPath + ":" + _path;
+      return (_data != null ? _data.fullPath : "<new>") + "." + _path;
     }
   }
 }

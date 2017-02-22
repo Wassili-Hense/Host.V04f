@@ -114,6 +114,8 @@
     </Compile>
     <Compile Include="Inspector\InTopic.cs" />
     <Compile Include="Inspector\InValue.cs" />
+    <Compile Include="UI\veEditor.cs" />
+    <Compile Include="UI\veVersion.cs" />
     <Compile Include="UI\IValueEditor.cs" />
     <Compile Include="UI\veAttribute.xaml.cs">
       <DependentUpon>veAttribute.xaml</DependentUpon>
@@ -244,6 +246,12 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\children.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ty_version.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ic_editor.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

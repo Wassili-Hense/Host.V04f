@@ -85,10 +85,12 @@ namespace X13 {
       LoadIcon("Date", "ty_dt.png");
       LoadIcon("DeskConnection", "ty_desk.png");
       LoadIcon("Double", "ty_f02.png");
+      LoadIcon("Editor", "ic_editor.png");
       LoadIcon("Integer", "ty_i64.png");
       LoadIcon("Object", "ty_obj.png");
       LoadIcon("String", "ty_str.png");
       LoadIcon("Null", "ty_null.png");
+      LoadIcon("Version", "ty_version.png");
 
 
       mainWindow = new MainWindow(cfgPath);
