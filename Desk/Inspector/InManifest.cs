@@ -59,21 +59,6 @@ namespace X13.UI {
       base.IsEdited = true;
     }
 
-    public override void FinishNameEdit(string name) {
-      if(_data == null) {
-        if(!string.IsNullOrEmpty(name)) {
-          var def = _manifest["default"];
-          _parent._data.SetField(_parent.IsGroupHeader ? name : (_parent._path + "." + name), def.Defined ? def : JSC.JSValue.Null);
-        }
-        _parent._items.Remove(this);
-        _collFunc(this, false);
-      } else {
-        IsEdited = false;
-        PropertyChangedReise("IsEdited");
-        throw new NotImplementedException("InValue.Move");
-      }
-    }
-
     private void UpdateData(JSC.JSValue val) {
       _value = val;
       if(_value.ValueType == JSC.JSValueType.Object) {
@@ -142,6 +127,20 @@ namespace X13.UI {
     }
 
     #region InBase Members
+    public override void FinishNameEdit(string name) {
+      if(_data == null) {
+        if(!string.IsNullOrEmpty(name)) {
+          var def = _manifest["default"];
+          _parent._data.SetField(_parent.IsGroupHeader ? name : (_parent._path + "." + name), def.Defined ? def : JSC.JSValue.Null);
+        }
+        _parent._items.Remove(this);
+        _collFunc(this, false);
+      } else {
+        IsEdited = false;
+        PropertyChangedReise("IsEdited");
+        throw new NotImplementedException("InValue.Move");
+      }
+    }
     protected override void UpdateType(JSC.JSValue type) {
       base.UpdateType(type);
       if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
@@ -163,6 +162,10 @@ namespace X13.UI {
         return _value;
       }
       set {
+        JSL.Date js_d;
+        if(value != null && value.ValueType == JSC.JSValueType.Date && (js_d = value.Value as JSL.Date) != null && Math.Abs((js_d.ToDateTime() - new DateTime(1001, 1, 1, 12, 0, 0)).TotalDays) < 1) {
+          value = JSC.JSObject.Marshal(DateTime.UtcNow);
+        }
         _data.SetField(_path, value).ContinueWith(SetFieldResp, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }

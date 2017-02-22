@@ -175,19 +175,24 @@ namespace X13.DeskHost {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      Topic p, t=null;
+      Topic p, t = null;
       string pn;
       JSC.JSValue jsp;
       if(msg.Count == 4 && msg[3].ValueType == JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)) {
         if((_basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p)) && (jsp = p.GetState()).ValueType == JSC.JSValueType.Object && jsp.Value != null) {
           t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
           var m = jsp["manifest"];
-          Topic.I.Fill(t, jsp["default"], (m.ValueType==JSC.JSValueType.Object && m.Value!=null)?JsLib.Clone(m):null, _owner);
+          var s = jsp["default"];
+          JSL.Date js_d;
+          if(s.ValueType == JSC.JSValueType.Date && (js_d = s.Value as JSL.Date) != null && Math.Abs((js_d.ToDateTime() - new DateTime(1001, 1, 1, 12, 0, 0)).TotalDays) < 1) {
+            s = JSC.JSObject.Marshal(DateTime.UtcNow);
+          }
+          Topic.I.Fill(t, s, (m.ValueType == JSC.JSValueType.Object && m.Value != null) ? JsLib.Clone(m) : null, _owner);
         } else {
           Log.Warning("Create({0}, {1}) - unknown prototype", msg[2].Value as string, pn);
         }
       }
-      if(t==null){
+      if(t == null) {
         t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, true);
       }
       var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
@@ -262,21 +267,21 @@ namespace X13.DeskHost {
         }
         break;
       case Perform.Art.changedField:
-          arr = new JSL.Array(3);
-          arr[0] = new JSL.Number(14);
-          arr[1] = new JSL.String(p.src.path);
-          arr[2] = p.src.GetField(null);
-          base.SendArr(arr);
-          break;
+        arr = new JSL.Array(3);
+        arr[0] = new JSL.Number(14);
+        arr[1] = new JSL.String(p.src.path);
+        arr[2] = p.src.GetField(null);
+        base.SendArr(arr);
+        break;
       case Perform.Art.remove:
-          arr = new JSL.Array(2);
-          arr[0] = new JSL.Number(12);
-          arr[1] = new JSL.String(p.src.path);
-          base.SendArr(arr);
-          lock(_subscriptions) {
-            _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
-          }
-          break;
+        arr = new JSL.Array(2);
+        arr[0] = new JSL.Number(12);
+        arr[1] = new JSL.String(p.src.path);
+        base.SendArr(arr);
+        lock(_subscriptions) {
+          _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
+        }
+        break;
       default:
         Log.Debug("Desk.Sub = {0}", p);
         break;

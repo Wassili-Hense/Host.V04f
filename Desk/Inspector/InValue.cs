@@ -63,47 +63,6 @@ namespace X13.UI {
       base.IsEdited = true;
     }
 
-    public override void FinishNameEdit(string name) {
-      if(_data == null) {
-        if(!string.IsNullOrEmpty(name)) {
-          var def = _manifest["default"];
-          _parent.ChangeValue(name, def.Defined ? def : JSC.JSValue.Null);
-        }
-        _parent._items.Remove(this);
-        _collFunc(this, false);
-      } else {
-        IsEdited = false;
-        PropertyChangedReise("IsEdited");
-        throw new NotImplementedException("InValue.Move");
-      }
-    }
-    public override NiL.JS.Core.JSValue value {
-      get {
-        return _value;
-      }
-      set {
-        if(_parent == null) {
-          _data.SetValue(value);
-        } else {
-          _parent.ChangeValue(name, value);
-        }
-      }
-    }
-    protected override void UpdateType(JSC.JSValue type) {
-      base.UpdateType(type);
-      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
-        var pr = _manifest["Fields"] as JSC.JSValue;
-        if(pr != null) {
-          InValue vc;
-          foreach(var kv in pr) {
-            vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
-            if(vc != null) {
-              vc.UpdateType(kv.Value);
-            }
-          }
-        }
-      }
-    }
     private void UpdateData(JSC.JSValue val) {
       _value = val;
       if(_value.ValueType == JSC.JSValueType.Object) {
@@ -150,7 +109,6 @@ namespace X13.UI {
         editor.ValueChanged(_value);
       }
     }
-
     private void ChangeValue(string name, JSC.JSValue val) {
       if(_value.ValueType == JSC.JSValueType.Object) {
         var jo = JSC.JSObject.CreateObject();
@@ -185,6 +143,61 @@ namespace X13.UI {
         UpdateData(_data.value);
       }
     }
+
+    #region InBase Members
+    public override void FinishNameEdit(string name) {
+      if(_data == null) {
+        if(!string.IsNullOrEmpty(name)) {
+          var def = _manifest["default"];
+          _parent.ChangeValue(name, def.Defined ? def : JSC.JSValue.Null);
+        }
+        _parent._items.Remove(this);
+        _collFunc(this, false);
+      } else {
+        IsEdited = false;
+        PropertyChangedReise("IsEdited");
+        throw new NotImplementedException("InValue.Move");
+      }
+    }
+    protected override void UpdateType(JSC.JSValue type) {
+      base.UpdateType(type);
+      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && !_manifest.IsNull) {
+        var pr = _manifest["Fields"] as JSC.JSValue;
+        if(pr != null) {
+          InValue vc;
+          foreach(var kv in pr) {
+            vc = _items.OfType<InValue>().FirstOrDefault(z => z.name == kv.Key);
+            if(vc != null) {
+              vc.UpdateType(kv.Value);
+            }
+          }
+        }
+      }
+    }
+    public override bool HasChildren {
+      get { return _items.Any(); }
+    }
+    public override JSC.JSValue value {
+      get {
+        return _value;
+      }
+      set {
+        JSL.Date js_d;
+        if(value != null && value.ValueType == JSC.JSValueType.Date && (js_d = value.Value as JSL.Date) != null && Math.Abs((js_d.ToDateTime() - new DateTime(1001, 1, 1, 12, 0, 0)).TotalDays) < 1) {
+          value = JSC.JSObject.Marshal(DateTime.UtcNow);
+        }
+        if(_parent == null) {
+          _data.SetValue(value);
+        } else {
+          _parent.ChangeValue(name, value);
+        }
+      }
+    }
+    public override int CompareTo(InBase other) {
+      var o = other as InValue;
+      return o == null ? -1 : this._path.CompareTo(o._path);
+    }
+    #endregion InBase Members
 
     #region ContextMenu
     public override List<Control> MenuItems(System.Windows.FrameworkElement src) {
@@ -282,16 +295,6 @@ namespace X13.UI {
       }
     }
     #endregion IDisposable Member
-
-    public override bool HasChildren {
-      get { return _items.Any(); }
-    }
-    #region IComparable<InBase> Members
-    public override int CompareTo(InBase other) {
-      var o = other as InValue;
-      return o == null ? -1 : this._path.CompareTo(o._path);
-    }
-    #endregion IComparable<InBase> Members
 
     public override string ToString() {
       return (_data != null ? _data.fullPath : "<new>") + "." + _path;
