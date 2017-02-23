@@ -84,9 +84,10 @@ namespace X13 {
       LoadIcon("children", "children.png");
       LoadIcon("Date", "ty_dt.png");
       LoadIcon("DeskConnection", "ty_desk.png");
-      LoadIcon("Double", "ty_f02.png");
+      LoadIcon("Double", "ty_double.png");
       LoadIcon("Editor", "ic_editor.png");
-      LoadIcon("Integer", "ty_i64.png");
+      LoadIcon("Hexadecimal", "ed_hex.png");
+      LoadIcon("Integer", "ty_int.png");
       LoadIcon("Object", "ty_obj.png");
       LoadIcon("String", "ty_str.png");
       LoadIcon("Null", "ty_null.png");

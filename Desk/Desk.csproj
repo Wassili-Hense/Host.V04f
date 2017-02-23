@@ -114,6 +114,7 @@
     </Compile>
     <Compile Include="Inspector\InTopic.cs" />
     <Compile Include="Inspector\InValue.cs" />
+    <Compile Include="UI\veHexadecimal.cs" />
     <Compile Include="UI\veEditor.cs" />
     <Compile Include="UI\veVersion.cs" />
     <Compile Include="UI\IValueEditor.cs" />
@@ -228,8 +229,6 @@
   <ItemGroup>
     <Resource Include="Images\ty_bool.png" />
     <Resource Include="Images\ty_dt.png" />
-    <Resource Include="Images\ty_f02.png" />
-    <Resource Include="Images\ty_i64.png" />
     <Resource Include="Images\ty_null.png" />
     <Resource Include="Images\ty_obj.png" />
     <Resource Include="Images\ty_str.png" />
@@ -252,6 +251,11 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Images\ic_editor.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\ed_hex.png" />
+    <Resource Include="Images\ty_double.png" />
+    <Resource Include="Images\ty_int.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

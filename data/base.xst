@@ -16,11 +16,13 @@
     </i>
   </i>
   <i n='Test'>
-    <i n='A' s='true' m='{"attr":4}' />
-    <i n='B' s='42' m='{"attr":4,"editor":"Integer"}' />
-    <i n='C' s='3.1415926' m='{"attr":4}' />
-    <i n='D' s='"Alpha"' m='{"attr":4}' />
-    <i n='E' s='"2017-02-15T10:00:00.000Z"' m='{"attr":4}' />
-    <i n='F' s='false' m='{"attr":4}' />
+    <i n='Alpha' s='false' m='{"attr":4}' />
+    <i n='Beta' s='true' m='{"attr":4}' />
+    <i n='Gamma' s='42' m='{"attr":4,"editor":"Integer"}' />
+    <i n='Delta' s='93' m='{"attr":4,"editor":"Hexadecimal"}' />
+    <i n='Epsilon' s='3.1415926' m='{"attr":4}' />
+    <i n='Zeta' s='"Hello World!!!"' m='{"attr":4}' />
+    <i n='Lambda' s='"2017-02-15T10:00:00.000Z"' m='{"attr":4}' />
+    <i n='Sigma' s='{"Tau":"3.4","Xi":true}' m='{"attr":4}' />
   </i>
 </xst>

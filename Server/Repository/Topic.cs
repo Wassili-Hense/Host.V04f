@@ -524,6 +524,10 @@ namespace X13.Repository {
           return BsonValue.Null;
         }
         switch(val.ValueType) {
+        case JSValueType.NotExists:
+        case JSValueType.NotExistsInObject:
+        case JSValueType.Undefined:
+          return BsonValue.Null;
         case JSValueType.Boolean:
           return new BsonValue((bool)val);
         case JSValueType.Date: {
