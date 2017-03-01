@@ -290,7 +290,7 @@ namespace X13.Repository {
         t._ps_manifest = obj;
         t._manifest = Bs2Js(t._ps_manifest["v"]);
         if(state != null) {
-          if(t.CheckAttribute(Topic.Attribute.Saved)) {
+          if(t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
             t._ps_state = state;
           }
           t._state = Bs2Js(state["v"]);
@@ -369,7 +369,7 @@ namespace X13.Repository {
       }
       public static void SetValue(Topic t, JSValue val) {
         t._state = val;
-        if(t.CheckAttribute(Topic.Attribute.Saved)) {
+        if(t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
           if(t._ps_state == null) {
             t._ps_state = new BsonDocument();
             t._ps_state["_id"] = t._ps_manifest["_id"];
@@ -636,7 +636,10 @@ namespace X13.Repository {
       None = 0,
       Required = 1,
       Readonly = 2,
-      Saved = 4,
+      DB = 4,
+      Config = 8,
+      Saved = Attribute.DB | Attribute.Config,
+
     }
     #endregion nested types
   }

@@ -97,19 +97,19 @@ namespace SrvTest {
 
       Topic a = Topic.root.Get("A");
       var val = JSValue.Marshal(43);
-      a.SetAttribute(Topic.Attribute.Saved);
+      a.SetAttribute(Topic.Attribute.DB);
       a.SetState(val);
 
       Topic b = Topic.root.Get("B");
       b.SetState(JSValue.Marshal(75));
 
       Topic c = Topic.root.Get("C");
-      c.SetAttribute(Topic.Attribute.Saved);
+      c.SetAttribute(Topic.Attribute.DB);
       c.SetState(JSValue.Marshal(12.01));
 
       _repo.Tick();
 
-      c.ClearAttribute(Topic.Attribute.Saved);
+      c.ClearAttribute(Topic.Attribute.DB);
 
       _repo.Tick();
 
@@ -122,25 +122,25 @@ namespace SrvTest {
       _repo.Init();
       _repo.Start();
       Assert.IsTrue(Topic.root.Exist("A", out a));
-      Assert.IsTrue(a.CheckAttribute(Topic.Attribute.Saved) );
+      Assert.IsTrue(a.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB));
       Assert.AreEqual(43, (int)a.GetState());
 
       Assert.IsTrue(Topic.root.Exist("B", out b));
-      Assert.IsFalse(b.CheckAttribute(Topic.Attribute.Saved));
+      Assert.IsFalse(b.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB));
       Assert.AreEqual(JSValue.Undefined, b.GetState());
 
       Assert.IsTrue(Topic.root.Exist("C", out c));
-      Assert.IsFalse(c.CheckAttribute(Topic.Attribute.Saved));
+      Assert.IsFalse(c.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB));
       Assert.AreEqual(JSValue.Undefined, c.GetState());
       _repo.Stop();
     }
     [TestMethod]
     public void T09() {
       Topic c = Topic.root.Get("C");
-      c.SetAttribute(Topic.Attribute.Saved);
+      c.SetAttribute(Topic.Attribute.DB);
       c.SetField("MQTT.path", "/dev/Node1");
       _repo.Tick();
-      Assert.AreEqual((int)Topic.Attribute.Saved, (int)c.GetField("attr"));
+      Assert.AreEqual((int)Topic.Attribute.DB, (int)c.GetField("attr"));
       Assert.AreEqual("/dev/Node1", c.GetField("MQTT.path").ToString());
     }
     [TestMethod]

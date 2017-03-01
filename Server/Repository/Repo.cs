@@ -1,6 +1,7 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
 using LiteDB;
 using NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -146,7 +147,7 @@ namespace X13.Repository {
       case Perform.Art.changedField:
         _objects.Update(manifest);
         if((cmd.o as string) == "attr") {
-          if(cmd.src.CheckAttribute(Topic.Attribute.Saved) ) {
+          if(cmd.src.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
             Topic.I.SetValue(cmd.src, cmd.src.GetState());
             if(state != null) {
               _states.Upsert(state);
@@ -161,7 +162,7 @@ namespace X13.Repository {
         break;
       case Perform.Art.create:
         _objects.Upsert(manifest);
-        if(cmd.src.CheckAttribute(Topic.Attribute.Saved) && state != null) {
+        if(cmd.src.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB) && state != null) {
           _states.Upsert(state);
         }
         break;
@@ -175,7 +176,7 @@ namespace X13.Repository {
     internal string Id2Topic(ObjectId id) {
       var d = _objects.FindById(id);
       BsonValue p;
-      if(d!=null && ( p=d["p"] )!=null && p.IsString) {
+      if(d != null && (p = d["p"]) != null && p.IsString) {
         return p.AsString;
       }
       return null;
@@ -188,7 +189,7 @@ namespace X13.Repository {
       _prOp = new List<Perform>(128);
     }
 
-    #region Import
+    #region Import/Export
     public static bool Import(string fileName, string path = null) {
       if(string.IsNullOrEmpty(fileName) || !File.Exists(fileName)) {
         return false;
@@ -212,7 +213,7 @@ namespace X13.Repository {
       Import(doc.Root, null, path);
     }
     private static void Import(XElement xElement, Topic owner, string path) {
-      if(xElement == null || ((xElement.Attribute("n") == null || owner==null) && path==null)) {
+      if(xElement == null || ((xElement.Attribute("n") == null || owner == null) && path == null)) {
         return;
       }
       Version ver;
@@ -235,7 +236,7 @@ namespace X13.Repository {
       JSValue state = null, manifest = null;
       if(xElement.Attribute("m") != null) {
         try {
-          manifest =  DeskHost.DeskSocket.ParseJson(xElement.Attribute("m").Value);
+          manifest = DeskHost.DeskSocket.ParseJson(xElement.Attribute("m").Value);
         }
         catch(Exception ex) {
           Log.Warning("Import({0}).m - {1}", xElement.ToString(), ex.Message);
@@ -265,7 +266,49 @@ namespace X13.Repository {
         Import(xNext, cur, null);
       }
     }
-    #endregion Import
+
+    public static void Export(string filename, Topic t, bool configOnly) {
+      if(filename == null || t == null) {
+        throw new ArgumentNullException();
+      }
+      XDocument doc = new XDocument(new XElement("xst", new XAttribute("path", t.path)));
+      doc.Declaration = new XDeclaration("1.0", "utf-8", "yes");
+      var s = t.GetState();
+      if(s.Exists && (t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.Config) || (!configOnly && t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)))) {
+        doc.Root.Add(new XAttribute("s", JSL.JSON.stringify(s, null, null)));
+      }
+      var m = t.GetField(null);
+      doc.Root.Add(new XAttribute("m", JSL.JSON.stringify(m, null, null)));
+      foreach(Topic c in t.children) {
+        Export(doc.Root, c, configOnly);
+      }
+      using(System.Xml.XmlTextWriter writer = new System.Xml.XmlTextWriter(filename, Encoding.UTF8)) {
+        writer.Formatting = System.Xml.Formatting.Indented;
+        writer.QuoteChar = '\'';
+        doc.WriteTo(writer);
+        writer.Flush();
+      }
+    }
+    private static void Export(XElement x, Topic t, bool configOnly) {
+      if(x == null || t == null) {
+        return;
+      }
+      XElement xCur = new XElement("i", new XAttribute("n", t.name));
+      foreach(Topic c in t.children) {
+        Export(xCur, c, configOnly);
+      }
+      if(!configOnly || xCur.HasElements || t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.Config)) {
+        var s = t.GetState();
+        if(s.Exists && (t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.Config) || (!configOnly && t.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)))) {
+          xCur.Add(new XAttribute("s", JSL.JSON.stringify(s, null, null)));
+        }
+        var m = t.GetField(null);
+        xCur.Add(new XAttribute("m", JSL.JSON.stringify(m, null, null)));
+
+        x.Add(xCur);
+      }
+    }
+    #endregion Import/Export
 
     #region IPlugModul Members
 
@@ -276,6 +319,10 @@ namespace X13.Repository {
 
       Topic.I.Init(this);
       _busyFlag = 1;
+      if(File.Exists("../data/server.xst")) {
+        Import("../data/Server.xst");
+      }
+      this.Tick();
     }
 
     public void Start() {
@@ -342,6 +389,7 @@ namespace X13.Repository {
       if(db != null) {
         db.Dispose();
       }
+      Export("../data/server.xst", Topic.root, true);
     }
 
     public bool enabled { get { return true; } set { if(!value) throw new ApplicationException("Repository disabled"); } }

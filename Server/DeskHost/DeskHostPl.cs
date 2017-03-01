@@ -45,7 +45,6 @@ namespace X13.DeskHost {
     public DeskHostPl() {
       _connections = new System.Collections.Concurrent.ConcurrentBag<DeskConnection>();
       _msgs = new System.Collections.Concurrent.ConcurrentBag<DeskMessage>();
-      enabled = true;
     }
 
     #region IPlugModul Members
@@ -90,7 +89,21 @@ namespace X13.DeskHost {
       _tcp = null;
     }
 
-    public bool enabled { get; set; }
+    public bool enabled {
+      get {
+        var en = Topic.root.Get("/$YS/Desk", true);
+        if(en.GetState().ValueType != JSC.JSValueType.Boolean) {
+          en.SetAttribute(Topic.Attribute.Required | Topic.Attribute.Readonly | Topic.Attribute.Config);
+          en.SetState(true);
+          return true;
+        }
+        return (bool)en.GetState();
+      }
+      set {
+        var en = Topic.root.Get("/$YS/Desk", true);
+        en.SetState(value);
+      }
+    }
     #endregion IPlugModul Members
   }
 }
