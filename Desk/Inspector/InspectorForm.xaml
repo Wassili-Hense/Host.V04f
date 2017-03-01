@@ -7,6 +7,8 @@
              xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
              xmlns:x13ui="clr-namespace:X13.UI"
              mc:Ignorable="d" 
+             d:DesignHeight="100" d:DesignWidth="900"
+
              TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Arial" FontSize="14" >
   <UserControl.Resources>
     <x13ui:GridColumnSpringConverter x:Key="ColumnSpringConverter"/>
@@ -67,7 +69,7 @@
     </ListView.ItemContainerStyle>
     <ListView.View>
       <GridView AllowsColumnReorder="False">
-        <GridViewColumn x:Name="gcItemName" Header="name" Width="250">
+        <GridViewColumn x:Name="gcItemName" Header="name" Width="220">
           <GridViewColumn.CellTemplate>
             <DataTemplate>
               <Grid>
@@ -135,13 +137,13 @@
             </DataTemplate>
           </GridViewColumn.CellTemplate>
         </GridViewColumn>
-        <GridViewColumn Header="value" Width="400">
-          <!--GridViewColumn.Width>
+        <GridViewColumn Header="value">
+          <GridViewColumn.Width>
               <MultiBinding Converter="{StaticResource ColumnSpringConverter}">
                 <Binding ElementName="lvValue" Path="ActualWidth" Mode="OneWay"/>
                 <Binding ElementName="gcItemName" Path="ActualWidth" Mode="OneWay"/>
               </MultiBinding>
-            </GridViewColumn.Width-->
+            </GridViewColumn.Width>
           <GridViewColumn.CellTemplate>
             <DataTemplate>
               <ContentPresenter Margin="0,4" Content="{Binding editor}" />
