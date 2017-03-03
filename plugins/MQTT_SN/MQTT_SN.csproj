@@ -50,7 +50,11 @@
     <Compile Include="..\..\Server\Properties\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
+    <Compile Include="IMsGate.cs" />
     <Compile Include="MQTT_SNPl.cs" />
+    <Compile Include="MsDevice.cs" />
+    <Compile Include="MsGSerial.cs" />
+    <Compile Include="MsMessages.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
