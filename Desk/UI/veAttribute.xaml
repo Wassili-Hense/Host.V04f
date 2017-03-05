@@ -24,7 +24,7 @@
               <Border Name="boTempl" BorderBrush="Black" BorderThickness="1,0">
                 <Border.Style>
                   <Style TargetType="Border">
-                    <Setter Property="Background" Value="Azure" />
+                    <Setter Property="Background" Value="White" />
                   </Style>
                 </Border.Style>
                 <TextBlock Name="tbTempl" Text="{TemplateBinding Property=ContentControl.Content}" HorizontalAlignment="Center" FontStretch="Expanded">
@@ -37,13 +37,12 @@
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsChecked" Value="True">
-                  <Setter TargetName="tbTempl" Property="Foreground" Value="#00FF00" />
+                  <Setter TargetName="tbTempl" Property="Foreground" Value="#006608" />
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                   <Setter TargetName="boTempl" Property="CornerRadius" Value="9" />
                   <Setter TargetName="boTempl" Property="BorderThickness" Value="0" />
-                  <Setter TargetName="boTempl" Property="Background" Value="White" />
-
+                  <Setter TargetName="boTempl" Property="Background" Value="#00000000" />
                 </Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate>

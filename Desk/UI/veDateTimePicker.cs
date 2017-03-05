@@ -42,11 +42,11 @@ namespace X13.UI {
     public void TypeChanged(JSC.JSValue manifest) {
       if(_owner.IsReadonly) {
         base.IsReadOnly = true;
-        base.Background = Brushes.White;
+        base.Background = null;
         base.BorderThickness = new System.Windows.Thickness(0, 0, 0, 0);
       } else {
         base.IsReadOnly = false;
-        base.Background = Brushes.Azure;
+        base.Background = Brushes.White;
         base.BorderThickness = new System.Windows.Thickness(1, 0, 1, 0);
       }
     }

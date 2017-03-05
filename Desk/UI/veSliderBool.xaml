@@ -12,7 +12,7 @@
         <Border x:Name="Border">
           <Border.Style>
             <Style TargetType="Border">
-              <Setter Property="Background" Value="Azure" />
+              <Setter Property="Background" Value="White" />
               <Setter Property="BorderThickness" Value="1,0" />
               <Setter Property="BorderBrush" Value="Black" />
             </Style>
@@ -29,12 +29,12 @@
         <ControlTemplate.Triggers>
           <Trigger Property="IsChecked" Value="True">
             <Setter TargetName="Caption" Property="Text" Value="On" />
-            <Setter TargetName="Caption" Property="Foreground" Value="#00FF00" />
+            <Setter TargetName="Caption" Property="Foreground" Value="#006608" />
           </Trigger>
           <Trigger Property="IsEnabled" Value="False">
             <Setter TargetName="Border" Property="CornerRadius" Value="9" />
             <Setter TargetName="Border" Property="BorderThickness" Value="0" />
-            <Setter TargetName="Border" Property="Background" Value="White" />
+            <Setter TargetName="Border" Property="Background" Value="#00000000" />
           </Trigger>
         </ControlTemplate.Triggers>
       </ControlTemplate>
