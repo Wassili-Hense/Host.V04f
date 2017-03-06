@@ -20,8 +20,6 @@ namespace X13.Periphery {
     internal bool _useSlip;
     internal byte[] _gateAddr;
 
-
-
     public MsGSerial(MQTT_SNPl pl, SerialPort port) {
       _port = port;
       _pl = pl;

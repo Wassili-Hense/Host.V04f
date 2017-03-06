@@ -320,17 +320,18 @@ namespace X13.Periphery {
           dev = new MsDevice(td);
           dev._gate = gate;
           dev.addr = addr;
+          _devs.Add(dev);
         }
-        //dev.Connect(cm);
+        dev.Connect(cm);
         foreach(var dub in _devs.Where(z => z != dev && z.CheckAddr(addr) && z._gate == gate).ToArray()) {
           dub.addr = null;
           dub._gate = null;
           dub.state = State.Disconnected;
         }
       } else {
-        MsDevice dev = _devs.FirstOrDefault(z => z.CheckAddr(addr) && z._gate == gate);
+        MsDevice dev = _devs.FirstOrDefault(z => z.addr != null && z.addr.SequenceEqual(addr) && z._gate == gate);
         if(dev != null && (dev.state != State.Disconnected && dev.state != State.Lost)) {
-          //dev.ProcessInPacket(msg);
+          dev.ProcessInPacket(msg);
         } else {
           if(dev == null || dev.owner == null) {
             Log.Debug("{0} unknown device", gate.Addr2If(addr));

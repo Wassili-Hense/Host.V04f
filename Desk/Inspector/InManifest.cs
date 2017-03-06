@@ -39,8 +39,9 @@ namespace X13.UI {
       this._parent = parent;
       this._data = _parent._data;
       base._collFunc = _parent._collFunc;
-      this._path = string.IsNullOrEmpty(_parent._path)?name:(_parent._path + "." + name);
       base.name = name;
+      this._path = string.IsNullOrEmpty(_parent._path) ? name : (_parent._path + "." + name);
+      base._isVisible = _parent._isExpanded;
       base._items = new List<InBase>();
       base.IsGroupHeader = false;
       levelPadding = _parent.levelPadding + 5;
