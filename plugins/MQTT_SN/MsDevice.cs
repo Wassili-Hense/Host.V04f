@@ -1,4 +1,6 @@
 ﻿///<remarks>This file is part of the <see cref="https://github.com/X13home">X13.Home</see> project.<remarks>
+using JSC = NiL.JS.Core;
+using JSL = NiL.JS.BaseLibrary;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,11 +26,13 @@ namespace X13.Periphery {
     private List<SubRec> _subsscriptions;
     private Queue<MsMessage> _sendQueue;
     private List<TopicInfo> _topics;
+    private State _state;
     private bool _waitAck;
     private int _tryCounter;
     private int _duration;
     private int _messageIdGen;
     private Timer _activeTimer;
+    private MsPublish _lastInPub;
     private bool _has_RTC;
     private DateTime _last_RTC;
 
@@ -68,6 +72,25 @@ namespace X13.Periphery {
       throw new NotImplementedException();
     }
     #endregion IMsGate Members
+
+    public State state {
+      get {
+        return _state;
+      }
+      set {
+        if(_state != value) {
+          _state = value;
+          if(_state == State.Connected || _state == State.AWake) {
+            owner.SetState(1);
+          } else if(_state == State.ASleep) {
+            owner.SetState(2);
+          } else {
+            owner.SetState(0);
+          }
+        }
+      }
+    }
+
     /// <summary>Check Address for DHCP</summary>
     /// <param name="addr">checked address</param>
     /// <returns>busy</returns>
@@ -80,9 +103,6 @@ namespace X13.Periphery {
       }
       return false;
     }
-
-    public State state { get; set; }
-
     public void Connect(MsConnect msg) {
       if(msg.CleanSession) {
         foreach(var s in _subsscriptions) {
@@ -93,7 +113,7 @@ namespace X13.Periphery {
         lock(_sendQueue) {
           _sendQueue.Clear();
         }
-          _waitAck = false;
+        _waitAck = false;
         //  if(_statistic.value) {
         //    StatConnectTime();
         //  }
@@ -207,7 +227,7 @@ namespace X13.Periphery {
             //  Send(new MsPublish(ti.topic, ti.TopicId, QoS.AtLeastOnce));
             //}
           } else {
-            Log.Warning("{0} registred failed: {1}", ti.path, tmp.RetCode.ToString());
+            Log.Warning("{0} registred failed: {1}", ti.topic.path, tmp.RetCode.ToString());
             _topics.Remove(ti);
             ti.topic.SetField("MQTT-SN.subIdx", null);
             //UpdateInMute();
@@ -266,12 +286,12 @@ namespace X13.Periphery {
               Log.Error("{0}", str);
               break;
             }
-            //    } else if(ti != null) {
-            //      if(tmp.Dup && _lastInPub != null && tmp.MessageId == _lastInPub.MessageId) {  // arready recieved
-            //      } else {
-            //        SetValue(ti, tmp.Data, tmp.Retained);
-            //      }
-            //      _lastInPub = tmp;
+          } else if(ti != null) {
+            if(tmp.Dup && _lastInPub != null && tmp.MessageId == _lastInPub.MessageId) {  // arready recieved
+            } else {
+              SetValue(ti, tmp.Data, tmp.Retained);
+            }
+            _lastInPub = tmp;
           }
         }
         break;
@@ -455,35 +475,45 @@ namespace X13.Periphery {
         return null;
       }
       TopicInfo rez = null;
+      bool field = !string.IsNullOrEmpty(subIdx) && subIdx[0] == '.';
       for(int i = _topics.Count - 1; i >= 0; i--) {
-        if(_topics[i].path == tp.path) {
+        if(_topics[i].topic == tp && (!field || _topics[i].subIdx == subIdx)) {
           rez = _topics[i];
           break;
         }
       }
-      string tpc = (tp.path.StartsWith(owner.path)) ? tp.path.Substring(owner.path.Length + 1) : tp.path;
       if(rez == null) {
         if(subIdx == null) {
           var siv = tp.GetField("MQTT-SN.subIdx");
           if(siv.ValueType != NiL.JS.Core.JSValueType.String || (subIdx = siv.Value as string) == null) {
-            return null;
+            if(tp != owner) {
+              subIdx = (tp.path.StartsWith(owner.path)) ? tp.path.Substring(owner.path.Length + 1) : tp.path;
+            } else {
+              return null;
+            }
           }
         }
-
         rez = new TopicInfo();
         rez.topic = tp;
-        rez.path = tp.path;
         rez.subIdx = subIdx;
-        ushort rtId;
-        if(PredefinedTopics.TryGetValue(tpc, out rtId)) {
-          rez.TopicId = rtId;
+        var pt = PredefinedTopics.FirstOrDefault(z => z.Item2 == subIdx);
+        if(pt != null) {
+          rez.TopicId = pt.Item1;
+          rez.dType = pt.Item3;
           rez.it = TopicIdType.PreDefined;
           rez.registred = true;
         } else {
-          rez.TopicId = CalculateTopicId(rez.path);
-          rez.it = TopicIdType.Normal;
+          var nt = _NTTable.FirstOrDefault(z => subIdx.StartsWith(z.Item1));
+          if(nt != null) {
+            rez.TopicId = CalculateTopicId(rez.topic.path);
+            rez.dType = nt.Item2;
+            rez.it = TopicIdType.Normal;
+          } else {
+            Log.Warning(owner.path + ".register(" + subIdx + ") - unknown type");
+            return null;
+          }
+          _topics.Add(rez);
         }
-        _topics.Add(rez);
         //UpdateInMute();
       }
       if(!rez.registred) {
@@ -496,13 +526,16 @@ namespace X13.Periphery {
       return rez;
     }
     private TopicInfo GetTopicInfo(string subIdx, bool sendRegister = true) {
+      if(string.IsNullOrEmpty(subIdx)) {
+        return null;
+      }
       TopicInfo ti;
       Topic cur = null;
       int idx = subIdx.LastIndexOf('/');
       string cName = subIdx.Substring(idx + 1);
-
-      var nt = _NTTable.FirstOrDefault(z => cName.StartsWith(z.Item1));
-      if(nt != null) {
+      if(subIdx[0] == '.') {
+        cur = owner;
+      } else {
         cur = owner.all.FirstOrDefault(z => {
           var nf = z.GetField("MQTT-SN.subIdx");
           return nf.ValueType == NiL.JS.Core.JSValueType.String && (nf.Value as string) == subIdx;
@@ -511,19 +544,17 @@ namespace X13.Periphery {
           cur = owner.Get(subIdx, true, owner);
           cur.SetField("MQTT-SN.subIdx", subIdx, owner);
         }
-        ti = GetTopicInfo(cur, sendRegister, subIdx);
-      } else {
-        ti = null;
       }
+      ti = GetTopicInfo(cur, sendRegister, subIdx);
       return ti;
     }
     private TopicInfo GetTopicInfo(ushort topicId, TopicIdType topicIdType, bool sendRegister = true) {
       var ti = _topics.Find(z => z.it == topicIdType && z.TopicId == topicId);
       if(ti == null) {
         if(topicIdType == TopicIdType.PreDefined) {
-          var cPath = PredefinedTopics.FirstOrDefault(z => z.Value == topicId).Key;
-          if(cPath != null) {
-            ti = GetTopicInfo(cPath, sendRegister);
+          var pt = PredefinedTopics.FirstOrDefault(z => z.Item1 == topicId);
+          if(pt != null) {
+            ti = GetTopicInfo(pt.Item2, sendRegister);
           }
         } else if(topicIdType == TopicIdType.ShortName) {
           ti = GetTopicInfo(string.Format("{0}{1}", (char)(topicId >> 8), (char)(topicId & 0xFF)), sendRegister);
@@ -533,6 +564,99 @@ namespace X13.Periphery {
         }
       }
       return ti;
+    }
+
+    private void SetValue(TopicInfo ti, byte[] msgData, bool retained) {
+      if(ti != null) {
+        if(!ti.topic.path.StartsWith(owner.path)) {
+          return;     // not allowed publish
+        }
+        JSC.JSValue val;
+        switch(ti.dType) {
+        case DType.Boolean:
+          val = new JSL.Boolean((msgData[0] != 0));
+          break;
+        case DType.Integer: {
+            long rv = (msgData[msgData.Length - 1] & 0x80) == 0 ? 0 : -1;
+            for(int i = msgData.Length - 1; i >= 0; i--) {
+              rv <<= 8;
+              rv |= msgData[i];
+            }
+            val = new JSL.Number(rv);
+          }
+          break;
+        case DType.String:
+          val = new JSL.String(Encoding.Default.GetString(msgData));
+          break;
+        case DType.ByteArray: {
+            //var arr = new JSL.Uint8Array(msgData.Length);
+            //for(int i = 0; i < msgData.Length; i++) {
+            //  arr[i.ToString()] = new JSL.Number(msgData[i]);
+            //}
+            val = JSC.JSValue.Marshal(msgData);
+          }
+          break;
+        /*
+        if(ti.topic.valueType == typeof(SmartTwi)) {
+          var sa = (ti.topic.GetValue() as SmartTwi);
+          if(sa == null) {
+            sa = new SmartTwi(ti.topic);
+            sa.Recv(msgData);
+            val = sa;
+          } else {
+            sa.Recv(msgData);
+            return;
+          }
+          break;
+        } else if(ti.topic.valueType == typeof(TWIDriver)) {
+          var twi = (ti.topic.GetValue() as TWIDriver);
+          if(twi == null) {
+            twi = new TWIDriver(ti.topic);
+            twi.Recv(msgData);
+            val = twi;
+          } else {
+            twi.Recv(msgData);
+            return;
+          }
+          break;
+        } else if(ti.topic.valueType == typeof(DevicePLC)) {
+          var plc = (ti.topic.GetValue() as DevicePLC);
+          if(plc == null) {
+            plc = new DevicePLC(ti.topic);
+            plc.Recv(msgData);
+            val = plc;
+          } else {
+            plc.Recv(msgData);
+            return;
+          }
+          break;
+        } else {
+          return;
+        }*/
+        default:
+          return;
+        }
+        if(ti.subIdx[0] == '.') {
+          if(ti.subIdx == ".MQTT-SN.declarer" && val.ValueType==JSC.JSValueType.String) {
+            var v = val.Value as string;
+            var type = "MQTT-SN/" + v.Substring(0, v.IndexOf('.'));
+            ti.topic.SetField("type", type, owner);
+          }
+          ti.topic.SetField(ti.subIdx.Substring(1), val, owner);
+        } else {
+          if(retained) {
+            if(!ti.topic.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
+              ti.topic.SetAttribute(Topic.Attribute.DB);
+            }
+          } else {
+            if(ti.topic.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
+              ti.topic.ClearAttribute(Topic.Attribute.DB);
+            }
+          }
+          //TODO: convert
+          ti.topic.SetState(val, owner);
+        }
+      }
     }
 
     private ushort NextMsgId() {
@@ -745,75 +869,61 @@ namespace X13.Periphery {
       public ushort TopicId;
       public TopicIdType it;
       public bool registred;
-      public string path;
       public string subIdx;
+      public DType dType;
     }
-    private static Tuple<string, Type>[] _NTTable = new Tuple<string, Type>[]{ 
-      new Tuple<string, Type>("In", typeof(bool)),
-      new Tuple<string, Type>("Ip", typeof(bool)),
-      new Tuple<string, Type>("Op", typeof(bool)),
-      new Tuple<string, Type>("On", typeof(bool)),
-      new Tuple<string, Type>("OA", typeof(bool)),   // output high if active
-      new Tuple<string, Type>("Oa", typeof(bool)),   // output low if active
-      new Tuple<string, Type>("Ai", typeof(long)),   //uint16 Analog ref
-      new Tuple<string, Type>("AI", typeof(long)),   //uint16 Analog ref2
-      new Tuple<string, Type>("Av", typeof(long)),   //uint16
-      new Tuple<string, Type>("Ae", typeof(long)),   //uint16
-      new Tuple<string, Type>("Pp", typeof(long)),   //uint16 PWM positive
-      new Tuple<string, Type>("Pn", typeof(long)),   //uint16 PWM negative
-      //new Tuple<string, Type>("_B", typeof(long)),   //uint8
-      //new Tuple<string, Type>("_W", typeof(long)),   //uint16
-      //new Tuple<string, Type>("_D", typeof(long)),   //uint32
-      //new Tuple<string, Type>("_q", typeof(long)),   //int64
-      //new Tuple<string, Type>("_s", typeof(string)),
-      //new Tuple<string, Type>("_a", typeof(PLC.ByteArray)),
-      new Tuple<string, Type>("_a", typeof(byte[])),
-      //new Tuple<string, Type>("St", typeof(PLC.ByteArray)),  // Serial port transmit
-      //new Tuple<string, Type>("Sr", typeof(PLC.ByteArray)),  // Serial port recieve
-      //new Tuple<string, Type>("Tz", typeof(bool)),
-      //new Tuple<string, Type>("Tb", typeof(long)),   //int8
-      //new Tuple<string, Type>("TB", typeof(long)),   //uint8
-      //new Tuple<string, Type>("Tw", typeof(long)),   //int16
-      //new Tuple<string, Type>("TW", typeof(long)),   //uint16
-      //new Tuple<string, Type>("Td", typeof(long)),   //int32
-      //new Tuple<string, Type>("TD", typeof(long)),   //uint32
-      //new Tuple<string, Type>("Tq", typeof(long)),   //int64
-      //new Tuple<string, Type>("Ts", typeof(string)),
-      //new Tuple<string, Type>("Ta", typeof(TWIDriver)),   // TWI >= ver 2.7
-      //new Tuple<string, Type>("sa", typeof(SmartTwi)),    // Smart TWI
-      //new Tuple<string, Type>("Xz", typeof(bool)),   // user defined
-      //new Tuple<string, Type>("Xb", typeof(long)),   //int8
-      //new Tuple<string, Type>("XB", typeof(long)),   //uint8
-      //new Tuple<string, Type>("Xw", typeof(long)),   //int16
-      //new Tuple<string, Type>("XW", typeof(long)),   //uint16
-      //new Tuple<string, Type>("Xd", typeof(long)),   //int32
-      //new Tuple<string, Type>("XD", typeof(long)),   //uint32
-      //new Tuple<string, Type>("Xq", typeof(long)),   //int64
-      //new Tuple<string, Type>("Xs", typeof(string)),
-      //new Tuple<string, Type>("Xa", typeof(PLC.ByteArray)),
-      //new Tuple<string, Type>("Mz", typeof(bool)),   // Merkers
-      //new Tuple<string, Type>("Mb", typeof(long)),   //int8
-      //new Tuple<string, Type>("MB", typeof(long)),   //uint8
-      //new Tuple<string, Type>("Mw", typeof(long)),   //int16
-      //new Tuple<string, Type>("MW", typeof(long)),   //uint16
-      new Tuple<string, Type>("Md", typeof(long)),   //int32
-      //new Tuple<string, Type>("MD", typeof(long)),   //uint32
-      //new Tuple<string, Type>("Mq", typeof(long)),   //int64
-      //new Tuple<string, Type>("Ms", typeof(string)),
-      //new Tuple<string, Type>("Ma", typeof(PLC.ByteArray)),  // Merkers
-      //new Tuple<string, Type>("pa", typeof(DevicePLC)),    // Program
-      new Tuple<string, Type>("pa", typeof(object)),    // Program
-      new Tuple<string, Type>("_declarer", typeof(string)),
+    private enum DType {
+      Boolean,
+      Integer,
+      String,
+      ByteArray,
+    }
+    private static Tuple<string, DType>[] _NTTable = new Tuple<string, DType>[]{ 
+      new Tuple<string, DType>("In", DType.Boolean),
+      new Tuple<string, DType>("Ip", DType.Boolean),
+      new Tuple<string, DType>("Op", DType.Boolean),
+      new Tuple<string, DType>("On", DType.Boolean),
+      new Tuple<string, DType>("OA", DType.Boolean),   // output high if active
+      new Tuple<string, DType>("Oa", DType.Boolean),   // output low if active
+      new Tuple<string, DType>("Mz", DType.Boolean),   // Merkers
+
+      new Tuple<string, DType>("Ai", DType.Integer),   //uint16 Analog ref
+      new Tuple<string, DType>("AI", DType.Integer),   //uint16 Analog ref2
+      new Tuple<string, DType>("Av", DType.Integer),   //uint16
+      new Tuple<string, DType>("Ae", DType.Integer),   //uint16
+      new Tuple<string, DType>("Pp", DType.Integer),   //uint16 PWM positive
+      new Tuple<string, DType>("Pn", DType.Integer),   //uint16 PWM negative
+      new Tuple<string, DType>("Mb", DType.Integer),   //int8
+      new Tuple<string, DType>("MB", DType.Integer),   //uint8
+      new Tuple<string, DType>("Mw", DType.Integer),   //int16
+      new Tuple<string, DType>("MW", DType.Integer),   //uint16
+      new Tuple<string, DType>("Md", DType.Integer),   //int32
+      new Tuple<string, DType>("MD", DType.Integer),   //uint32
+      new Tuple<string, DType>("Mq", DType.Integer),   //int64
+
+      new Tuple<string, DType>("Ms", DType.String),
+
+      new Tuple<string, DType>("St", DType.ByteArray),  // Serial port transmit
+      new Tuple<string, DType>("Sr", DType.ByteArray),  // Serial port recieve
+      new Tuple<string, DType>("Ma", DType.ByteArray),  // Merkers
+
+      //new Tuple<string, DType>("pa", typeof(DevicePLC)),    // Program
+      //new Tuple<string, DType>("sa", typeof(SmartTwi)),    // Smart TWI
+      new Tuple<string, DType>("pa", DType.ByteArray),    // Program
 
     };
-    internal static Dictionary<string, ushort> PredefinedTopics = new Dictionary<string, ushort>(){
-      {"_declarer",          0xFFC0},
-      {".cfg/_a_phy1",       0xFFC1},
-
-      {"_logD",              LOG_D_ID},
-      {"_logI",              LOG_I_ID},
-      {"_logW",              LOG_W_ID},
-      {"_logE",              LOG_E_ID},
+    private static Tuple<ushort, string, DType>[] PredefinedTopics = new Tuple<ushort, string, DType>[]{
+      new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.declarer", DType.String),
+      new Tuple<ushort, string, DType>(0xFFC1, ".MQTT-SN.phy1_addr", DType.ByteArray),
     };
+    //internal static Dictionary<string, ushort> PredefinedTopics = new Dictionary<string, ushort>(){
+    //  {".MQTT-SN.declarer",          0xFFC0},
+    //  {".MQTT-SN.a_phy1",            0xFFC1},
+
+    //  {"_logD",              LOG_D_ID},
+    //  {"_logI",              LOG_I_ID},
+    //  {"_logW",              LOG_W_ID},
+    //  {"_logE",              LOG_E_ID},
+    //};
   }
 }

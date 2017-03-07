@@ -378,24 +378,29 @@ namespace X13.Repository {
         }
       }
       public static void SetField(Topic t, string fPath, JSValue val) {
-        var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
-        JSValue p = t._manifest, c;
-        for(int i = 0; i < ps.Length - 1; i++) {
-          c = p.GetProperty(ps[i]);
-          if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
-            c = JSObject.CreateObject();
-            p[ps[i]] = c;
-          } else if(c.ValueType != JSValueType.Object) {
-            return;
+        try {
+          var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
+          JSValue p = t._manifest, c;
+          for(int i = 0; i < ps.Length - 1; i++) {
+            c = p.GetProperty(ps[i]);
+            if(c.ValueType <= JSValueType.Undefined || c.IsNull) {
+              c = JSObject.CreateObject();
+              p[ps[i]] = c;
+            } else if(c.ValueType != JSValueType.Object) {
+              return;
+            }
+            p = c;
           }
-          p = c;
+          if(val == null) {
+            p.DeleteProperty(ps[ps.Length - 1]);
+          } else {
+            p[ps[ps.Length - 1]] = val;
+          }
+          t._ps_manifest.Set("v." + fPath, Js2Bs(val));
         }
-        if(val == null) {
-          p.DeleteProperty(ps[ps.Length - 1]);
-        } else {
-          p[ps[ps.Length - 1]] = val;
+        catch(Exception ex) {
+          Log.Warning("{0}.SetField({1}, ..) - {2}", t.path, fPath, ex.Message);
         }
-        t._ps_manifest.Set("v." + fPath, Js2Bs(val));
       }
 
       public static void UpdatePath(Topic t) {
