@@ -236,7 +236,7 @@ namespace X13.Repository {
       JSValue state = null, manifest = null;
       if(xElement.Attribute("m") != null) {
         try {
-          manifest = DeskHost.DeskSocket.ParseJson(xElement.Attribute("m").Value);
+          manifest = JsLib.ParseJson(xElement.Attribute("m").Value);
         }
         catch(Exception ex) {
           Log.Warning("Import({0}).m - {1}", xElement.ToString(), ex.Message);
@@ -248,7 +248,7 @@ namespace X13.Repository {
 
       if(xElement.Attribute("s") != null) {
         try {
-          state = DeskHost.DeskSocket.ParseJson(xElement.Attribute("s").Value);
+          state = JsLib.ParseJson(xElement.Attribute("s").Value);
         }
         catch(Exception ex) {
           Log.Warning("Import({0}).s - {1}", xElement.ToString(), ex.Message);

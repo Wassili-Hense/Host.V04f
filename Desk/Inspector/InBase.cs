@@ -105,17 +105,7 @@ namespace X13.UI {
       IsReadonly = (attr&2)!=0;
       IsRequired = (attr&1)!=0;
       if(nv == null){
-        string v;
-        if(value.ValueType == JSC.JSValueType.String && (v = value.Value as string) != null && v.Length > 3 && v[0] == '¤') {
-          switch(v.Substring(1, 2)) {
-          case "TR":
-            nv = "TopicReference";
-            break;
-          case "VR":
-            nv = "Version";
-            break;
-          }
-        }
+        nv = JSV2Type();
       }
       if(ni == null) {
         if(value.ValueType == JSC.JSValueType.Object && value.Value == null) {
@@ -123,16 +113,10 @@ namespace X13.UI {
           ni = App.GetIcon((this is InTopic) ? string.Empty : "Null");  // Folder or Null
         }
       }
-      if(nv == null) {
-        if(value.ValueType == JSC.JSValueType.Integer) {
-          nv = JSC.JSValueType.Double.ToString();
-        } else {
-          nv = value.ValueType.ToString();
-        }
-      }
       if(ni == null) {
         ni = App.GetIcon(nv);
       }
+
       if(ni != icon) {
         icon = ni;
         PropertyChangedReise("icon");
@@ -143,6 +127,30 @@ namespace X13.UI {
         PropertyChangedReise("editor");
       }
       this.editor.TypeChanged(_manifest);
+    }
+
+    private string JSV2Type() {
+      string v;
+      switch(value.ValueType){
+      case JSC.JSValueType.String:
+        if((v = value.Value as string) != null && v.Length > 3 && v[0] == '¤') {
+          switch(v.Substring(1, 2)) {
+          case "TR":
+            return "TopicReference";
+          case "VR":
+            return "Version";
+          }
+        } 
+        break;
+      case JSC.JSValueType.Object:
+        if(value is ByteArray || value.Value is ByteArray) {
+          return "ByteArray";
+        }
+        break;
+      case JSC.JSValueType.Integer:
+        return JSC.JSValueType.Double.ToString();
+      }
+      return value.ValueType.ToString();
     }
     public void Deleted() {
       if(_isVisible) {

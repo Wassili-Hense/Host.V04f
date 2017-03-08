@@ -574,6 +574,10 @@ namespace X13.Repository {
             }
             return r;
           }
+          ByteArray ba = val as ByteArray;
+          if(ba != null || (ba = val.Value as ByteArray) != null) {
+            return new BsonValue(ba.GetBytes());
+          }
           {
             var r = new BsonDocument();
             if(val != null) {
@@ -614,6 +618,8 @@ namespace X13.Repository {
           return new JST.Boolean(val.AsBoolean);
         case BsonType.DateTime:
           return JSValue.Marshal(val.AsDateTime.ToLocalTime());
+        case BsonType.Binary:
+          return new ByteArray(val.AsBinary);
         case BsonType.Document: {
             var r = JSObject.CreateObject();
             var o = val.AsDocument;

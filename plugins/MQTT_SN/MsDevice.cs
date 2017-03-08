@@ -589,11 +589,7 @@ namespace X13.Periphery {
           val = new JSL.String(Encoding.Default.GetString(msgData));
           break;
         case DType.ByteArray: {
-            //var arr = new JSL.Uint8Array(msgData.Length);
-            //for(int i = 0; i < msgData.Length; i++) {
-            //  arr[i.ToString()] = new JSL.Number(msgData[i]);
-            //}
-            val = JSC.JSValue.Marshal(msgData);
+            val = new ByteArray(msgData);
           }
           break;
         /*

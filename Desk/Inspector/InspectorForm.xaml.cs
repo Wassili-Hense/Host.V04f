@@ -27,6 +27,7 @@ namespace X13.UI {
       _editors = new SortedList<string, Func<InBase, JSC.JSValue, IValueEditor>>();
       _editors["Attribute"] = veAttribute.Create;
       _editors["Boolean"] = veSliderBool.Create;
+      _editors["ByteArray"] = veByteArray.Create;
       _editors["Double"] = veDouble.Create;
       _editors["Editor"] = veEditor.Create;
       _editors["Integer"] = veInteger.Create;
