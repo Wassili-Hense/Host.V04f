@@ -88,7 +88,14 @@ namespace X13.Periphery {
 
     private void SubFunc(Perform p) {
       if(p.art == Perform.Art.subscribe) {
-
+        if(p.src.GetField("MQTT-SN.phy1_addr").Defined) {
+          var dev = _devs.FirstOrDefault(z => z.name == p.src.name);
+          if(dev == null) {
+            dev = new MsDevice(p.src);
+            _devs.Add(dev);
+            Log.Info(dev.owner.path + " created on subscribe");
+          }
+        }
       } else if(p.art == Perform.Art.subAck) {
         ThreadPool.RegisterWaitForSingleObject(_startScan, ScanPorts, null, 45000, false);
         _scanBusy = 1;
@@ -257,7 +264,7 @@ namespace X13.Periphery {
         }
         port = null;
       }
-      _scanBusy = 0;
+      _scanBusy = 1;
     }
     internal bool ProcessInPacket(IMsGate gate, byte[] addr, byte[] buf, int start, int end) {
       var msg = MsMessage.Parse(buf, start, end);
@@ -328,10 +335,11 @@ namespace X13.Periphery {
         if(dev == null) {
           var td = Topic.root.Get("/vacant/" + cm.ClientId, true, _owner);
           dev = new MsDevice(td);
-          dev._gate = gate;
-          dev.addr = addr;
           _devs.Add(dev);
+          Log.Info(dev.owner.path + " created on connect");
         }
+        dev._gate = gate;
+        dev.addr = addr;
         dev.Connect(cm);
         foreach(var dub in _devs.Where(z => z != dev && z.CheckAddr(addr) && z._gate == gate).ToArray()) {
           dub.addr = null;

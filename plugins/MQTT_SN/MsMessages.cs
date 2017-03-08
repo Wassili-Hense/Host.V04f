@@ -411,33 +411,9 @@ namespace X13.Periphery {
   }
   
   internal class MsPublish : MsMessage {
-    private Topic _val;
+    private MsDevice.TopicInfo _ti;
     private byte[] _payload;
 
-    //public MsPublish(Topic val, ushort topicId, QoS qualityOfService)
-    //  : base(MsMessageType.PUBLISH) {
-    //  this.IsRequest=qualityOfService!=QoS.AtMostOnce;
-    //  this.qualityOfService=qualityOfService;
-    //  this.TopicId=topicId;
-    //  this._val=val;
-    //  Topic dev=val;
-    //  string lPath;
-    //  if(val == null) {
-    //    this.topicIdType = TopicIdType.PreDefined;
-    //  } else {
-    //    while(dev != null && dev.valueType != typeof(MsDevice)) {
-    //      dev = dev.parent;
-    //    }
-    //    if(dev != null) {
-    //      lPath = val.path.Substring(dev.path.Length + 1);
-    //    } else {
-    //      lPath = val.path;
-    //    }
-    //    if(MsDevice.PredefinedTopics.ContainsValue(topicId) && (_val == null || MsDevice.PredefinedTopics.ContainsKey(lPath))) {
-    //      this.topicIdType = TopicIdType.PreDefined;
-    //    }
-    //  }
-    //}
     public MsPublish(byte[] buf, int start, int end)
       : base(buf, start, end) {
       int ptr=buf[start+0]==1?start+4:start+2;
@@ -450,6 +426,16 @@ namespace X13.Periphery {
       this.MessageId=(ushort)((buf[ptr++]<<8) | buf[ptr++]);
       this._payload=new byte[end-ptr];
       Buffer.BlockCopy(buf, ptr, this._payload, 0, end-ptr);
+    }
+
+    public MsPublish(MsDevice.TopicInfo ti)
+      : base(MsMessageType.PUBLISH) {
+        this._ti = ti;
+
+        this.IsRequest=true;
+        this.qualityOfService=QoS.AtLeastOnce;
+        this.TopicId=_ti.TopicId;
+        this.topicIdType = _ti.it;
     }
     public override byte[] GetBytes() {
       byte[] tmp=this.Data;
@@ -470,11 +456,11 @@ namespace X13.Periphery {
     public readonly QoS qualityOfService;
     public readonly TopicIdType topicIdType;
     public readonly ushort TopicId;
-    //public byte[] Data { get { if(_payload==null) _payload=MsDevice.Serialize(_val); return _payload; } set { _payload=value; } }
-    public byte[] Data { get { return _payload; } set { _payload = value; } }
+    public byte[] Data { get { if(_payload==null) _payload=MsDevice.Serialize(_ti); return _payload; } set { _payload=value; } }
 
     public override string ToString() {
-      return string.Format("MsPublish [{1:X4}.{3:X4}] {0}={2}", _val!=null?_val.name:"msg", TopicId, Data==null?"null":(BitConverter.ToString(Data)+"["+ Encoding.ASCII.GetString(Data.Select(z => (z<0x20 || z>0x7E)?(byte)'.':z).ToArray())+"]"), MessageId);
+      return string.Format("MsPublish [{0:X4}.{1:X4}] {2}={3}", TopicId, MessageId, _ti != null ? _ti.subIdx : "msg"
+        , Data==null?"null":(BitConverter.ToString(Data)+"["+ Encoding.ASCII.GetString(Data.Select(z => (z<0x20 || z>0x7E)?(byte)'.':z).ToArray())+"]"));
     }
   }
 

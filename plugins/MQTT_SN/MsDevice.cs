@@ -18,6 +18,46 @@ namespace X13.Periphery {
     private const ushort LOG_W_ID = 0xFFE2;
     private const ushort LOG_E_ID = 0xFFE3;
     private static Random _rand;
+    private static byte[] _baEmty = new byte[0];
+    private static byte[] _baFalse = new byte[] { 0 };
+    private static byte[] _baTrue = new byte[] { 1 };
+
+
+    public static byte[] Serialize(TopicInfo _ti) {
+      var val = _ti.topic.GetState();
+      //TODO: convert
+      switch(_ti.dType) {
+      case DType.Boolean:
+        return ((bool)val) ? _baTrue : _baFalse;
+      case DType.Integer: {
+          List<byte> ret = new List<byte>();
+          long vo = (long)val;
+          long v = vo;
+          do {
+            ret.Add((byte)v);
+            v = v >> 8;
+          } while(vo < 0 ? (v < -1 || (ret[ret.Count - 1] & 0x80) == 0) : (v > 0 || (ret[ret.Count - 1] & 0x80) != 0));
+          return ret.ToArray();
+        }
+      case DType.String: {
+          var s = val.Value as string;
+          if(string.IsNullOrEmpty(s)) {
+            return _baEmty;
+          } else {
+            return Encoding.Default.GetBytes(s);
+          }
+        }
+      case DType.ByteArray: {
+          ByteArray ba;
+          if((ba = val as ByteArray) != null || (ba = val.Value as ByteArray) != null) {
+            return ba.GetBytes();
+          }
+        }
+        break;
+      }
+      return _baEmty;
+      ;
+    }
 
     static MsDevice() {
       _rand = new Random((int)DateTime.Now.Ticks);
@@ -172,23 +212,51 @@ namespace X13.Periphery {
           var tmp = msg as MsSubscribe;
 
           SyncMsgId(msg.MessageId);
-          //SubRec s = null;
+          int idx;
           ushort topicId = tmp.topicId;
-          if(tmp.topicIdType != TopicIdType.Normal || tmp.path.IndexOfAny(new[] { '+', '#' }) < 0) {
-            TopicInfo ti = null;
-            if(tmp.topicIdType == TopicIdType.Normal) {
-              ti = GetTopicInfo(tmp.path, false);
+          TopicInfo ti = null;
+          MsReturnCode retCode = MsReturnCode.Accepted;
+          Topic t = null;
+          SubRec.SubMask mask = SubRec.SubMask.Value;
+
+          if(tmp.topicIdType != TopicIdType.Normal) {
+            ti = GetTopicInfo(tmp.topicId, tmp.topicIdType);
+            if(ti != null) {
+              topicId = ti.TopicId;
+              t = ti.topic;
             } else {
-              ti = GetTopicInfo(tmp.topicId, tmp.topicIdType);
+              retCode = MsReturnCode.InvalidTopicId;
             }
-            topicId = ti.TopicId;
+          } else if((idx = tmp.path.IndexOfAny(new[] { '+', '#' })) < 0) {
+            ti = GetTopicInfo(tmp.path, false);
+            if(ti != null) {
+              topicId = ti.TopicId;
+              t = ti.topic;
+            } else {
+              retCode = MsReturnCode.InvalidTopicId;
+            }
+          } else if(idx != tmp.path.Length - 1) {
+            retCode = MsReturnCode.InvalidTopicId;
+          } else {
+            mask |= tmp.path[idx] == '#' ? SubRec.SubMask.All : SubRec.SubMask.Chldren;
+            if(tmp.path.Length > 1) {
+              if(tmp.path[0] == '/' && !tmp.path.StartsWith(owner.path)) {
+                retCode = MsReturnCode.InvalidTopicId;
+              } else {
+                t = owner.Get(tmp.path.Substring(0, idx), true, owner);
+              }
+            } else {
+              t = owner;
+            }
           }
-          Send(new MsSuback(tmp.qualityOfService, topicId, msg.MessageId, MsReturnCode.Accepted));
+          Send(new MsSuback(tmp.qualityOfService, topicId, msg.MessageId, retCode));
           if(state == State.PreConnect) {
             state = State.Connected;
           }
-          //s = owner.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, PublishTopic);
-          //_subsscriptions.Add(s);
+          if(t != null) {
+            SubRec s = t.Subscribe(mask, PublishTopic);
+            _subsscriptions.Add(s);
+          }
         }
         break;
       case MsMessageType.REGISTER: {
@@ -200,6 +268,9 @@ namespace X13.Periphery {
             ti = GetTopicInfo(tmp.TopicPath, false);
             if(ti != null) {
               Send(new MsRegAck(ti.TopicId, tmp.MessageId, MsReturnCode.Accepted));
+              if((ti.dType == DType.Boolean || ti.dType == DType.Integer) && !ti.topic.GetState().Defined) {
+                SetValue(ti, new byte[] { 0 }, false);
+              }
             } else {
               Send(new MsRegAck(0, tmp.MessageId, MsReturnCode.NotSupportes));
               Log.Warning("Unknown variable type by register {0}, {1}", owner.path, tmp.TopicPath);
@@ -541,7 +612,14 @@ namespace X13.Periphery {
           return nf.ValueType == NiL.JS.Core.JSValueType.String && (nf.Value as string) == subIdx;
         });
         if(cur == null) {
-          cur = owner.Get(subIdx, true, owner);
+          if(subIdx[0] == '/' && !subIdx.StartsWith(owner.path)) {
+            cur = owner.Get(subIdx, false, owner);
+            if(cur == null) {
+              return null;
+            }
+          } else {
+            cur = owner.Get(subIdx, true, owner);
+          }
           cur.SetField("MQTT-SN.subIdx", subIdx, owner);
         }
       }
@@ -566,6 +644,55 @@ namespace X13.Periphery {
       return ti;
     }
 
+    private void PublishTopic(Perform p) {
+      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner) {
+        return;
+      }
+      if(p.art == Perform.Art.create) {
+        GetTopicInfo(p.src);
+        return;
+      }
+      TopicInfo ti = null;
+      for(int i = _topics.Count - 1; i >= 0; i--) {
+        if(_topics[i].topic == p.src) {
+          ti = _topics[i];
+          break;
+        }
+      }
+      if(ti == null && p.art == Perform.Art.changedState) {
+        ti = GetTopicInfo(p.src, true);
+      }
+      if(ti == null || ti.TopicId >= 0xFFC0 || !ti.registred) {
+        return;
+      }
+      if(p.art == Perform.Art.changedState) {
+        Send(new MsPublish(ti));
+      } else if(p.art == Perform.Art.remove) {          // Remove by device
+        if(ti.it == TopicIdType.Normal) {
+          Send(new MsRegister(0xFFFF, ti.subIdx));
+        }
+        _topics.Remove(ti);
+      }
+    }
+    internal void PublishWithPayload(Topic t, byte[] payload) {
+      if(state == State.Disconnected || state == State.Lost || _topics == null) {
+        return;
+      }
+      TopicInfo ti = null;
+      for(int i = _topics.Count - 1; i >= 0; i--) {
+        if(_topics[i].topic == t) {
+          ti = _topics[i];
+          break;
+        }
+      }
+      if(ti == null) {
+        return;
+      }
+      //if(_verbose.value) {
+      //  Log.Debug("{0}.Snd {1}", t.name, BitConverter.ToString(payload));
+      //}
+      Send(new MsPublish(ti) { Data = payload });
+    }
     private void SetValue(TopicInfo ti, byte[] msgData, bool retained) {
       if(ti != null) {
         if(!ti.topic.path.StartsWith(owner.path)) {
@@ -633,7 +760,7 @@ namespace X13.Periphery {
           return;
         }
         if(ti.subIdx[0] == '.') {
-          if(ti.subIdx == ".MQTT-SN.declarer" && val.ValueType==JSC.JSValueType.String) {
+          if(ti.subIdx == ".MQTT-SN.declarer" && val.ValueType == JSC.JSValueType.String) {
             var v = val.Value as string;
             var type = "MQTT-SN/" + v.Substring(0, v.IndexOf('.'));
             ti.topic.SetField("type", type, owner);
@@ -856,11 +983,19 @@ namespace X13.Periphery {
             Log.Info("{0} Disconnected", owner.path);
           }
         }
+        foreach(var s in _subsscriptions) {
+          s.Dispose();
+        }
+        _subsscriptions.Clear();
+        _topics.Clear();
+        lock(_sendQueue) {
+          _sendQueue.Clear();
+        }
       }
       _waitAck = false;
     }
 
-    private class TopicInfo {
+    internal class TopicInfo {
       public Topic topic;
       public ushort TopicId;
       public TopicIdType it;
@@ -868,7 +1003,7 @@ namespace X13.Periphery {
       public string subIdx;
       public DType dType;
     }
-    private enum DType {
+    internal enum DType {
       Boolean,
       Integer,
       String,
@@ -921,5 +1056,6 @@ namespace X13.Periphery {
     //  {"_logW",              LOG_W_ID},
     //  {"_logE",              LOG_E_ID},
     //};
+
   }
 }
