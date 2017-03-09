@@ -69,18 +69,21 @@ namespace X13.UI {
     }
     public override bool HasChildren {
       get {
-        return _owner != null && _owner.children != null;
+        return (_owner != null && _owner.children != null && _owner.children.Any()) || (_items != null && _items.Any());
       }
     }
     public override JSC.JSValue value { get { return _owner != null ? _owner.value : JSC.JSValue.NotExists; } set { if(_owner != null) { _owner.SetValue(value); } } }
     public override void FinishNameEdit(string name) {
       if(_owner == null) {
-        if(!string.IsNullOrEmpty(name)) {
-          //base.name = name;
-          _parent._owner.CreateAsync(name, _createType).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
-        }
         _parent._items.Remove(this);
         _parent._collFunc(this, false);
+        if(!_parent._items.Any()) {
+          _parent._items = null;
+          _parent.IsExpanded = false;
+        }
+        if(!string.IsNullOrEmpty(name)) {
+          _parent._owner.CreateAsync(name, _createType).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
+        }
       } else {
         if(!string.IsNullOrEmpty(name)) {
           _owner.Move(_owner.parent, name);
@@ -157,8 +160,14 @@ namespace X13.UI {
         if(td.IsFaulted) {
           Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
         }
-        _parent._items.Remove(this);
-        _collFunc(this, false);
+        if(_parent._items != null) {
+          _parent._items.Remove(this);
+          _collFunc(this, false);
+          if(!_parent._items.Any()) {
+            _parent._items = null;
+            _parent.IsExpanded = false;
+          }
+        }
       }
     }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
@@ -182,10 +191,16 @@ namespace X13.UI {
             var td = AddTopic(child);
           }
         } else if(art == DTopic.Art.RemoveChild) {
-          var it = _items.FirstOrDefault(z => z.name == child.name);
-          if(it != null) {
-            it.Deleted();
-            _items.Remove(it);
+          if(_items != null) {
+            var it = _items.FirstOrDefault(z => z.name == child.name);
+            if(it != null) {
+              it.Deleted();
+              _items.Remove(it);
+              if(!_items.Any()) {
+                _items = null;
+                IsExpanded = false;
+              }
+            }
           }
         }
       }
@@ -213,13 +228,13 @@ namespace X13.UI {
           ma.Items.Add(mi);
         }
       } else {
-        if(_owner.Connection.TypeManifest!= null) {
+        if(_owner.Connection.TypeManifest != null) {
           foreach(var t in _owner.Connection.TypeManifest.parent.children) {
             if(t.name == "Manifest" || (v1 = t.value).ValueType != JSC.JSValueType.Object || v1.Value == null) {
               continue;
             }
             mi = new MenuItem() { Header = t.name, Tag = v1 };
-            if((v2=v1["icon"]).ValueType == JSC.JSValueType.String) {
+            if((v2 = v1["icon"]).ValueType == JSC.JSValueType.String) {
               mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
             } else {
               mi.Icon = new Image() { Source = App.GetIcon(t.name) };

@@ -255,6 +255,5 @@ namespace X13.Periphery {
       _port = null;
       _pl._gates.Remove(this);
     }
-
   }
 }

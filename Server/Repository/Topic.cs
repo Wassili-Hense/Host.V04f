@@ -356,8 +356,10 @@ namespace X13.Repository {
               } else {
                 next = new Topic(home, pt[i], fill);
                 home._children[pt[i]] = next;
-                var c = Perform.Create(next, Perform.Art.create, prim);
-                _repo.DoCmd(c, inter);
+                if(fill) {  // else the Perform(create) will be added in Fill()
+                  var c = Perform.Create(next, Perform.Art.create, prim);
+                  _repo.DoCmd(c, inter);
+                }
               }
             } else {
               return null;

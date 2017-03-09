@@ -64,25 +64,29 @@ namespace X13.Periphery {
     }
 
     private List<SubRec> _subsscriptions;
-    private Queue<MsMessage> _sendQueue;
-    private List<TopicInfo> _topics;
+    private Queue<MsMessage> _sendQueue; 
+    private List<TopicInfo> _topics;     
+    private MQTT_SNPl _pl;
     private State _state;
-    private bool _waitAck;
-    private int _tryCounter;
-    private int _duration;
+    private bool _waitAck;          
+    private int _tryCounter;        
+    private int _duration;          
     private int _messageIdGen;
-    private Timer _activeTimer;
-    private MsPublish _lastInPub;
-    private bool _has_RTC;
-    private DateTime _last_RTC;
+    private DateTime _toActive;
+    private string _willPath;       
+    private byte[] _wilMsg;         
+    private bool _willRetain;       
+    private MsPublish _lastInPub;   
+    private bool _has_RTC;          
+    private DateTime _last_RTC;     
 
     public readonly Topic owner;
-    public IMsGate _gate;
+    public IMsGate _gate;           
     public byte[] addr;
 
-    public MsDevice(Topic owner) {
+    public MsDevice(MQTT_SNPl pl, Topic owner) {
       this.owner = owner;
-      _activeTimer = new Timer(new TimerCallback(TimeOut));
+      this._pl = pl;
       _subsscriptions = new List<SubRec>(4);
       _sendQueue = new Queue<MsMessage>();
       _topics = new List<TopicInfo>(16);
@@ -107,9 +111,19 @@ namespace X13.Periphery {
     public string Addr2If(byte[] addr) {
       return _gate != null ? _gate.Addr2If(addr) : string.Concat(BitConverter.ToString(addr), " via ", this.name);
     }
-
     public void Stop() {
-      throw new NotImplementedException();
+      //if(_nodes == null || !_nodes.Any()) {
+      //  return;
+      //}
+      //var nodes = _nodes.ToArray();
+      //for(int i = 0; i < nodes.Length; i++) {
+      //  nodes[i].Stop();
+      //}
+      //if(_gate != null) {
+      //  _gate.SendGw(this, new MsDisconnect());
+      //  Stat(true, MsMessageType.DISCONNECT, false);
+      //}
+      //state = State.Disconnected;
     }
     #endregion IMsGate Members
 
@@ -141,6 +155,13 @@ namespace X13.Periphery {
       if(this.addr != null && this.addr.Length - 1 == addr.Length && this.addr.Skip(1).SequenceEqual(addr)) {
         return true;
       }
+      ByteArray ba;
+      for(int i = 2; i < 5; i++) {
+        var a = owner.GetField(string.Format("MQTT-SN.phy{0}_addr", i));
+        if((ba = a as ByteArray) != null || (ba = a.Value as ByteArray) != null && ba.GetBytes().Length == addr.Length && ba.GetBytes().SequenceEqual(addr)) {
+          return true;
+        }
+      }
       return false;
     }
     public void Connect(MsConnect msg) {
@@ -160,24 +181,25 @@ namespace X13.Periphery {
       }
       _duration = msg.Duration * 1100;
       ResetTimer();
-      //if(msg.Will) {
-      //  _willPath = string.Empty;
-      //  _wilMsg = null;
-      //  if(msg.CleanSession) {
-      //    Log.Info("{0}.state {1} => WILLTOPICREQ", Owner.path, state);
-      //  }
-      //  state = State.WillTopic;
-      //  Send(new MsMessage(MsMessageType.WILLTOPICREQ));
-      //} else {
-      if(msg.CleanSession) {
-        Log.Info("{0} {1} => PreConnect", owner.path, state);
-        state = State.PreConnect;
+      if(msg.Will) {
+        _willPath = string.Empty;
+        _wilMsg = null;
+        if(msg.CleanSession) {
+          Log.Info("{0}.state {1} => WILLTOPICREQ", owner.path, state);
+        }
+        state = State.WillTopic;
+        Send(new MsMessage(MsMessageType.WILLTOPICREQ));
       } else {
-        state = State.Connected;
+        if(msg.CleanSession) {
+          Log.Info("{0} {1} => PreConnect", owner.path, state);
+          state = State.PreConnect;
+        } else {
+          state = State.Connected;
+        }
+        Send(new MsConnack(MsReturnCode.Accepted));
       }
-      Send(new MsConnack(MsReturnCode.Accepted));
-      //}
       //via = _gate.name;
+
       //if(_statistic.value) {
       //  Stat(false, MsMessageType.CONNECT, msg.CleanSession);
       //}
@@ -187,27 +209,27 @@ namespace X13.Periphery {
       //  Stat(false, msg.MsgTyp);
       //}
       switch(msg.MsgTyp) {
-      //case MsMessageType.WILLTOPIC: {
-      //    var tmp = msg as MsWillTopic;
-      //    if(state == State.WillTopic) {
-      //      _willPath = tmp.Path;
-      //      _willRetain = tmp.Retain;
-      //      state = State.WillMsg;
-      //      ProccessAcknoledge(msg);
-      //    }
-      //  }
-      //  break;
-      //case MsMessageType.WILLMSG: {
-      //    var tmp = msg as MsWillMsg;
-      //    if(state == State.WillMsg) {
-      //      _wilMsg = tmp.Payload;
-      //      Log.Info("{0}.state {1} => WILLTOPICREQ", Owner.path, state);
-      //      state = State.PreConnect;
-      //      ProccessAcknoledge(msg);
-      //      Send(new MsConnack(MsReturnCode.Accepted));
-      //    }
-      //  }
-      //  break;
+      case MsMessageType.WILLTOPIC: {
+          var tmp = msg as MsWillTopic;
+          if(state == State.WillTopic) {
+            _willPath = tmp.Path;
+            _willRetain = tmp.Retain;
+            state = State.WillMsg;
+            ProccessAcknoledge(msg);
+          }
+        }
+        break;
+      case MsMessageType.WILLMSG: {
+          var tmp = msg as MsWillMsg;
+          if(state == State.WillMsg) {
+            _wilMsg = tmp.Payload;
+            Log.Info("{0}.state {1} => WILLTOPICREQ", owner.path, state);
+            state = State.PreConnect;
+            ProccessAcknoledge(msg);
+            Send(new MsConnack(MsReturnCode.Accepted));
+          }
+        }
+        break;
       case MsMessageType.SUBSCRIBE: {
           var tmp = msg as MsSubscribe;
 
@@ -294,13 +316,13 @@ namespace X13.Periphery {
           }
           if(tmp.RetCode == MsReturnCode.Accepted) {
             ti.registred = true;
-            //if(ti.it != TopicIdType.PreDefined) {
-            //  Send(new MsPublish(ti.topic, ti.TopicId, QoS.AtLeastOnce));
-            //}
+            if(ti.it != TopicIdType.PreDefined) {
+              Send(new MsPublish(ti));
+            }
           } else {
             Log.Warning("{0} registred failed: {1}", ti.topic.path, tmp.RetCode.ToString());
             _topics.Remove(ti);
-            ti.topic.SetField("MQTT-SN.subIdx", null);
+            ti.topic.Remove(owner);
             //UpdateInMute();
           }
         }
@@ -398,133 +420,174 @@ namespace X13.Periphery {
       case MsMessageType.CONNECT:
         Connect(msg as MsConnect);
         break;
-      //case MsMessageType.EncapsulatedMessage: {
-      //    Topic devR = Topic.root.Get("/dev");
-      //    var fm = msg as MsForward;
-      //    if(fm.msg == null) {
-      //      if(_verbose.value) {
-      //        Log.Warning("bad message {0}:{1}", _gate, fm.ToString());
-      //      }
-      //      return;
-      //    }
-      //    if(fm.msg.MsgTyp == MsMessageType.SEARCHGW) {
-      //      _gate.SendGw(this, new MsGwInfo(gwIdx));
-      //    } else if(fm.msg.MsgTyp == MsMessageType.DHCP_REQ) {
-      //      var dr = fm.msg as MsDhcpReq;
-      //      //******************************
-      //      List<byte> ackAddr = new List<byte>();
-      //      byte[] respPrev = null;
+      case MsMessageType.EncapsulatedMessage: {
+          var fm = msg as MsForward;
+          if(fm.msg == null) {
+            if(_pl.verbose) {
+              Log.Warning("bad message {0}:{1}", _gate, fm.ToString());
+            }
+            return;
+          }
+          if(fm.msg.MsgTyp == MsMessageType.SEARCHGW) {
+            _gate.SendGw(this, new MsGwInfo(gwIdx));
+          } else if(fm.msg.MsgTyp == MsMessageType.DHCP_REQ) {
+            var dr = fm.msg as MsDhcpReq;
+            //******************************
+            List<byte> ackAddr = new List<byte>();
+            byte[] respPrev = null;
 
-      //      foreach(byte hLen in dr.hLen) {
-      //        if(hLen == 0) {
-      //          continue;
-      //        } else if(hLen <= 8) {
-      //          byte[] resp;
-      //          if(respPrev != null && respPrev.Length == hLen) {
-      //            resp = respPrev;
-      //          } else {
-      //            resp = new byte[hLen];
+            foreach(byte hLen in dr.hLen) {
+              if(hLen == 0) {
+                continue;
+              } else if(hLen <= 8) {
+                byte[] resp;
+                if(respPrev != null && respPrev.Length == hLen) {
+                  resp = respPrev;
+                } else {
+                  resp = new byte[hLen];
 
-      //            for(int i = 0; i < 5; i++) {
-      //              for(int j = 0; j < resp.Length; j++) {
-      //                resp[j] = (byte)_rand.Next((i < 3 && hLen == 1) ? 32 : 1, (i < 3 && hLen == 1) ? 126 : (j == 0 ? 254 : 255));
-      //              }
-      //              if(devR.children.Select(z => z as DVar<MsDevice>).Where(z => z != null && z.value != null).All(z => !z.value.CheckAddr(resp))) {
-      //                break;
-      //              } else if(i == 4) {
-      //                for(int j = 0; j < resp.Length; j++) {
-      //                  resp[j] = 0xFF;
-      //                }
-      //              }
-      //            }
-      //            respPrev = resp;
-      //          }
-      //          ackAddr.AddRange(resp);
-      //        } else {
-      //          if(_verbose.value) {
-      //            Log.Warning("{0}:{1} DhcpReq.hLen is too high", BitConverter.ToString(fm.addr), fm.msg.ToString());
-      //          }
-      //          ackAddr = null;
-      //          break;
-      //        }
-      //      }
-      //      if(ackAddr != null) {
-      //        _gate.SendGw(this, new MsForward(fm.addr, new MsDhcpAck(gwIdx, dr.xId, ackAddr.ToArray())));
-      //      }
-      //      //******************************
-      //    } else {
-      //      if(fm.msg.MsgTyp == MsMessageType.CONNECT) {
-      //        var cm = fm.msg as MsConnect;
-      //        if(fm.addr != null && fm.addr.Length == 2 && fm.addr[1] == 0xFF) {    // DHCP V<0.3
-      //          _gate.SendGw(this, new MsForward(fm.addr, new MsConnack(MsReturnCode.Accepted)));
-
-      //          byte[] nAddr = new byte[1];
-      //          do {
-      //            nAddr[0] = (byte)(_rand.Next(32, 254));
-      //          } while(!devR.children.Select(z => z as DVar<MsDevice>).Where(z => z != null && z.value != null).All(z => !z.value.CheckAddr(nAddr)));
-      //          Log.Info("{0} new addr={1:X2}", cm.ClientId, nAddr[0]);
-      //          _gate.SendGw(this, new MsForward(fm.addr, new MsPublish(null, PredefinedTopics[".cfg/XD_DeviceAddr"], QoS.AtLeastOnce) { MessageId = 1, Data = nAddr }));
-      //        } else {
-      //          DVar<MsDevice> dDev = devR.Get<MsDevice>(cm.ClientId);
-      //          if(dDev.value == null) {
-      //            dDev.value = new MsDevice(this, fm.addr);
-      //            Thread.Sleep(0);
-      //            dDev.value.Owner = dDev;
-      //          } else {
-      //            this.RemoveNode(dDev.value);
-      //            dDev.value._gate = this;
-      //            dDev.value.Addr = fm.addr;
-      //          }
-      //          this.AddNode(dDev.value);
-      //          dDev.value.Connect(cm);
-      //          foreach(var dub in devR.children.Select(z => z.GetValue() as MsDevice).Where(z => z != null && z != dDev.value && z.Addr != null && z.Addr.SequenceEqual(fm.addr) && z._gate == this).ToArray()) {
-      //            dub.Addr = null;
-      //            dub._gate = null;
-      //            dub.state = State.Disconnected;
-      //          }
-      //        }
-      //      } else {
-      //        MsDevice dev = devR.children.Select(z => z.GetValue() as MsDevice).FirstOrDefault(z => z != null && z.Addr != null && z.Addr.SequenceEqual(fm.addr) && z._gate == this);
-      //        if(dev != null
-      //          && ((dev.state != State.Disconnected && dev.state != State.Lost)
-      //            || fm.msg.MsgTyp == MsMessageType.CONNECT
-      //            || (fm.msg.MsgTyp == MsMessageType.PUBLISH && (fm.msg as MsPublish).qualityOfService == QoS.MinusOne))) {
-      //          dev.ProcessInPacket(fm.msg);
-      //        } else if(fm.msg.MsgTyp == MsMessageType.PUBLISH && (fm.msg as MsPublish).qualityOfService == QoS.MinusOne) {
-      //          var tmp = fm.msg as MsPublish;
-      //          if(tmp.topicIdType == TopicIdType.PreDefined && tmp.TopicId >= LOG_D_ID && tmp.TopicId <= LOG_E_ID) {
-      //            string str = string.Format("{0}: msgId={2:X4} msg={1}", BitConverter.ToString(this.Addr), tmp.Data == null ? "null" : (BitConverter.ToString(tmp.Data) + "[" + Encoding.ASCII.GetString(tmp.Data.Select(z => (z < 0x20 || z > 0x7E) ? (byte)'.' : z).ToArray()) + "]"), tmp.MessageId);
-      //            switch(tmp.TopicId) {
-      //            case LOG_D_ID:
-      //              Log.Debug(str);
-      //              break;
-      //            case LOG_I_ID:
-      //              Log.Info(str);
-      //              break;
-      //            case LOG_W_ID:
-      //              Log.Warning(str);
-      //              break;
-      //            case LOG_E_ID:
-      //              Log.Error(str);
-      //              break;
-      //            }
-      //          }
-      //        } else {
-      //          if(dev == null || dev.Owner == null) {
-      //            if(_verbose.value) {
-      //              Log.Debug("{0} via {1} unknown device", BitConverter.ToString(fm.addr), this.name);
-      //            }
-      //          } else {
-      //            if(_verbose.value) {
-      //              Log.Debug("{0} via {1} inactive", dev.Owner.name, this.name);
-      //            }
-      //          }
-      //          _gate.SendGw(this, new MsForward(fm.addr, new MsDisconnect()));
-      //        }
-      //      }
-      //    }
-      //  }
-      //  break;
+                  for(int i = 0; i < 5; i++) {
+                    for(int j = 0; j < resp.Length; j++) {
+                      resp[j] = (byte)_rand.Next((i < 3 && hLen == 1) ? 32 : 1, (i < 3 && hLen == 1) ? 126 : (j == 0 ? 254 : 255));
+                    }
+                    if(_pl._devs.All(z => !z.CheckAddr(resp))) {
+                      break;
+                    } else if(i == 4) {
+                      for(int j = 0; j < resp.Length; j++) {
+                        resp[j] = 0xFF;
+                      }
+                    }
+                  }
+                  respPrev = resp;
+                }
+                ackAddr.AddRange(resp);
+              } else {
+                if(_pl.verbose) {
+                  Log.Warning("{0}:{1} DhcpReq.hLen is too high", BitConverter.ToString(fm.addr), fm.msg.ToString());
+                }
+                ackAddr = null;
+                break;
+              }
+            }
+            if(ackAddr != null) {
+              _gate.SendGw(this, new MsForward(fm.addr, new MsDhcpAck(gwIdx, dr.xId, ackAddr.ToArray())));
+            }
+            //******************************
+          } else {
+            if(fm.msg.MsgTyp == MsMessageType.CONNECT) {
+              var cm = fm.msg as MsConnect;
+              MsDevice dev = _pl._devs.FirstOrDefault(z => z.owner != null && z.owner.name == cm.ClientId);
+              if(dev == null) {
+                var td = Topic.root.Get("/vacant/" + cm.ClientId, true, owner);
+                dev = new MsDevice(_pl, td);
+                _pl._devs.Add(dev);
+              }
+              dev._gate = this;
+              dev.addr = fm.addr;
+              dev.Connect(cm);
+              foreach(var dub in _pl._devs.Where(z => z != dev && z.CheckAddr(addr) && z._gate == this).ToArray()) {
+                dub.addr = null;
+                dub._gate = null;
+                dub.state = State.Disconnected;
+              }
+            } else {
+              MsDevice dev = _pl._devs.FirstOrDefault(z => z.addr != null && z.addr.SequenceEqual(fm.addr) && z._gate == this);
+              if(dev != null
+                && ((dev.state != State.Disconnected && dev.state != State.Lost)
+                  || (fm.msg.MsgTyp == MsMessageType.PUBLISH && (fm.msg as MsPublish).qualityOfService == QoS.MinusOne))) {
+                dev.ProcessInPacket(fm.msg);
+              } else if(fm.msg.MsgTyp == MsMessageType.PUBLISH && (fm.msg as MsPublish).qualityOfService == QoS.MinusOne) {
+                var tmp = fm.msg as MsPublish;
+                if(tmp.topicIdType == TopicIdType.PreDefined && tmp.TopicId >= LOG_D_ID && tmp.TopicId <= LOG_E_ID) {
+                  string str = string.Format("{0}: msgId={2:X4} msg={1}", BitConverter.ToString(this.addr), tmp.Data == null ? "null" : (BitConverter.ToString(tmp.Data) + "[" + Encoding.ASCII.GetString(tmp.Data.Select(z => (z < 0x20 || z > 0x7E) ? (byte)'.' : z).ToArray()) + "]"), tmp.MessageId);
+                  switch(tmp.TopicId) {
+                  case LOG_D_ID:
+                    Log.Debug(str);
+                    break;
+                  case LOG_I_ID:
+                    Log.Info(str);
+                    break;
+                  case LOG_W_ID:
+                    Log.Warning(str);
+                    break;
+                  case LOG_E_ID:
+                    Log.Error(str);
+                    break;
+                  }
+                }
+              } else {
+                if(_pl.verbose) {
+                  if(dev == null || dev.owner == null) {
+                    Log.Debug("{0} via {1} unknown device", BitConverter.ToString(fm.addr), this.name);
+                  } else {
+                    Log.Debug("{0} via {1} inactive", dev.owner.name, this.name);
+                  }
+                }
+                _gate.SendGw(this, new MsForward(fm.addr, new MsDisconnect()));
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+    public void Tick() {
+      if(_state != State.Lost && _state != State.Disconnected && _toActive < DateTime.Now) {
+        //Log.Debug("$ {0}.TimeOut _tryCounter={1}", Owner.name, _tryCounter);
+        if(_tryCounter > 0) {
+          MsMessage msg = null;
+          lock(_sendQueue) {
+            if(_sendQueue.Count > 0) {
+              msg = _sendQueue.Peek();
+            }
+          }
+          _waitAck = false;
+          if(msg != null) {
+            _tryCounter--;
+            SendIntern(msg);
+          } else {
+            ResetTimer();
+            _tryCounter = 0;
+          }
+          return;
+        }
+        state = State.Lost;
+        if(owner != null) {
+          Disconnect();
+          //if(_statistic.value) {
+          //  Stat(false, MsMessageType.GWINFO);
+          //}
+          Log.Warning("{0} Lost", owner.path);
+        }
+        lock(_sendQueue) {
+          _sendQueue.Clear();
+        }
+        if(_gate != null) {
+          _gate.SendGw(this, new MsDisconnect());
+          //if(_statistic.value) {
+          //  Stat(true, MsMessageType.DISCONNECT, false);
+          //}
+        }
+        return;
+      }
+      if(_state == State.Connected) {
+        if(_has_RTC) {
+          var now = DateTime.Now;
+          if((now - _last_RTC).TotalHours > 1) {
+            _last_RTC = now;
+            var pl = new byte[6] {int2BCD(_last_RTC.Second), int2BCD(_last_RTC.Minute), int2BCD(_last_RTC.Hour)
+          , int2BCD(_last_RTC.Day), (byte)((( ( (_last_RTC.DayOfWeek==DayOfWeek.Sunday)?7:(int)_last_RTC.DayOfWeek))  <<5) |  int2BCD(_last_RTC.Month)),int2BCD(_last_RTC.Year%100)};
+            Send(new MsPublish(RTC_EXCH, pl));
+          }
+        }
+        //if(Pool != null) {
+        //  try {
+        //    Pool();
+        //  }
+        //  catch(Exception ex) {
+        //    Log.Warning("{0}.ReisePool - {1}", Owner, ex.ToString());
+        //  }
+        //}
       }
     }
 
@@ -688,9 +751,9 @@ namespace X13.Periphery {
       if(ti == null) {
         return;
       }
-      //if(_verbose.value) {
-      //  Log.Debug("{0}.Snd {1}", t.name, BitConverter.ToString(payload));
-      //}
+      if(_pl.verbose) {
+        Log.Debug("{0}.Snd {1}", t.name, BitConverter.ToString(payload));
+      }
       Send(new MsPublish(ti) { Data = payload });
     }
     private void SetValue(TopicInfo ti, byte[] msgData, bool retained) {
@@ -781,7 +844,6 @@ namespace X13.Periphery {
         }
       }
     }
-
     private ushort NextMsgId() {
       int rez = Interlocked.Increment(ref _messageIdGen);
       Interlocked.CompareExchange(ref _messageIdGen, 1, 0xFFFF);
@@ -819,7 +881,7 @@ namespace X13.Periphery {
         }
       }
       if(msg == null && !_waitAck && state == State.AWake) {
-        //ReisePool(null);
+        Tick();
         if(_waitAck) {
           return; // sended from pool
         }
@@ -894,8 +956,8 @@ namespace X13.Periphery {
               //  Stat(true, MsMessageType.PINGRESP, false);
               //}
             }
-            //var st = Owner.Get<long>(".cfg/XD_SleepTime", Owner);
-            //ResetTimer(st.value > 0 ? (3100 + (int)st.value * 1550) : _duration);  // t_wakeup
+            var st = owner.GetField("MQTT-SN.SleepTime");
+            ResetTimer(st.IsNumber && (int)st > 0 ? (3100 + (int)st * 1550) : _duration);  // t_wakeup
             ResetTimer(_duration);
             state = State.ASleep;
             break;
@@ -919,50 +981,15 @@ namespace X13.Periphery {
         }
       }
       //Log.Debug("$ {0}._activeTimer={1}", Owner.name, period);
-      _activeTimer.Change(period, Timeout.Infinite);
-    }
-    private void TimeOut(object o) {
-      //Log.Debug("$ {0}.TimeOut _tryCounter={1}", Owner.name, _tryCounter);
-      if(_tryCounter > 0) {
-        MsMessage msg = null;
-        lock(_sendQueue) {
-          if(_sendQueue.Count > 0) {
-            msg = _sendQueue.Peek();
-          }
-        }
-        _waitAck = false;
-        if(msg != null) {
-          _tryCounter--;
-          SendIntern(msg);
-        } else {
-          ResetTimer();
-          _tryCounter = 0;
-        }
-        return;
-      }
-      state = State.Lost;
-      if(owner != null) {
-        Disconnect();
-        //if(_statistic.value) {
-        //  Stat(false, MsMessageType.GWINFO);
-        //}
-        Log.Warning("{0} Lost", owner.path);
-      }
-      lock(_sendQueue) {
-        _sendQueue.Clear();
-      }
-      if(_gate != null) {
-        _gate.SendGw(this, new MsDisconnect());
-        //if(_statistic.value) {
-        //  Stat(true, MsMessageType.DISCONNECT, false);
-        //}
-      }
+      _toActive = DateTime.Now.AddMilliseconds(period);
     }
     private void Disconnect(ushort duration = 0) {
-      //if(duration == 0 && !string.IsNullOrEmpty(_willPath)) {
-      //  TopicInfo ti = GetTopicInfo(_willPath, false);
-      //  SetValue(ti, _wilMsg, false);
-      //}
+      if(duration == 0 && !string.IsNullOrEmpty(_willPath)) {
+        TopicInfo ti = GetTopicInfo(_willPath, false);
+        if(ti != null) {
+          SetValue(ti, _wilMsg, _willRetain);
+        }
+      }
       if(duration > 0) {
         if(state == State.ASleep) {
           state = State.AWake;
@@ -971,11 +998,8 @@ namespace X13.Periphery {
         this.Send(new MsDisconnect());
         _tryCounter = 0;
         state = State.ASleep;
-        //var st = Owner.Get<long>(".cfg/XD_SleepTime", Owner);
-        //st.saved = true;
-        //st.SetValue((short)duration, new TopicChanged(TopicChanged.ChangeArt.Value, Owner) { Source = st });
+        owner.SetField("MQTT-SN.SleepTime", new JSL.Number(duration), owner);
       } else {
-        _activeTimer.Change(Timeout.Infinite, Timeout.Infinite);
         this._gate = null;
         if(state != State.Lost) {
           state = State.Disconnected;
@@ -1044,18 +1068,34 @@ namespace X13.Periphery {
 
     };
     private static Tuple<ushort, string, DType>[] PredefinedTopics = new Tuple<ushort, string, DType>[]{
+      new Tuple<ushort, string, DType>(0xFF01, ".MQTT-SN.SleepTime", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF08, ".MQTT-SN.ADCintegrate", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF09, ".MQTT-SN.SupressInputs", DType.ByteArray),
+
+      new Tuple<ushort, string, DType>(0xFF10, ".MQTT-SN.DeviceAddr", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF11, ".MQTT-SN.GroupID", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF12, ".MQTT-SN.Channel", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF14, ".MQTT-SN.GateId", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF16, ".MQTT-SN.Power", DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF18, ".MQTT-SN.Key", DType.ByteArray),
+      
+      new Tuple<ushort, string, DType>(0xFF20, ".MQTT-SN.MACAddr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF21, ".MQTT-SN.IPAddr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF22, ".MQTT-SN.IPMask", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF23, ".MQTT-SN.IPRouter", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF24, ".MQTT-SN.IPBroker", DType.ByteArray),
+
       new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.declarer", DType.String),
       new Tuple<ushort, string, DType>(0xFFC1, ".MQTT-SN.phy1_addr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC2, ".MQTT-SN.phy2_addr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC3, ".MQTT-SN.phy3_addr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC4, ".MQTT-SN.phy4_addr", DType.ByteArray),
+
+      //  {".cfg/_a_RTC",        RTC_EXCH},  // 0xFF07
+      //  {"_logD",              LOG_D_ID},
+      //  {"_logI",              LOG_I_ID},
+      //  {"_logW",              LOG_W_ID},
+      //  {"_logE",              LOG_E_ID},
     };
-    //internal static Dictionary<string, ushort> PredefinedTopics = new Dictionary<string, ushort>(){
-    //  {".MQTT-SN.declarer",          0xFFC0},
-    //  {".MQTT-SN.a_phy1",            0xFFC1},
-
-    //  {"_logD",              LOG_D_ID},
-    //  {"_logI",              LOG_I_ID},
-    //  {"_logW",              LOG_W_ID},
-    //  {"_logE",              LOG_E_ID},
-    //};
-
   }
 }

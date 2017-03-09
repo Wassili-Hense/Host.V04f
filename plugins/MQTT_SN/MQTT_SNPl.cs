@@ -32,6 +32,7 @@ namespace X13.Periphery {
       _devs = new List<MsDevice>();
       _rand = new Random((int)DateTime.Now.Ticks);
     }
+
     #region IPlugModul Members
     public void Init() {
     }
@@ -58,6 +59,9 @@ namespace X13.Periphery {
     }
 
     public void Tick() {
+      for(int i = _devs.Count - 1; i >= 0; i--) {
+        _devs[i].Tick();
+      }
     }
 
     public void Stop() {
@@ -69,7 +73,7 @@ namespace X13.Periphery {
         if(en.GetState().ValueType != JSC.JSValueType.Boolean) {
           en.SetAttribute(Topic.Attribute.Required | Topic.Attribute.Readonly | Topic.Attribute.Config);
           en.SetState(true);
-          return true;          
+          return true;
         }
         return (bool)en.GetState();
       }
@@ -91,9 +95,8 @@ namespace X13.Periphery {
         if(p.src.GetField("MQTT-SN.phy1_addr").Defined) {
           var dev = _devs.FirstOrDefault(z => z.name == p.src.name);
           if(dev == null) {
-            dev = new MsDevice(p.src);
+            dev = new MsDevice(this, p.src);
             _devs.Add(dev);
-            Log.Info(dev.owner.path + " created on subscribe");
           }
         }
       } else if(p.art == Perform.Art.subAck) {
@@ -304,7 +307,7 @@ namespace X13.Periphery {
                   for(int j = 0; j < resp.Length; j++) {
                     resp[j] = (byte)_rand.Next(j == 0 ? 4 : 0, (i < 3 && hLen == 1) ? 31 : (j == 0 ? 254 : 255));
                   }
-                  if(!_devs.Any(z => z.gwIdx==gate.gwIdx && z.CheckAddr(resp))) {
+                  if(!_devs.Any(z => z.gwIdx == gate.gwIdx && z.CheckAddr(resp))) {
                     break;
                   } else if(i == 4) {
                     for(int j = 0; j < resp.Length; j++) {
@@ -334,7 +337,7 @@ namespace X13.Periphery {
         MsDevice dev = _devs.FirstOrDefault(z => z.owner != null && z.owner.name == cm.ClientId);
         if(dev == null) {
           var td = Topic.root.Get("/vacant/" + cm.ClientId, true, _owner);
-          dev = new MsDevice(td);
+          dev = new MsDevice(this, td);
           _devs.Add(dev);
           Log.Info(dev.owner.path + " created on connect");
         }
@@ -351,13 +354,14 @@ namespace X13.Periphery {
         if(dev != null && (dev.state != State.Disconnected && dev.state != State.Lost)) {
           dev.ProcessInPacket(msg);
         } else {
-          if(dev == null || dev.owner == null) {
-            Log.Debug("{0} unknown device", gate.Addr2If(addr));
-            gate.SendGw(addr, new MsDisconnect());
-          } else {
-            Log.Debug("{0} inactive device: {1}", gate.Addr2If(addr), dev.owner.path);
-            gate.SendGw(dev, new MsDisconnect());
+          if(verbose) {
+            if(dev == null || dev.owner == null) {
+              Log.Debug("{0} unknown device", gate.Addr2If(addr));
+            } else {
+              Log.Debug("{0} inactive device: {1}", gate.Addr2If(addr), dev.owner.path);
+            }
           }
+          gate.SendGw(addr, new MsDisconnect());
         }
       }
       return true;

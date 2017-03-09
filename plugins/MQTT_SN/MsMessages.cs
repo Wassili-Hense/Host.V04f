@@ -437,6 +437,14 @@ namespace X13.Periphery {
         this.TopicId=_ti.TopicId;
         this.topicIdType = _ti.it;
     }
+    public MsPublish(ushort topicId, byte[] payload)
+      : base(MsMessageType.PUBLISH) {
+      this.IsRequest = true;
+      this.qualityOfService = QoS.AtLeastOnce;
+      this.TopicId = topicId;
+      this.topicIdType = TopicIdType.PreDefined;
+      this._payload = payload;
+    }
     public override byte[] GetBytes() {
       byte[] tmp=this.Data;
       base._length=(ushort)(7+tmp.Length);
