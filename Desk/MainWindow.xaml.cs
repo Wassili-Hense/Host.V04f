@@ -67,7 +67,7 @@ namespace X13 {
       if(App.Workspace.Clients.Count == 0) {
         var cl = new Client("localhost", DeskHost.DeskSocket.portDefault, null, null);
         App.Workspace.Clients.Add(cl);
-        cl.Connect();
+        //cl.Connect();
       }
     }
     private void Window_Closed(object sender, EventArgs e) {

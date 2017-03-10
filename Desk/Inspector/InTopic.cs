@@ -55,7 +55,7 @@ namespace X13.UI {
 
     public override bool IsExpanded {
       get {
-        return _isExpanded;
+        return _isExpanded && HasChildren;
       }
       set {
         base.IsExpanded = value;
@@ -77,12 +77,13 @@ namespace X13.UI {
       if(_owner == null) {
         _parent._items.Remove(this);
         _parent._collFunc(this, false);
-        if(!_parent._items.Any()) {
-          _parent._items = null;
-          _parent.IsExpanded = false;
-        }
         if(!string.IsNullOrEmpty(name)) {
           _parent._owner.CreateAsync(name, _createType).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
+        } else if(!_parent._items.Any()) {
+          _parent._items = null;
+          PropertyChangedReise("items");
+          PropertyChangedReise("HasChildren");
+          _parent.IsExpanded = false;
         }
       } else {
         if(!string.IsNullOrEmpty(name)) {
@@ -93,6 +94,31 @@ namespace X13.UI {
       }
     }
 
+    private void SetNameComplete(Task<DTopic> td) {
+      if(td.IsCompleted && td.Result != null) {
+        //_owner = td.Result;
+        //_owner.changed += _owner_PropertyChanged;
+        //base.name = _owner.name;
+        //base.UpdateType(_owner.type);
+        //IsEdited = false;
+        //PropertyChangedReise("IsEdited");
+        //PropertyChangedReise("name");
+      } else {
+        if(td.IsFaulted) {
+          Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
+        }
+        if(_parent._items != null) {
+          _parent._items.Remove(this);
+          _collFunc(this, false);
+          if(!_parent._items.Any()) {
+            _parent._items = null;
+            PropertyChangedReise("items");
+            PropertyChangedReise("HasChildren");
+            _parent.IsExpanded = false;
+          }
+        }
+      }
+    }
     private void InsertItems(ReadOnlyCollection<DTopic> its) {
       bool pc_items = false;
       if(_items == null) {
@@ -108,6 +134,10 @@ namespace X13.UI {
       }
       if(pc_items) {
         PropertyChangedReise("items");
+        PropertyChangedReise("HasChildren");
+        if(_items != null && _items.Any()) {
+          _parent.IsExpanded = true;
+        }
       }
     }
     private async Task AddTopic(DTopic t) {
@@ -147,30 +177,14 @@ namespace X13.UI {
         InsertItems(_owner.children);
       }
     }
-    private void SetNameComplete(Task<DTopic> td) {
-      if(td.IsCompleted && td.Result != null) {
-        _owner = td.Result;
-        _owner.changed += _owner_PropertyChanged;
-        base.name = _owner.name;
-        base.UpdateType(_owner.type);
-        IsEdited = false;
-        PropertyChangedReise("IsEdited");
-        PropertyChangedReise("name");
-      } else {
-        if(td.IsFaulted) {
-          Log.Warning("{0}/{1} - {2}", _parent._owner.fullPath, base.name, td.Exception.Message);
-        }
-        if(_parent._items != null) {
-          _parent._items.Remove(this);
-          _collFunc(this, false);
-          if(!_parent._items.Any()) {
-            _parent._items = null;
-            _parent.IsExpanded = false;
-          }
-        }
-      }
-    }
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
+      {
+        var pr = this;
+        while(pr._parent!=null){
+          pr = pr._parent;
+        }
+        Log.Debug("$ " + pr._owner.path + "(" + art.ToString() + ", " + (child != null ? child.path : "null") + ")");
+      }
       if(IsGroupHeader) {
         if(art == DTopic.Art.type) {
           _manifest = _owner.type;
@@ -199,6 +213,8 @@ namespace X13.UI {
               if(!_items.Any()) {
                 _items = null;
                 IsExpanded = false;
+                PropertyChangedReise("HasChildren");
+                PropertyChangedReise("items");
               }
             }
           }
@@ -211,6 +227,12 @@ namespace X13.UI {
       var l = new List<Control>();
       JSC.JSValue v1, v2;
       MenuItem mi;
+      if(!IsGroupHeader) {
+        mi = new MenuItem() { Header = "Open in new tab" };
+        mi.Click += miOpen_Click;
+        l.Add(mi);
+        l.Add(new Separator());
+      }
       MenuItem ma = new MenuItem() { Header = "Add" };
       if(_manifest != null && (v1 = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
@@ -247,12 +269,6 @@ namespace X13.UI {
       }
       if(ma.HasItems) {
         l.Add(ma);
-        l.Add(new Separator());
-      }
-      if(!IsGroupHeader) {
-        mi = new MenuItem() { Header = "Open" };
-        mi.Click += miOpen_Click;
-        l.Add(mi);
         l.Add(new Separator());
       }
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };

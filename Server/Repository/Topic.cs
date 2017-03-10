@@ -112,10 +112,10 @@ namespace X13.Repository {
       var c = Perform.Create(this, Perform.Art.remove, prim);
       _repo.DoCmd(c, false);
     }
-    public SubRec Subscribe(SubRec.SubMask mask, Action<Perform> func) {
+    public SubRec Subscribe(SubRec.SubMask mask, Action<Perform, SubRec> func) {
       return Subscribe(mask, null, func);
     }
-    public SubRec Subscribe(SubRec.SubMask mask, string prefix, Action<Perform> func) {
+    public SubRec Subscribe(SubRec.SubMask mask, string prefix, Action<Perform, SubRec> func) {
       if(func == null) {
         throw new ArgumentNullException(this.path + ".Subscribe(func == NULL, " + mask.ToString() + (prefix == null ? string.Empty : ", " + prefix) + ")");
       }
@@ -433,7 +433,7 @@ namespace X13.Repository {
 
         if((cmd.art == Perform.Art.subscribe || cmd.art == Perform.Art.subAck) && (sb = cmd.o as SubRec) != null) {
           try {
-            sb.func(cmd);
+            sb.func(cmd, sb);
           }
           catch(Exception ex) {
             Log.Warning("{0}.{1}({2}) - {3}", sb.func.Method.DeclaringType.Name, sb.func.Method.Name, cmd.ToString(), ex.ToString());
@@ -446,7 +446,7 @@ namespace X13.Repository {
                   && (cmd.art != Perform.Art.changedState || (sb.mask & SubRec.SubMask.Value) == SubRec.SubMask.Value)
                   && (cmd.art != Perform.Art.changedField || ((sb.mask & SubRec.SubMask.Field) == SubRec.SubMask.Field && (tmp_s = cmd.o as string) != null && tmp_s.StartsWith(sb.prefix)))) {
                 try {
-                  sb.func(cmd);
+                  sb.func(cmd, sb);
                 }
                 catch(Exception ex) {
                   Log.Warning("{0}.{1}({2}) - {3}", sb.func.Method.DeclaringType.Name, sb.func.Method.Name, cmd.ToString(), ex.ToString());

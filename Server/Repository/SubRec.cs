@@ -9,9 +9,9 @@ namespace X13.Repository {
     public readonly Topic setTopic;
     public readonly SubMask mask;
     public readonly string prefix;
-    internal readonly Action<Perform> func;
+    internal readonly Action<Perform, SubRec> func;
 
-    internal SubRec(Topic t, Action<Perform> func, SubRec.SubMask mask, string prefix) {
+    internal SubRec(Topic t, Action<Perform, SubRec> func, SubRec.SubMask mask, string prefix) {
       this.setTopic = t;
       this.func = func;
       this.mask = mask;

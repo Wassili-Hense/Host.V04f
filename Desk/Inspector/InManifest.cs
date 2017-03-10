@@ -13,6 +13,7 @@ using JSL = NiL.JS.BaseLibrary;
 namespace X13.UI {
   internal class InManifest : InBase, IDisposable {
     private DTopic _data;
+    private DTopic _tManifest;
     private InManifest _parent;
     private JSC.JSValue _value;
     private string _path;
@@ -29,11 +30,18 @@ namespace X13.UI {
       base.levelPadding = 1;
       base._items = new List<InBase>();
       this._value = _data.type;
-      UpdateType(_data.Connection.TypeManifest.value);
+      UpdateType(_tManifest!=null?_tManifest.value:null);
       UpdateData(_data.type);
       base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
-      _data.Connection.TypeManifest.changed+=Manifest_changed;
+      _data.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(ManifestLoaded, TaskScheduler.FromCurrentSynchronizationContext());
+    }
+
+    private void ManifestLoaded(Task<DTopic> td) {
+      if(td.IsCompleted && !td.IsFaulted && td.Result!=null) {
+        _tManifest = td.Result;
+        _tManifest.changed += Manifest_changed;
+      }
     }
     private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {
       this._parent = parent;
@@ -109,13 +117,13 @@ namespace X13.UI {
     private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
       if(art == DTopic.Art.type) {
         _value = _data.type;
-        UpdateType(_data.Connection.TypeManifest.value);
+        UpdateType(_tManifest != null ? _tManifest.value : null);
         UpdateData(_data.type);
       }
     }
     private void Manifest_changed(DTopic.Art art, DTopic src) {
       if(art == DTopic.Art.value) {
-        UpdateType(_data.Connection.TypeManifest.value);
+        UpdateType(_tManifest != null ? _tManifest.value : null);
       }
     }
     private void SetFieldResp(Task<JSC.JSValue> r) {

@@ -117,6 +117,13 @@ namespace X13.Data {
           }
           Log.Info("{0} connected as {1}", this.ToString(), alias);
           _st = State.Ready;
+          lock(_connEvnt) {
+            foreach(var ce in _connEvnt) {
+              ce.Response(true, null);
+              App.PostMsg(ce);
+            }
+            _connEvnt.Clear();
+          }
           this.root.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(HelloComplete);
         }
         break;
@@ -133,34 +140,38 @@ namespace X13.Data {
           App.PostMsg(req);
         }
         break;
-      case 4:  // [SubscribeResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
-      case 8:  // [CreateResp, path, flags, state, manifest] ; flags: 1 - present, 16 - hat children
-        if(msg.Count != 5 || msg[1].ValueType != JSC.JSValueType.String || !msg[2].IsNumber) {
+      case 4:  // [SubscribeResp, path, state, manifest]
+      case 8:  // [CreateResp, path, state, manifest]
+        if(msg.Count < 2 || msg[1].ValueType != JSC.JSValueType.String) {
           Log.Warning("Synax error {0}", msg);
           break;
         }
-        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, (int)msg[2], msg[3], msg[4]));
+        if(msg.Count == 4) {
+          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, cmd, msg[2], msg[3]));
+        } else {
+          App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, cmd, null, null));
+        }
         break;
       case 6:  // [Publish, path, state]
         if(msg.Count != 3 || msg[1].ValueType != JSC.JSValueType.String) {
           Log.Warning("Synax error {0}", msg);
           break;
         }
-        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, msg[2], null));
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, cmd, msg[2], null));
         break;
       case 12:  // [Remove, path]
         if(msg.Count != 2 || msg[1].ValueType != JSC.JSValueType.String) {
           Log.Warning("Synax error {0}", msg);
           break;
         }
-        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, -32, null, null));
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, cmd, null, null));
         break;
       case 14:  // [ManifestChanged, path, manifest]
         if(msg.Count != 3 || msg[1].ValueType != JSC.JSValueType.String) {
           Log.Warning("Synax error {0}", msg);
           break;
         }
-        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, 0, null, msg[2]));
+        App.PostMsg(new DTopic.ClientEvent(this.root, msg[1].Value as string, cmd, null, msg[2]));
         break;
 
       }
@@ -170,12 +181,8 @@ namespace X13.Data {
       if(dt.IsCompleted) {
         this.TypeManifest = dt.Result;
       }
-      lock(_connEvnt) {
-        foreach(var ce in _connEvnt) {
-          ce.Response(true, null);
-          App.PostMsg(ce);
-        }
-        _connEvnt.Clear();
+      foreach(var t in this.TypeManifest.parent.children.Where(z=>z.name!="Manifest")){
+        t.GetAsync(null);
       }
     }
 

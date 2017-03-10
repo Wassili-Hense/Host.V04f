@@ -139,7 +139,7 @@ namespace X13.UI {
       if((gr = sender as ListViewItem) != null && (it = gr.DataContext as InBase) != null) {
         var mis = it.MenuItems(gr);
         MenuItem mi;
-        if(mis != null && (mi = mis.OfType<MenuItem>().FirstOrDefault(z => z.Header as string == "Open")) != null) {
+        if(mis != null && (mi = mis.OfType<MenuItem>().FirstOrDefault(z => z.Header as string == "Open in new tab")) != null) {
           mi.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
         }
       }

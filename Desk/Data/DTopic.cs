@@ -15,12 +15,12 @@ namespace X13.Data {
 
     internal readonly Client Connection;
 
-    private int _flags;  //  16 - hat children
     private bool _disposed;
     private List<DTopic> _children;
     private JSC.JSValue _value;
     private JSC.JSValue _manifest;
     private DTopic _typeTopic;
+    private TopicReq _req;
 
     private DTopic(DTopic parent, string name) {
       this.parent = parent;
@@ -89,10 +89,10 @@ namespace X13.Data {
     private void ManifestPublished(JSC.JSValue manifest) {
       _manifest = manifest;
       bool send = true;
-      if(_manifest.ValueType==JSC.JSValueType.Object && _manifest.Value!=null){
+      if(_manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
         var tt = _manifest["type"];
         if(tt.ValueType == JSC.JSValueType.String && tt.Value != null) {
-          this.GetAsync("/$YS/TYPES/"+(tt.Value as string)).ContinueWith(TypeLoaded);
+          this.GetAsync("/$YS/TYPES/" + (tt.Value as string)).ContinueWith(TypeLoaded);
           send = false;
         }
       }
@@ -119,7 +119,7 @@ namespace X13.Data {
       }
     }
     private void ChangedReise(Art art, DTopic src) {
-      if(changed != null && App.mainWindow!=null) {
+      if(changed != null && App.mainWindow != null) {
         App.mainWindow.Dispatcher.BeginInvoke(changed, System.Windows.Threading.DispatcherPriority.DataBind, art, src);
       }
     }
@@ -127,7 +127,6 @@ namespace X13.Data {
       if(_children == null) {
         if(create) {
           _children = new List<DTopic>();
-          _flags |= 16;
         } else {
           return null;
         }
@@ -145,7 +144,7 @@ namespace X13.Data {
 
       if(create) {
         var t = new DTopic(this, name);
-        this._children.Insert(mid+1, t);
+        this._children.Insert(mid + 1, t);
         ChangedReise(Art.addChild, t);
         return t;
       }
@@ -174,7 +173,6 @@ namespace X13.Data {
       }
       if(!_children.Any()) {
         _children = null;
-        _flags &= ~16;
       }
     }
 
@@ -188,6 +186,7 @@ namespace X13.Data {
       private bool _create;
       private string _manifestStr;
       private TaskCompletionSource<DTopic> _tcs;
+      private List<TopicReq> _reqs;
 
       public TopicReq(DTopic cur, string path) {
         this._cur = cur;
@@ -212,9 +211,36 @@ namespace X13.Data {
         if(_path == null || _path.Length <= _cur.path.Length) {
           if(_cur._disposed) {
             _tcs.SetResult(null);
-          } else if(_cur._value != null && ((_cur._flags & 16) == 0 || _cur._children != null)) {
+            lock(_cur) {
+              _cur._req=null;
+              if(this._reqs != null) {
+                foreach(var r in _reqs){
+                  App.PostMsg(r);
+                }
+              }
+            }
+          } else if(_cur._value != null) {
             _tcs.SetResult(_cur);
+            lock(_cur) {
+              _cur._req = null;
+              if(this._reqs != null) {
+                foreach(var r in _reqs) {
+                  App.PostMsg(r);
+                }
+              }
+            }
           } else {
+            lock(_cur){
+              if(_cur._req != null && _cur._req != this) {
+                if(_cur._req._reqs == null) {
+                  _cur._req._reqs = new List<TopicReq>();
+                }
+                _cur._req._reqs.Add(this);
+                return;
+              } else {
+                _cur._req = this;
+              }
+            }
             _cur.Connection.SendReq(4, this, _cur.path, 3);
           }
           return;
@@ -226,14 +252,22 @@ namespace X13.Data {
         }
         string name = _path.Substring(idx1, idx2 - idx1);
 
-        if((_cur._flags & 16) == 16 || _cur._flags == 0) {  // 0 => 1st request
-          if(_cur._children == null) {
-            _cur.Connection.SendReq(4, this, _cur.path, 3);
-            return;
+        if(_cur._children == null && _cur._value==null) {
+          lock(_cur) {
+            if(_cur._req != null && _cur._req!=this) {
+              if(_cur._req._reqs == null) {
+                _cur._req._reqs = new List<TopicReq>();
+              }
+              _cur._req._reqs.Add(this);
+              return;
+            } else {
+              _cur._req = this;
+            }
           }
-
-          next = _cur.GetChild(name, false);
+          _cur.Connection.SendReq(4, this, _cur.path, 3);
+          return;
         }
+        next = _cur.GetChild(name, false);
         if(next == null) {
           if(_create) {
             _create = false;
@@ -244,6 +278,14 @@ namespace X13.Data {
             }
           } else {
             _tcs.SetResult(null);
+            lock(_cur) {
+              _cur._req = null;
+              if(this._reqs != null) {
+                foreach(var r in _reqs) {
+                  App.PostMsg(r);
+                }
+              }
+            }
           }
           return;
         }
@@ -251,7 +293,7 @@ namespace X13.Data {
         App.PostMsg(this);
       }
       public void Response(bool success, JSC.JSValue value) {
-        if(success) {   // value == null aftre connect
+        if(success) {   // value == null after connect
           if(value != null && (value.ValueType != JSC.JSValueType.Boolean || !((bool)value))) {
             _cur._disposed = true;
           }
@@ -291,7 +333,7 @@ namespace X13.Data {
           _topic.ValuePublished(this._value);
           _tcs.SetResult(true);
         } else {
-          _tcs.SetException(new ApplicationException(value==null?"TopicSetError":value.ToString()));
+          _tcs.SetException(new ApplicationException(value == null ? "TopicSetError" : value.ToString()));
         }
         _complete = true;
       }
@@ -349,7 +391,7 @@ namespace X13.Data {
       public void Process() {
         var ps = _path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
         DTopic cur = _root, next;
-        bool remove = _flags == -32 && _state == null && _manifest == null;
+        bool remove = _flags == 12 && _state == null && _manifest == null;
         for(int i = 0; i < ps.Length; i++) {
           next = cur.GetChild(ps[i], !remove);
           if(next == null) {  // Topic not exist
@@ -357,9 +399,7 @@ namespace X13.Data {
           }
           cur = next;
         }
-        if(_flags > 0) {
-          cur._flags = _flags;
-        } else if(_flags == -32) {
+        if(remove) {
           cur._disposed = true;
           var parent = cur.parent;
           if(parent != null) {

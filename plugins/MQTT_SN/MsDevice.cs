@@ -707,7 +707,7 @@ namespace X13.Periphery {
       return ti;
     }
 
-    private void PublishTopic(Perform p) {
+    private void PublishTopic(Perform p, SubRec sb) {
       if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner) {
         return;
       }

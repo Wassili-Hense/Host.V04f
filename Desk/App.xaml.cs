@@ -139,5 +139,8 @@ namespace X13 {
   internal interface INotMsg {
     void Process();
     void Response(bool success, JSC.JSValue value);
+    //TODO: ADD
+    // bool IsRequest {get; }
+    // JSL.Array Data { get; }
   }
 }

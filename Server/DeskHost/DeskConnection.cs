@@ -16,13 +16,14 @@ namespace X13.DeskHost {
     private DeskHostPl _basePl;
     private Topic _owner;
     private List<Tuple<SubRec, DeskMessage>> _subscriptions;
-    private Action<Perform> _subCB;
+    private Action<Perform, SubRec> _subCBt, _subCBc;
 
     public DeskConnection(DeskHostPl pl, TcpClient tcp)
       : base(tcp, null) { //
       base._callback = new Action<DeskMessage>(RcvMsg);
       this._basePl = pl;
-      this._subCB = new Action<Perform>(SubscriptionChanged);
+      this._subCBt = new Action<Perform, SubRec>(TopicChanged);
+      this._subCBc = new Action<Perform, SubRec>(ChildChanged);
       this._subscriptions = new List<Tuple<SubRec, DeskMessage>>();
       base.verbose = true;
 
@@ -112,13 +113,11 @@ namespace X13.DeskHost {
       }
       Topic parent = Topic.root.Get(msg[2].Value as string, false, _owner);
       if(parent != null) {
-        SubRec.SubMask m = SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren;
-        if(parent == Topic.root) {
-          m |= SubRec.SubMask.Once;
-        }
-        var sr = parent.Subscribe(m, string.Empty, _subCB);
+        var sr1 = parent.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Once, string.Empty, _subCBt);
+        var sr2 = parent.Subscribe(SubRec.SubMask.Chldren, string.Empty, _subCBc);
         lock(_subscriptions) {
-          _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
+          _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr1, null));
+          _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr2, msg));
         }
       } else {
         msg.Response(3, msg[1], true, false);
@@ -195,10 +194,6 @@ namespace X13.DeskHost {
       if(t == null) {
         t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, true);
       }
-      var sr = t.Subscribe(SubRec.SubMask.Value | SubRec.SubMask.Field | SubRec.SubMask.Chldren, string.Empty, _subCB);
-      lock(_subscriptions) {
-        _subscriptions.Add(new Tuple<SubRec, DeskMessage>(sr, msg));
-      }
     }
     /// <summary>Move topic</summary>
     /// <param name="args">
@@ -232,17 +227,14 @@ namespace X13.DeskHost {
       }
     }
 
-    private void SubscriptionChanged(Perform p) {
+    private void ChildChanged(Perform p, SubRec sb) {
       JSL.Array arr;
       switch(p.art) {
       case Perform.Art.create:
       case Perform.Art.subscribe: {
-          arr = new JSL.Array(5);
+          arr = new JSL.Array(2);
           arr[0] = new JSL.Number(4);
           arr[1] = new JSL.String(p.src.path);
-          arr[2] = new JSL.Number(p.src.children.Any() ? 17 : 1);
-          arr[3] = p.src.GetState();
-          arr[4] = p.src.GetField(null);
           base.SendArr(arr);
         }
         break;
@@ -257,8 +249,38 @@ namespace X13.DeskHost {
           }
         }
         break;
+      case Perform.Art.remove:
+        arr = new JSL.Array(2);
+        arr[0] = new JSL.Number(12);
+        arr[1] = new JSL.String(p.src.path);
+        base.SendArr(arr);
+        lock(_subscriptions) {
+          _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
+        }
+        break;
+      default:
+        Log.Debug("Desk.Sub = {0}", p);
+        break;
+      }
+    }
+    private void TopicChanged(Perform p, SubRec sb) {
+      JSL.Array arr;
+      switch(p.art) {
+      case Perform.Art.subscribe: {
+            arr = new JSL.Array(4);
+            arr[0] = new JSL.Number(4);
+            arr[1] = new JSL.String(p.src.path);
+            arr[2] = p.src.GetState();
+            arr[3] = p.src.GetField(null);
+          base.SendArr(arr);
+        }
+        break;
+      case Perform.Art.create:
+      case Perform.Art.subAck: 
+      case Perform.Art.remove:
+        break;
       case Perform.Art.changedState:
-        if(p.prim != _owner) {
+        if(p.prim != _owner && sb.setTopic == p.src) {
           arr = new JSL.Array(3);
           arr[0] = new JSL.Number(6);
           arr[1] = new JSL.String(p.src.path);
@@ -267,19 +289,12 @@ namespace X13.DeskHost {
         }
         break;
       case Perform.Art.changedField:
-        arr = new JSL.Array(3);
-        arr[0] = new JSL.Number(14);
-        arr[1] = new JSL.String(p.src.path);
-        arr[2] = p.src.GetField(null);
-        base.SendArr(arr);
-        break;
-      case Perform.Art.remove:
-        arr = new JSL.Array(2);
-        arr[0] = new JSL.Number(12);
-        arr[1] = new JSL.String(p.src.path);
-        base.SendArr(arr);
-        lock(_subscriptions) {
-          _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
+        if(p.prim != _owner && sb.setTopic == p.src) {
+          arr = new JSL.Array(3);
+          arr[0] = new JSL.Number(14);
+          arr[1] = new JSL.String(p.src.path);
+          arr[2] = p.src.GetField(null);
+          base.SendArr(arr);
         }
         break;
       default:

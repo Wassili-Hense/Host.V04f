@@ -200,7 +200,7 @@ namespace SrvTest {
       List<Perform> cmds = new List<Perform>();
       Topic t0 = Topic.root.Get("child");
       _repo.Tick();
-      var s1 = t0.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, s => cmds.Add(s));
+      var s1 = t0.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, (s, sr) => cmds.Add(s));
       _repo.Tick();
       Assert.AreEqual(2, cmds.Count);
       Assert.AreEqual(t0, cmds[0].src);
@@ -226,7 +226,7 @@ namespace SrvTest {
       var t1_a = t1.Get("a");
       var cmds = new List<Perform>();
       _repo.Tick();
-      var s1 = t0.Subscribe(SubRec.SubMask.Chldren | SubRec.SubMask.Value, s => cmds.Add(s));
+      var s1 = t0.Subscribe(SubRec.SubMask.Chldren | SubRec.SubMask.Value, (s, sr) => cmds.Add(s));
       _repo.Tick();
       Assert.AreEqual(2, cmds.Count);
       Assert.AreEqual(Perform.Art.subscribe, cmds[0].art);
@@ -260,7 +260,7 @@ namespace SrvTest {
       Topic t0 = Topic.root.Get("child");
       var cmds = new List<Perform>();
       _repo.Tick();
-      var s1 = t0.Subscribe(SubRec.SubMask.All, s => cmds.Add(s));
+      var s1 = t0.Subscribe(SubRec.SubMask.All, (s, sr) => cmds.Add(s));
       _repo.Tick();
       Assert.AreEqual(2, cmds.Count, "T15.01");
       Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T15.02");
@@ -296,7 +296,7 @@ namespace SrvTest {
       var t1_a = t1.Get("a");
       var cmds = new List<Perform>();
       _repo.Tick();
-      var s1 = t0.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds.Add(s));
+      var s1 = t0.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, (s, sr) => cmds.Add(s));
       _repo.Tick();
       Assert.AreEqual(4, cmds.Count, "T16.01");
       Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T16.02");
@@ -341,7 +341,7 @@ namespace SrvTest {
       a.SetField("TestA", true);
       b.SetField("TestB", false);
       _repo.Tick();
-      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Field, "TestB", s => cmds.Add(s));
+      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Field, "TestB", (s, sr) => cmds.Add(s));
       _repo.Tick();
       Assert.AreEqual(2, cmds.Count, "T17.01");
       Assert.AreEqual(Perform.Art.subscribe, cmds[0].art, "T17.02");
@@ -369,9 +369,9 @@ namespace SrvTest {
       var c = b.Get("C");
       var d = Topic.root.Get("D");
 
-      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds1.Add(s));
-      var s2 = a.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, s => cmds2.Add(s));
-      var s3 = c.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, s => cmds3.Add(s));
+      var s1 = Topic.root.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, (s, sr) => cmds1.Add(s));
+      var s2 = a.Subscribe(SubRec.SubMask.All | SubRec.SubMask.Value, (s, sr) => cmds2.Add(s));
+      var s3 = c.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Value, (s, sr) => cmds3.Add(s));
       _repo.Tick();
       cmds1.Clear();
       cmds2.Clear();
