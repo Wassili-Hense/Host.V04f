@@ -46,7 +46,7 @@ namespace X13.UI {
       _isVisible = true;
       _isExpanded = true; // fill _valueVC
       base.IsGroupHeader = false;
-      levelPadding = _parent.levelPadding + 5;
+      levelPadding = _parent.levelPadding + 8;
       _value = value;
       UpdateType(type);
       UpdateData(value);
@@ -58,7 +58,7 @@ namespace X13.UI {
       base._collFunc = parent._collFunc;
       base.name = string.Empty;
       this._path = _parent._path + ".";
-      base.levelPadding = _parent == null ? 1 : _parent.levelPadding + 5;
+      base.levelPadding = _parent == null ? 1 : _parent.levelPadding + 8;
       base._items = new List<InBase>();
       base.IsEdited = true;
     }

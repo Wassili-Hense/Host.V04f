@@ -39,7 +39,7 @@ namespace X13.UI {
       } else {
         name = _owner.name;
         base.UpdateType(_owner.type);
-        levelPadding = _parent.levelPadding + 5;
+        levelPadding = _parent.levelPadding + 8;
       }
       base._isExpanded = IsGroupHeader && _owner.children != null && _owner.children.Any();
       base._isVisible = IsGroupHeader || (_parent._isVisible && _parent._isExpanded);
@@ -49,7 +49,7 @@ namespace X13.UI {
       _collFunc = parent._collFunc;
       name = string.Empty;
       IsEdited = true;
-      levelPadding = _parent == null ? 1 : _parent.levelPadding + 5;
+      levelPadding = _parent == null ? 1 : _parent.levelPadding + 8;
       _createType = type;
     }
 
@@ -161,6 +161,10 @@ namespace X13.UI {
           }
         }
         _items.Insert(i, tmp);
+        if(_items.Count==1) {
+          PropertyChangedReise("items");
+          PropertyChangedReise("HasChildren");
+        }
       }
     }
     private void RefreshOwner(DTopic tt) {
