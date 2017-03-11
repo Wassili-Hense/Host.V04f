@@ -101,10 +101,11 @@ namespace X13.Repository {
         Log.Warning("{0}.Move({1}, {2}) remove FAILED", this._path, nParent._path, nName);
         return;
       }
+      var c = Perform.Create(this, Perform.Art.move, prim);
+      c.o = this._path;
       _parent = nParent;
       this._name = nName;
       I.UpdatePath(this);
-      var c = Perform.Create(this, Perform.Art.move, prim);
       _repo.DoCmd(c, false);
     }
     public void Remove(Topic prim = null) {
@@ -407,7 +408,8 @@ namespace X13.Repository {
 
       public static void UpdatePath(Topic t) {
         t._path = t.parent == root ? "/" + t._name : t.parent._path + "/" + t._name;
-        var c = Perform.Create(t, "p", new JST.String(t._path), null);
+        t._ps_manifest["p"] = t._path;
+        var c = Perform.Create(t, Perform.Art.changedField, null);
         _repo.DoCmd(c, false);
         if(t._children != null) {
           foreach(var ch in t._children) {

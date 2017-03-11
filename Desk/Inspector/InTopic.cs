@@ -150,9 +150,6 @@ namespace X13.UI {
           tmp.RefreshOwner(tt);
         } else {
           tmp = new InTopic(tt, this, _collFunc);
-          if(_isVisible && _isExpanded) {
-            _collFunc(tmp, true);
-          }
         }
         int i;
         for(i = 0; i < _items.Count; i++) {
@@ -164,6 +161,9 @@ namespace X13.UI {
         if(_items.Count==1) {
           PropertyChangedReise("items");
           PropertyChangedReise("HasChildren");
+        }
+        if(_isVisible && _isExpanded) {
+          _collFunc(tmp, true);
         }
       }
     }

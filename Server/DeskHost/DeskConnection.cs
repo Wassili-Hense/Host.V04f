@@ -249,6 +249,14 @@ namespace X13.DeskHost {
           }
         }
         break;
+      case Perform.Art.move:
+        arr = new JSL.Array(4);
+        arr[0] = new JSL.Number(10);
+        arr[1] = new JSL.String(p.o as string);
+        arr[2] = new JSL.String(p.src.parent.path);
+        arr[3] = new JSL.String(p.src.name);
+        base.SendArr(arr);
+        break;
       case Perform.Art.remove:
         arr = new JSL.Array(2);
         arr[0] = new JSL.Number(12);
@@ -275,10 +283,6 @@ namespace X13.DeskHost {
           base.SendArr(arr);
         }
         break;
-      case Perform.Art.create:
-      case Perform.Art.subAck: 
-      case Perform.Art.remove:
-        break;
       case Perform.Art.changedState:
         if(p.prim != _owner && sb.setTopic == p.src) {
           arr = new JSL.Array(3);
@@ -296,6 +300,11 @@ namespace X13.DeskHost {
           arr[2] = p.src.GetField(null);
           base.SendArr(arr);
         }
+        break;
+      case Perform.Art.create:
+      case Perform.Art.subAck:
+      case Perform.Art.move:
+      case Perform.Art.remove:
         break;
       default:
         Log.Debug("Desk.Sub = {0}", p);

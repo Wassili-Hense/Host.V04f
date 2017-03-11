@@ -157,9 +157,9 @@ namespace X13.Repository {
           }
         }
         break;
-      case Perform.Art.move:
-        _objects.Update(manifest);
-        break;
+      //case Perform.Art.move:
+      //  _objects.Update(manifest);
+      //  break;
       case Perform.Art.create:
         _objects.Upsert(manifest);
         if(cmd.src.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB) && state != null) {

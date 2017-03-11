@@ -153,10 +153,6 @@ namespace SrvTest {
       Assert.AreEqual("B", a.name);
       Assert.AreEqual("/B", a.path);
       Assert.AreEqual("/B/C", a_c.path);
-
-      _repo.Tick();
-      Assert.AreEqual("/B", a.GetField("p").ToString());
-      Assert.AreEqual("/B/C", a_c.GetField("p").ToString());
     }
     [TestMethod]
     public void T11() {
@@ -168,9 +164,6 @@ namespace SrvTest {
       Assert.AreEqual("/D/B", a_b.path);
       Assert.AreEqual("/D/B/C", a_b_c.path);
       Assert.IsFalse(Topic.root.Exist("/A/B"));
-      _repo.Tick();
-      Assert.AreEqual("/D/B", a_b.GetField("p").ToString());
-      Assert.AreEqual("/D/B/C", a_b_c.GetField("p").ToString());
     }
     [TestMethod]
     public void T12() {

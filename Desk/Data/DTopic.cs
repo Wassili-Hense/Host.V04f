@@ -26,7 +26,7 @@ namespace X13.Data {
       this.parent = parent;
       this.Connection = this.parent.Connection;
       this.name = name;
-      this.path = this.parent == Connection.root ? ("/" + name) : (this.parent.path + "/" + name);
+      this.path = this.parent == Connection.root ? ( "/" + name ) : ( this.parent.path + "/" + name );
     }
     internal DTopic(Client cl) {
       Connection = cl;
@@ -43,7 +43,7 @@ namespace X13.Data {
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
     public Task<DTopic> CreateAsync(string name, string manifestStr) {
-      var req = new TopicReq(this, this == Connection.root ? ("/" + name) : (this.path + "/" + name), manifestStr);
+      var req = new TopicReq(this, this == Connection.root ? ( "/" + name ) : ( this.path + "/" + name ), manifestStr);
       App.PostMsg(req);
       return req.Task;
     }
@@ -55,7 +55,7 @@ namespace X13.Data {
         ts = Connection.root;
       } else {
         ts = this;
-        p = this == Connection.root ? ("/" + p) : (this.path + "/" + p);
+        p = this == Connection.root ? ( "/" + p ) : ( this.path + "/" + p );
       }
       var req = new TopicReq(ts, p);
       App.PostMsg(req);
@@ -92,7 +92,7 @@ namespace X13.Data {
       if(_manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
         var tt = _manifest["type"];
         if(tt.ValueType == JSC.JSValueType.String && tt.Value != null) {
-          this.GetAsync("/$YS/TYPES/" + (tt.Value as string)).ContinueWith(TypeLoaded);
+          this.GetAsync("/$YS/TYPES/" + ( tt.Value as string )).ContinueWith(TypeLoaded);
           send = false;
         }
       }
@@ -113,7 +113,7 @@ namespace X13.Data {
           _manifest.__proto__ = null;
           ChangedReise(Art.type, this);
         } else if(_typeTopic.value.ValueType == JSC.JSValueType.Object && _typeTopic.value.Value != null) {
-          _manifest.__proto__ = (_typeTopic.value as JSC.JSObject) ?? (_typeTopic.value.Value as JSC.JSObject);
+          _manifest.__proto__ = ( _typeTopic.value as JSC.JSObject ) ?? ( _typeTopic.value.Value as JSC.JSObject );
           ChangedReise(Art.type, this);
         }
       }
@@ -123,7 +123,7 @@ namespace X13.Data {
         App.mainWindow.Dispatcher.BeginInvoke(changed, System.Windows.Threading.DispatcherPriority.DataBind, art, src);
       }
     }
-    private DTopic GetChild(string name, bool create) {
+    private DTopic GetChild(string cName, bool create) {
       if(_children == null) {
         if(create) {
           _children = new List<DTopic>();
@@ -133,7 +133,7 @@ namespace X13.Data {
       }
       int cmp, mid;
       for(mid = _children.Count - 1; mid >= 0; mid--) {
-        cmp = string.Compare(_children[mid].name, name);
+        cmp = string.Compare(_children[mid].name, cName);
         if(cmp == 0) {
           return _children[mid];
         }
@@ -143,12 +143,38 @@ namespace X13.Data {
       }
 
       if(create) {
-        var t = new DTopic(this, name);
+        var t = new DTopic(this, cName);
         this._children.Insert(mid + 1, t);
         ChangedReise(Art.addChild, t);
         return t;
       }
       return null;
+    }
+    private void SetChild(DTopic t) {
+      if(_children == null) {
+        _children = new List<DTopic>();
+      }
+      int cmp, mid;
+      for(mid = _children.Count - 1; mid >= 0; mid--) {
+        cmp = string.Compare(_children[mid].name, t.name);
+        if(cmp == 0) {
+          _children[mid]=t;
+          return;
+        }
+        if(cmp < 0) {
+          break;
+        }
+      }
+      this._children.Insert(mid + 1, t);
+    }
+    private void UpdatePath() {
+      this.path = this.parent == Connection.root ? ( "/" + name ) : ( this.parent.path + "/" + name );
+      if(_children!=null) {
+        foreach(var c in _children) {
+          c.parent = this;
+          c.UpdatePath();
+        }
+      }
     }
     private void RemoveChild(DTopic t) {
       if(_children == null) {
@@ -157,7 +183,7 @@ namespace X13.Data {
       int min = 0, max = _children.Count - 1, cmp, mid = 0;
 
       while(min <= max) {
-        mid = (min + max) / 2;
+        mid = ( min + max ) / 2;
         cmp = string.Compare(_children[mid].name, t.name);
         if(cmp < 0) {
           min = mid + 1;
@@ -214,7 +240,7 @@ namespace X13.Data {
             lock(_cur) {
               _cur._req=null;
               if(this._reqs != null) {
-                foreach(var r in _reqs){
+                foreach(var r in _reqs) {
                   App.PostMsg(r);
                 }
               }
@@ -230,7 +256,7 @@ namespace X13.Data {
               }
             }
           } else {
-            lock(_cur){
+            lock(_cur) {
               if(_cur._req != null && _cur._req != this) {
                 if(_cur._req._reqs == null) {
                   _cur._req._reqs = new List<TopicReq>();
@@ -294,11 +320,11 @@ namespace X13.Data {
       }
       public void Response(bool success, JSC.JSValue value) {
         if(success) {   // value == null after connect
-          if(value != null && (value.ValueType != JSC.JSValueType.Boolean || !((bool)value))) {
+          if(value != null && ( value.ValueType != JSC.JSValueType.Boolean || !( (bool)value ) )) {
             _cur._disposed = true;
           }
         } else {
-          _tcs.SetException(new ApplicationException((value == null ? "TopicReqError" : value.ToString())));
+          _tcs.SetException(new ApplicationException(( value == null ? "TopicReqError" : value.ToString() )));
         }
       }
 
@@ -362,7 +388,7 @@ namespace X13.Data {
         if(success) {
           _tcs.SetResult(true);
         } else {
-          _tcs.SetException(new ApplicationException((value == null ? "FieldSetError" : value.ToString())));
+          _tcs.SetException(new ApplicationException(( value == null ? "FieldSetError" : value.ToString() )));
         }
         _complete = true;
       }
@@ -370,11 +396,11 @@ namespace X13.Data {
     internal class ClientEvent : INotMsg {
       private DTopic _root;
       private string _path;
-      private int _flags;
-      private JSC.JSValue _state;
-      private JSC.JSValue _manifest;
+      private int _cmd;
+      private JSC.JSValue _p1;
+      private JSC.JSValue _p2;
 
-      public ClientEvent(DTopic root, string path, int flags, JSC.JSValue state, JSC.JSValue manifest) {
+      public ClientEvent(DTopic root, string path, int cmd, JSC.JSValue p1, JSC.JSValue p2) {
         if(root == null) {
           throw new ArgumentNullException("root");
         }
@@ -384,35 +410,60 @@ namespace X13.Data {
 
         _root = root;
         _path = path;
-        _flags = flags;
-        _state = state;
-        _manifest = manifest;
+        _cmd = cmd;
+        _p1 = p1;
+        _p2 = p2;
       }
       public void Process() {
         var ps = _path.Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
         DTopic cur = _root, next;
-        bool remove = _flags == 12 && _state == null && _manifest == null;
+        bool noCreation = ( _cmd == 12 && _p1 == null && _p2 == null ) || ( _cmd==10 && _p1!=null && _p1.ValueType==JSC.JSValueType.String && _p2!=null && _p2.ValueType==JSC.JSValueType.String );
         for(int i = 0; i < ps.Length; i++) {
-          next = cur.GetChild(ps[i], !remove);
+          next = cur.GetChild(ps[i], !noCreation);
           if(next == null) {  // Topic not exist
             return;
           }
           cur = next;
         }
-        if(remove) {
-          cur._disposed = true;
-          var parent = cur.parent;
-          if(parent != null) {
-            parent.RemoveChild(cur);
-            parent.ChangedReise(Art.RemoveChild, cur);
+        if(noCreation) {
+          if(_cmd==10) {  // move
+            DTopic parent = _root;
+            ps = ( _p1.Value as string ).Split(PATH_SEPARATOR, StringSplitOptions.RemoveEmptyEntries);
+            for(int i = 0; i < ps.Length; i++) {
+              next = parent.GetChild(ps[i], false);
+              if(next == null) {  // Topic not exist
+                return;
+              }
+              parent = next;
+            }
+            next = new DTopic(parent, _p2.Value as string);
+            next._children = cur._children;
+            next._value    =cur._value;
+            next._manifest =cur._manifest;
+            next._typeTopic=cur._typeTopic;
+
+            cur.parent.ChangedReise(Art.RemoveChild, cur);
+            cur.parent._children.Remove(cur);
+
+            parent.SetChild(next);
+            next.UpdatePath();
+            parent.ChangedReise(Art.addChild, next);
+
+          } else if(_cmd==12) {  // delete
+            cur._disposed = true;
+            var parent = cur.parent;
+            if(parent != null) {
+              parent.RemoveChild(cur);
+              parent.ChangedReise(Art.RemoveChild, cur);
+            }
           }
-          return;
-        }
-        if(_state != null) {
-          cur.ValuePublished(_state);
-        }
-        if(_manifest != null) {
-          cur.ManifestPublished(_manifest);
+        } else {
+          if(_p1 != null) {
+            cur.ValuePublished(_p1);
+          }
+          if(_p2 != null) {
+            cur.ManifestPublished(_p2);
+          }
         }
       }
       public void Response(bool success, JSC.JSValue value) {
@@ -426,6 +477,5 @@ namespace X13.Data {
       addChild,
       RemoveChild,
     }
-
   }
 }
