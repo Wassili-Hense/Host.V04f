@@ -118,6 +118,6 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MQTT_SN_MANIFEST" xml:space="preserve">
-    <value>{"Fields":{"declarer":{"attr":3},"phy1_addr":{"attr":3},"subIdx":{"attr":3}}}</value>
+    <value>{"Fields":{"declarer":{"attr":3},"SleepTime":{"editor":"Integer","default":0},"ADCintegrate":{"editor":"Integer","default":0},"SupressInputs":{"attr":3},"GroupID":{"editor":"Integer","default":0},"Channel":{"editor":"Integer","default":0},"GateId":{"editor":"Integer","default":0},"Power":{"editor":"Integer","default":0},"Key":{"editor":"ByteArray","default":"¤BA"},"MACAddr":{"editor":"ByteArray","default":"¤BA"},"IPAddr":{"editor":"ByteArray","default":"¤BA"},"IPMask":{"editor":"ByteArray","default":"¤BA"},"IPRouter":{"editor":"ByteArray","default":"¤BA"},"IPBroker":{"editor":"ByteArray","default":"¤BA"},"phy1_addr":{"attr":3},"phy2_addr":{"attr":3},"phy3_addr":{"attr":3},"phy4_addr":{"attr":3},"subIdx":{"attr":3}}}</value>
   </data>
 </root>

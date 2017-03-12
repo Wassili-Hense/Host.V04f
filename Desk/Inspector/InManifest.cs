@@ -41,6 +41,7 @@ namespace X13.UI {
       if(td.IsCompleted && !td.IsFaulted && td.Result!=null) {
         _tManifest = td.Result;
         _tManifest.changed += Manifest_changed;
+        UpdateType(_tManifest.value);
       }
     }
     private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {
@@ -195,7 +196,7 @@ namespace X13.UI {
       if(!base.IsReadonly && _value.ValueType == JSC.JSValueType.Object) {
         MenuItem ma = new MenuItem() { Header = "Add" };
         if(_manifest != null && (v1 = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
-          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object && z.Value["default"].Defined)) {
             if(_items.Any(z => z.name == kv.Key)) {
               continue;
             }
@@ -260,9 +261,8 @@ namespace X13.UI {
           _collFunc(ni, true);
         } else {
           if(decl != null) {
-            var def = decl["default"];
             string fName = mi.Header as string;
-            _data.SetField(IsGroupHeader ? fName : _path + "." + fName, def.Defined ? def : JSC.JSValue.Null);
+            _data.SetField(IsGroupHeader ? fName : _path + "." + fName, decl["default"]);
           }
         }
         if(pc_items) {

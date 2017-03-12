@@ -337,6 +337,7 @@ namespace X13.Periphery {
         MsDevice dev = _devs.FirstOrDefault(z => z.owner != null && z.owner.name == cm.ClientId);
         if(dev == null) {
           var td = Topic.root.Get("/vacant/" + cm.ClientId, true, _owner);
+          td.SetAttribute(Topic.Attribute.DB);
           dev = new MsDevice(this, td);
           _devs.Add(dev);
           Log.Info(dev.owner.path + " created on connect");

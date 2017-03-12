@@ -51,15 +51,15 @@ namespace X13.UI {
         tbRequired.IsChecked = false;
       } else {
         int a = (int)value;
-        tbConfig.IsChecked = (a & 8) != 0;
-        tbSaved.IsChecked = (a & 12) == 4;
-        tbReadonly.IsChecked = (a & 2) != 0;
-        tbRequired.IsChecked = (a & 1) != 0;
+        tbConfig.IsChecked = ( a & 8 ) != 0;
+        tbSaved.IsChecked = ( a & 12 ) == 4;
+        tbReadonly.IsChecked = ( a & 2 ) != 0;
+        tbRequired.IsChecked = ( a & 1 ) != 0;
       }
     }
     public void TypeChanged(NiL.JS.Core.JSValue manifest) {
-      tbSaved.Visibility = _owner.levelPadding>7?System.Windows.Visibility.Hidden:System.Windows.Visibility.Visible;
-      tbConfig.Visibility = _owner.levelPadding > 7 ? System.Windows.Visibility.Hidden : System.Windows.Visibility.Visible;
+      tbSaved.Visibility = _owner.levelPadding > 9 ? System.Windows.Visibility.Hidden : System.Windows.Visibility.Visible;
+      tbConfig.Visibility = _owner.levelPadding > 9 ? System.Windows.Visibility.Hidden : System.Windows.Visibility.Visible;
       tbSaved.IsEnabled = !_owner.IsReadonly;
       tbConfig.IsEnabled = !_owner.IsReadonly;
       tbReadonly.IsEnabled = !_owner.IsReadonly;
@@ -68,7 +68,7 @@ namespace X13.UI {
     private void tbChanged(object sender, RoutedEventArgs e) {
       if(!_owner.IsReadonly) {
         int ov = _owner.value.IsNumber ? (int)_owner.value : -1;
-        int nv = (tbConfig.IsChecked == true ? 8 : 0) + ((tbConfig.IsChecked != true && tbSaved.IsChecked == true) ? 4 : 0) + (tbRequired.IsChecked == true ? 1 : 0) + (tbReadonly.IsChecked == true ? 2 : 0);
+        int nv = ( tbConfig.IsChecked == true ? 8 : 0 ) + ( ( tbConfig.IsChecked != true && tbSaved.IsChecked == true ) ? 4 : 0 ) + ( tbRequired.IsChecked == true ? 1 : 0 ) + ( tbReadonly.IsChecked == true ? 2 : 0 );
         if(nv != ov) {
           _owner.value = new JSL.Number(nv);
         }

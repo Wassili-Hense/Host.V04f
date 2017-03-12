@@ -479,6 +479,7 @@ namespace X13.Periphery {
               MsDevice dev = _pl._devs.FirstOrDefault(z => z.owner != null && z.owner.name == cm.ClientId);
               if(dev == null) {
                 var td = Topic.root.Get("/vacant/" + cm.ClientId, true, owner);
+                td.SetAttribute(Topic.Attribute.DB);
                 dev = new MsDevice(_pl, td);
                 _pl._devs.Add(dev);
               }
@@ -1068,28 +1069,28 @@ namespace X13.Periphery {
 
     };
     private static Tuple<ushort, string, DType>[] PredefinedTopics = new Tuple<ushort, string, DType>[]{
-      new Tuple<ushort, string, DType>(0xFF01, ".MQTT-SN.SleepTime", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF08, ".MQTT-SN.ADCintegrate", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF09, ".MQTT-SN.SupressInputs", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF01, ".MQTT-SN.SleepTime",      DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF08, ".MQTT-SN.ADCintegrate",   DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF09, ".MQTT-SN.SupressInputs",  DType.ByteArray),
 
-      new Tuple<ushort, string, DType>(0xFF10, ".MQTT-SN.DeviceAddr", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF11, ".MQTT-SN.GroupID", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF12, ".MQTT-SN.Channel", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF14, ".MQTT-SN.GateId", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF16, ".MQTT-SN.Power", DType.Integer),
-      new Tuple<ushort, string, DType>(0xFF18, ".MQTT-SN.Key", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF10, ".MQTT-SN.DeviceAddr",     DType.Integer),  // ???
+      new Tuple<ushort, string, DType>(0xFF11, ".MQTT-SN.GroupID",        DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF12, ".MQTT-SN.Channel",        DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF14, ".MQTT-SN.GateId",         DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF16, ".MQTT-SN.Power",          DType.Integer),
+      new Tuple<ushort, string, DType>(0xFF18, ".MQTT-SN.Key",            DType.ByteArray),
       
-      new Tuple<ushort, string, DType>(0xFF20, ".MQTT-SN.MACAddr", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFF21, ".MQTT-SN.IPAddr", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFF22, ".MQTT-SN.IPMask", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFF23, ".MQTT-SN.IPRouter", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFF24, ".MQTT-SN.IPBroker", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF20, ".MQTT-SN.MACAddr",        DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF21, ".MQTT-SN.IPAddr",         DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF22, ".MQTT-SN.IPMask",         DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF23, ".MQTT-SN.IPRouter",       DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFF24, ".MQTT-SN.IPBroker",       DType.ByteArray),
 
-      new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.declarer", DType.String),
-      new Tuple<ushort, string, DType>(0xFFC1, ".MQTT-SN.phy1_addr", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFFC2, ".MQTT-SN.phy2_addr", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFFC3, ".MQTT-SN.phy3_addr", DType.ByteArray),
-      new Tuple<ushort, string, DType>(0xFFC4, ".MQTT-SN.phy4_addr", DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.declarer",       DType.String),
+      new Tuple<ushort, string, DType>(0xFFC1, ".MQTT-SN.phy1_addr",      DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC2, ".MQTT-SN.phy2_addr",      DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC3, ".MQTT-SN.phy3_addr",      DType.ByteArray),
+      new Tuple<ushort, string, DType>(0xFFC4, ".MQTT-SN.phy4_addr",      DType.ByteArray),
 
       //  {".cfg/_a_RTC",        RTC_EXCH},  // 0xFF07
       //  {"_logD",              LOG_D_ID},

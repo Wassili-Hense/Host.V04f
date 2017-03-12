@@ -61,7 +61,7 @@ namespace X13.Periphery.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {&quot;Fields&quot;:{&quot;declarer&quot;:{&quot;attr&quot;:3},&quot;phy1_addr&quot;:{&quot;attr&quot;:3},&quot;subIdx&quot;:{&quot;attr&quot;:3}}}.
+        ///   Looks up a localized string similar to {&quot;Fields&quot;:{&quot;declarer&quot;:{&quot;attr&quot;:3},&quot;SleepTime&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;ADCintegrate&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;SupressInputs&quot;:{&quot;attr&quot;:3},&quot;GroupID&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;Channel&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;GateId&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;Power&quot;:{&quot;editor&quot;:&quot;Integer&quot;,&quot;default&quot;:0},&quot;Key&quot;:{&quot;editor&quot;:&quot;ByteArray&quot;,&quot;default&quot;:&quot;¤BA&quot;},&quot;MACAddr&quot;:{&quot;editor&quot;:&quot;ByteArray&quot;,&quot;default&quot;:&quot;¤BA&quot;},&quot;IPAddr&quot;:{&quot;editor&quot;:&quot;ByteArray&quot;,&quot;default&quot;:&quot;¤BA&quot;},&quot;IPMask&quot;:{&quot;editor&quot;:&quot;ByteArray&quot;,&quot;default&quot;:&quot;¤BA&quot;}, [rest of string wa....
         /// </summary>
         internal static string MQTT_SN_MANIFEST {
             get {
