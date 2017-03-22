@@ -12,13 +12,17 @@ using JSL = NiL.JS.BaseLibrary;
 
 namespace X13.UI {
   internal class InManifest : InBase, IDisposable {
+    private static int SIGNATURE_CNT = 0;
+
     private DTopic _data;
     private DTopic _tManifest;
     private InManifest _parent;
     private JSC.JSValue _value;
     private string _path;
+    private int _signature;
 
     public InManifest(DTopic data, Action<InBase, bool> collFunc) {
+      _signature = System.Threading.Interlocked.Increment(ref SIGNATURE_CNT);
       this._data = data;
       this._parent = null;
       base._collFunc = collFunc;
@@ -30,7 +34,7 @@ namespace X13.UI {
       base.levelPadding = 1;
       base._items = new List<InBase>();
       this._value = _data.type;
-      UpdateType(_tManifest!=null?_tManifest.value:null);
+      UpdateType(_tManifest != null ? _tManifest.value : null);
       UpdateData(_data.type);
       base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
@@ -38,13 +42,14 @@ namespace X13.UI {
     }
 
     private void ManifestLoaded(Task<DTopic> td) {
-      if(td.IsCompleted && !td.IsFaulted && td.Result!=null) {
+      if(td.IsCompleted && !td.IsFaulted && td.Result != null) {
         _tManifest = td.Result;
         _tManifest.changed += Manifest_changed;
         UpdateType(_tManifest.value);
       }
     }
     private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {
+      _signature = System.Threading.Interlocked.Increment(ref SIGNATURE_CNT);
       this._parent = parent;
       this._data = _parent._data;
       base._collFunc = _parent._collFunc;
@@ -59,6 +64,7 @@ namespace X13.UI {
       UpdateData(value);
     }
     private InManifest(JSC.JSValue manifest, InManifest parent) {
+      _signature = System.Threading.Interlocked.Increment(ref SIGNATURE_CNT);
       this._parent = parent;
       base._manifest = manifest;
       base._collFunc = parent._collFunc;
@@ -74,24 +80,49 @@ namespace X13.UI {
       if(_value.ValueType == JSC.JSValueType.Object) {
         InManifest vc;
         int i;
+        JSC.JSValue cs, cs_mi, cs_p;
+        /*{
+          StringBuilder sb = new StringBuilder();
+          sb.Append(this.ToString());
+          sb.Append(".UpdateData( val{");
+          foreach(var kv in _value) {
+            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+          }
+          sb.Append("}");
+          if(_value.__proto__.ValueType == JSC.JSValueType.Object && _value.__proto__.Any()) {
+            sb.Append(" proto{");
+            foreach(var kv in _value.__proto__) {
+              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+            }
+            sb.Append("}");
+
+          }
+          sb.Append(")");
+          Log.Debug("{0}", sb.ToString());
+        }*/
         foreach(var kv in _value.OrderBy(z => z.Key)) {
+          if(_manifest == null || _manifest.ValueType != JSC.JSValueType.Object || _manifest.Value == null || (cs_mi = _manifest["mi"]).ValueType != JSC.JSValueType.Object || cs_mi.Value == null || (cs = cs_mi[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
+            cs = JSC.JSObject.CreateObject();
+          }
+          if((cs_mi = (IsGroupHeader ? _value : _manifest)["mi"]).ValueType == JSC.JSValueType.Object && cs_mi.Value != null) {
+            if((cs_p = cs_mi[kv.Key]).ValueType == JSC.JSValueType.Object && cs_p.Value != null && cs != cs_p) {
+              if(cs["mi"].ValueType == JSC.JSValueType.Object) {
+                cs["mi"].__proto__ = cs_p["mi"].ToObject();
+              }
+              cs.__proto__ = cs_p.ToObject();
+            }
+          }
           vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
           if(vc != null) {
+            vc.UpdateType(cs);
             vc.UpdateData(kv.Value);
           } else {
+            var ni = new InManifest(this, kv.Key, kv.Value, cs);
             for(i = _items.Count - 1; i >= 0; i--) {
               if(string.Compare(_items[i].name, kv.Key) < 0) {
                 break;
               }
             }
-            JSC.JSValue cs;
-            {
-              JSC.JSValue pr;
-              if(_manifest == null || _manifest.ValueType != JSC.JSValueType.Object || _manifest.Value == null || (pr = _manifest["Fields"] as JSC.JSValue).ValueType != JSC.JSValueType.Object || pr.Value == null || (cs = pr[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
-                cs = null;
-              }
-            }
-            var ni = new InManifest(this, kv.Key, kv.Value, cs);
             _items.Insert(i + 1, ni);
             if(_isVisible && _isExpanded) {
               _collFunc(ni, true);
@@ -125,6 +156,7 @@ namespace X13.UI {
     private void Manifest_changed(DTopic.Art art, DTopic src) {
       if(art == DTopic.Art.value) {
         UpdateType(_tManifest != null ? _tManifest.value : null);
+        UpdateData(_value);
       }
     }
     private void SetFieldResp(Task<JSC.JSValue> r) {
@@ -152,15 +184,40 @@ namespace X13.UI {
       }
     }
     protected override void UpdateType(JSC.JSValue type) {
+      /*{
+        StringBuilder sb = new StringBuilder();
+        sb.Append(this.ToString());
+        sb.Append(".UpdateType( val{");
+        if(type == null) {
+          sb.Append("null");
+        } else {
+          foreach(var kv in type) {
+            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+          }
+          sb.Append("}");
+          if(type.__proto__.ValueType == JSC.JSValueType.Object && type.__proto__.Any()) {
+            sb.Append(" proto{");
+            foreach(var kv in type.__proto__) {
+              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+            }
+            sb.Append("}");
+
+          }
+        }
+        sb.Append(")");
+        Log.Debug("{0}", sb.ToString());
+      }*/
+
       base.UpdateType(type);
       if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
-        var pr = _manifest["Fields"] as JSC.JSValue;
+        var pr = _manifest["mi"] as JSC.JSValue;
         if(pr != null) {
           InManifest vc;
           foreach(var kv in pr) {
             vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
             if(vc != null) {
               vc.UpdateType(kv.Value);
+              vc.UpdateData(vc._value);
             }
           }
         }
@@ -182,7 +239,7 @@ namespace X13.UI {
     public override int CompareTo(InBase other) {
       var o = other as InManifest;
       if(o == null) {
-        return (other is InValue)?1:-1;
+        return (other is InValue) ? 1 : -1;
       }
       return this._path.CompareTo(o._path);
     }
@@ -195,8 +252,15 @@ namespace X13.UI {
       MenuItem mi;
       if(!base.IsReadonly && _value.ValueType == JSC.JSValueType.Object) {
         MenuItem ma = new MenuItem() { Header = "Add" };
-        if(_manifest != null && (v1 = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
-          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object && z.Value["default"].Defined)) {
+        if(_manifest != null && (v1 = _manifest["mi"]).ValueType == JSC.JSValueType.Object) {
+          KeyValuePair<string, JSC.JSValue>[] iArr;
+          if(v1.__proto__.ValueType == JSC.JSValueType.Object) {
+            iArr = v1.Union(v1.__proto__).ToArray();
+          } else {
+            iArr = v1.ToArray();
+          }
+
+          foreach(var kv in iArr.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object && z.Value["default"].Defined)) {
             if(_items.Any(z => z.name == kv.Key)) {
               continue;
             }
@@ -286,7 +350,7 @@ namespace X13.UI {
     #endregion IDisposable Member
 
     public override string ToString() {
-      return (_data!=null?_data.fullPath:"<new>") + "." + _path;
+      return /*"/" + _signature.ToString("X4") + "/ " + */(_data != null ? _data.fullPath : "<new>") + "." + _path;
     }
   }
 }

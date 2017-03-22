@@ -44,17 +44,17 @@ namespace X13.Periphery {
         _verbose.SetAttribute(Topic.Attribute.Required | Topic.Attribute.DB);
         _verbose.SetState(true);
       }
-      var verV = _owner.GetField("ver");
-      string verS;
-      Version ver, verC = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+      //var verV = _owner.GetField("ver");
+      //string verS;
+      //Version ver, verC = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 
-      if(verV.ValueType != JSC.JSValueType.String || (verS = verV.Value as string) == null || !verS.StartsWith("¤VR") || !Version.TryParse(verS.Substring(3), out ver) || ver < verC) {
-        var man = Topic.root.Get("/$YS/TYPES/Core/Manifest");
-        var manJ = JsLib.Clone(man.GetState());
-        JsLib.SetField(ref manJ, "Fields.MQTT-SN", JSL.JSON.parse(X13.Periphery.Properties.Resources.MQTT_SN_MANIFEST));
-        man.SetState(manJ);
-        _owner.SetField("version", "¤VR" + verC.ToString());
-      }
+      //if(verV.ValueType != JSC.JSValueType.String || (verS = verV.Value as string) == null || !verS.StartsWith("¤VR") || !Version.TryParse(verS.Substring(3), out ver) || ver < verC) {
+      //  var man = Topic.root.Get("/$YS/TYPES/Core/Manifest");
+      //  var manJ = JsLib.Clone(man.GetState());
+      //  JsLib.SetField(ref manJ, "Fields.MQTT-SN", JSL.JSON.parse(X13.Periphery.Properties.Resources.MQTT_SN_MANIFEST));
+      //  man.SetState(manJ);
+      //  _owner.SetField("version", "¤VR" + verC.ToString());
+      //}
       Topic.root.Subscribe(SubRec.SubMask.Field | SubRec.SubMask.All, "MQTT-SN.phy1_addr", SubFunc);
     }
 

@@ -293,7 +293,7 @@ namespace X13.DeskHost {
         }
         break;
       case Perform.Art.changedField:
-        if(p.prim != _owner && sb.setTopic == p.src) {
+        if(sb.setTopic == p.src) {
           arr = new JSL.Array(3);
           arr[0] = new JSL.Number(14);
           arr[1] = new JSL.String(p.src.path);

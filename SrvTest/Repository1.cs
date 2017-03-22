@@ -405,11 +405,14 @@ namespace SrvTest {
     [TestMethod]
     public void T99() {
       var proto = JSObject.CreateObject();
-      proto["A"] = "ABC";
-      var obj=X13.JsLib.Clone(proto);
-      proto["A"] = 43;
-      var a = obj["A"];
-      Assert.AreEqual("ABC", a.Value as string);
+      proto["B"] = 1;
+      var obj = JSObject.CreateObject();
+      obj["A"] = 2;
+      obj.__proto__ = proto;
+      var b = obj["B"];
+      Assert.IsTrue(b.Defined);
+      var l = obj.ToArray();
+
     }
   }
 }
