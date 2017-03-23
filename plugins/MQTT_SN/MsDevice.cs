@@ -66,6 +66,7 @@ namespace X13.Periphery {
       _rand = new Random((int)DateTime.Now.Ticks);
     }
 
+    private string _oldName;
     private List<SubRec> _subsscriptions;
     private SubRec _srOwner;
     private Queue<MsMessage> _sendQueue; 
@@ -90,6 +91,8 @@ namespace X13.Periphery {
 
     public MsDevice(MQTT_SNPl pl, Topic owner) {
       this.owner = owner;
+      this._oldName = owner.name;
+
       this._pl = pl;
       _subsscriptions = new List<SubRec>(4);
       _sendQueue = new Queue<MsMessage>();
@@ -117,6 +120,12 @@ namespace X13.Periphery {
         var val = owner.GetField(p.FieldPath);
         if(!val.IsNull) {
           Send(new MsPublish(pt.Item1, Serialize(val, pt.Item3)));
+        }
+      } else if(p.art == Perform.Art.move) {
+        if(_oldName != owner.name) {
+          Send(new MsPublish(0xFF00, Encoding.UTF8.GetBytes(owner.name)));  // _sName
+          _state = State.Disconnected;
+          _oldName = owner.name;
         }
       }
     }

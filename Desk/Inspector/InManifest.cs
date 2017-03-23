@@ -92,7 +92,7 @@ namespace X13.UI {
       }
     }
     private void UpdateType(JSC.JSValue type, JSC.JSValue val) {
-      {
+      /*{
         StringBuilder sb = new StringBuilder();
         sb.Append(this.ToString());
         sb.Append(" $UpdateType( m{");
@@ -129,7 +129,7 @@ namespace X13.UI {
         }
         sb.Append(")");
         Log.Debug("{0}", sb.ToString());
-      }
+      }*/
       _value = val;
       base.UpdateType(type);
       if(_value.ValueType == JSC.JSValueType.Object) {
