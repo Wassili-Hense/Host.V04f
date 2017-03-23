@@ -33,8 +33,6 @@ namespace X13.UI {
       base.IsGroupHeader = true;
       base.levelPadding = 1;
       base._items = new List<InBase>();
-      UpdateType(_tManifest != null ? _tManifest.value : null, _data.type);
-      base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
       _data.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(ManifestLoaded, TaskScheduler.FromCurrentSynchronizationContext());
     }
@@ -43,7 +41,8 @@ namespace X13.UI {
       if(td.IsCompleted && !td.IsFaulted && td.Result != null) {
         _tManifest = td.Result;
         _tManifest.changed += Manifest_changed;
-        UpdateType(_tManifest.value);
+        UpdateType(_tManifest.value, _data.type);
+        base._isExpanded = IsGroupHeader && this.HasChildren;
       }
     }
     private InManifest(InManifest parent, string name, JSC.JSValue value, JSC.JSValue type) {

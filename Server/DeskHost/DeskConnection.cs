@@ -166,34 +166,20 @@ namespace X13.DeskHost {
     }
     /// <summary>Create topic</summary>
     /// <param name="args">
-    /// REQUEST: [8, msgId, path[, prototype]]
-    /// RESPONSE: [3, msgId, success, [errorMsg] ]
+    /// REQUEST: [8, msgId, path, state, manifest]
     /// </param>
     private void Create(DeskMessage msg) {
-      if(msg.Count < 3 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
+      if(msg.Count < 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
         Log.Warning("Syntax error: {0}", msg);
         return;
       }
-      Topic p, t = null;
-      string pn;
-      JSC.JSValue jsp;
-      if(msg.Count == 4 && msg[3].ValueType == JSC.JSValueType.String && !string.IsNullOrWhiteSpace(pn = msg[3].Value as string)) {
-        if((_basePl.TypesCore.Exist(pn, out p) || _basePl.Types.Exist(pn, out p)) && (jsp = p.GetState()).ValueType == JSC.JSValueType.Object && jsp.Value != null) {
-          t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
-          var m = jsp["manifest"];
-          var s = jsp["default"];
-          JSL.Date js_d;
-          if(s.ValueType == JSC.JSValueType.Date && (js_d = s.Value as JSL.Date) != null && Math.Abs((js_d.ToDateTime() - new DateTime(1001, 1, 1, 12, 0, 0)).TotalDays) < 1) {
-            s = JSC.JSObject.Marshal(DateTime.UtcNow);
-          }
-          Topic.I.Fill(t, s, (m.ValueType == JSC.JSValueType.Object && m.Value != null) ? JsLib.Clone(m) : null, _owner);
-        } else {
-          Log.Warning("Create({0}, {1}) - unknown prototype", msg[2].Value as string, pn);
-        }
+      var s = msg[3];
+      JSL.Date js_d;
+      if(s.ValueType == JSC.JSValueType.Date && (js_d = s.Value as JSL.Date) != null && Math.Abs((js_d.ToDateTime() - new DateTime(1001, 1, 1, 12, 0, 0)).TotalDays) < 1) {
+        s = JSC.JSObject.Marshal(DateTime.UtcNow);
       }
-      if(t == null) {
-        t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, true);
-      }
+      var t = Topic.I.Get(Topic.root, msg[2].Value as string, true, _owner, false, false);
+      Topic.I.Fill(t, s, (msg[4].ValueType == JSC.JSValueType.Object && msg[4].Value != null) ? JsLib.Clone(msg[4]) : null, _owner);
     }
     /// <summary>Move topic</summary>
     /// <param name="args">
@@ -275,11 +261,11 @@ namespace X13.DeskHost {
       JSL.Array arr;
       switch(p.art) {
       case Perform.Art.subscribe: {
-            arr = new JSL.Array(4);
-            arr[0] = new JSL.Number(4);
-            arr[1] = new JSL.String(p.src.path);
-            arr[2] = p.src.GetState();
-            arr[3] = p.src.GetField(null);
+          arr = new JSL.Array(4);
+          arr[0] = new JSL.Number(4);
+          arr[1] = new JSL.String(p.src.path);
+          arr[2] = p.src.GetState();
+          arr[3] = p.src.GetField(null);
           base.SendArr(arr);
         }
         break;

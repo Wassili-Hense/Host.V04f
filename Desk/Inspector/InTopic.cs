@@ -18,7 +18,7 @@ namespace X13.UI {
     private InTopic _parent;
     private DTopic _owner;
     private bool _populated;
-    private string _createType;
+    private JSC.JSValue _createTag;
 
     public InTopic(DTopic owner, InTopic parent, Action<InBase, bool> collFunc) {
       _owner = owner;
@@ -44,13 +44,13 @@ namespace X13.UI {
       base._isExpanded = IsGroupHeader && _owner.children != null && _owner.children.Any();
       base._isVisible = IsGroupHeader || (_parent._isVisible && _parent._isExpanded);
     }
-    private InTopic(string type, InTopic parent) {
+    private InTopic(JSC.JSValue tag, InTopic parent) {
       _parent = parent;
       _collFunc = parent._collFunc;
       name = string.Empty;
       IsEdited = true;
       levelPadding = _parent == null ? 1 : _parent.levelPadding + 8;
-      _createType = type;
+      _createTag = tag;
     }
 
     public override bool IsExpanded {
@@ -78,7 +78,7 @@ namespace X13.UI {
         _parent._items.Remove(this);
         _parent._collFunc(this, false);
         if(!string.IsNullOrEmpty(name)) {
-          _parent._owner.CreateAsync(name, _createType).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
+          _parent._owner.CreateAsync(name, _createTag["default"], _createTag["manifest"]).ContinueWith(SetNameComplete, TaskScheduler.FromCurrentSynchronizationContext());
         } else if(!_parent._items.Any()) {
           _parent._items = null;
           PropertyChangedReise("items");
@@ -158,7 +158,7 @@ namespace X13.UI {
           }
         }
         _items.Insert(i, tmp);
-        if(_items.Count==1) {
+        if(_items.Count == 1) {
           PropertyChangedReise("items");
           PropertyChangedReise("HasChildren");
         }
@@ -184,7 +184,7 @@ namespace X13.UI {
     private void _owner_PropertyChanged(DTopic.Art art, DTopic child) {
       {
         var pr = this;
-        while(pr._parent!=null){
+        while(pr._parent != null) {
           pr = pr._parent;
         }
         Log.Debug("$ " + pr._owner.path + "(" + art.ToString() + ", " + (child != null ? child.path : "null") + ")");
@@ -240,7 +240,7 @@ namespace X13.UI {
       MenuItem ma = new MenuItem() { Header = "Add" };
       if(_manifest != null && (v1 = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
         foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-          if(_items.Any(z => (v2 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == v2.Value as string)) {
+          if(_items!=null && _items.Any(z => (v2 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == v2.Value as string)) {
             continue;
           }
           // TODO: check resources
@@ -297,9 +297,9 @@ namespace X13.UI {
         base.PropertyChangedReise("IsExpanded");
       }
       bool pc_items = false;
-      var decl = mi.Tag as JSC.JSValue;
-      if(decl != null) {
-        if((bool)decl["willful"]) {
+      var tag = mi.Tag as JSC.JSValue;
+      if(tag != null) {
+        if((bool)tag["willful"]) {
           if(_items == null) {
             lock(this) {
               if(_items == null) {
@@ -308,12 +308,12 @@ namespace X13.UI {
               }
             }
           }
-          var ni = new InTopic(decl["type"].Value as string, this);
+          var ni = new InTopic(tag, this);
           _items.Insert(0, ni);
           _collFunc(ni, true);
+        } else {
+          _owner.CreateAsync(mi.Header as string, tag["default"], tag["manifest"]);
         }
-      } else {
-        _owner.CreateAsync(mi.Header as string, decl["type"].Value as string);
       }
       if(pc_items) {
         PropertyChangedReise("items");

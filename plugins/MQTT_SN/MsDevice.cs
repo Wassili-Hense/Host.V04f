@@ -69,24 +69,24 @@ namespace X13.Periphery {
     private string _oldName;
     private List<SubRec> _subsscriptions;
     private SubRec _srOwner;
-    private Queue<MsMessage> _sendQueue; 
-    private List<TopicInfo> _topics;     
+    private Queue<MsMessage> _sendQueue;
+    private List<TopicInfo> _topics;
     private MQTT_SNPl _pl;
     private State _state;
-    private bool _waitAck;          
-    private int _tryCounter;        
-    private int _duration;          
+    private bool _waitAck;
+    private int _tryCounter;
+    private int _duration;
     private int _messageIdGen;
     private DateTime _toActive;
-    private string _willPath;       
-    private byte[] _wilMsg;         
-    private bool _willRetain;       
-    private MsPublish _lastInPub;   
-    private bool _has_RTC;          
-    private DateTime _last_RTC;     
+    private string _willPath;
+    private byte[] _wilMsg;
+    private bool _willRetain;
+    private MsPublish _lastInPub;
+    private bool _has_RTC;
+    private DateTime _last_RTC;
 
     public readonly Topic owner;
-    public IMsGate _gate;           
+    public IMsGate _gate;
     public byte[] addr;
 
     public MsDevice(MQTT_SNPl pl, Topic owner) {
@@ -112,7 +112,7 @@ namespace X13.Periphery {
         return;
       }
       if(p.art == Perform.Art.changedField) {
-        var fp = "."+(p.FieldPath??string.Empty);
+        var fp = "." + (p.FieldPath ?? string.Empty);
         var pt = PredefinedTopics.FirstOrDefault(z => z.Item2 == fp);
         if(pt == null || pt.Item1 >= 0xFFC0) {
           return;
@@ -645,24 +645,24 @@ namespace X13.Periphery {
     /// <param name="tp">Topic as key</param>
     /// <param name="sendRegister">Send MsRegister for new TopicInfo</param>
     /// <returns>found TopicInfo or null</returns>
-    private TopicInfo GetTopicInfo(Topic tp, bool sendRegister = true, string subIdx = null) {
+    private TopicInfo GetTopicInfo(Topic tp, bool sendRegister = true, string tag = null) {
       if(tp == null) {
         return null;
       }
       TopicInfo rez = null;
-      bool field = !string.IsNullOrEmpty(subIdx) && subIdx[0] == '.';
+      bool field = !string.IsNullOrEmpty(tag) && tag[0] == '.';
       for(int i = _topics.Count - 1; i >= 0; i--) {
-        if(_topics[i].topic == tp && (!field || _topics[i].subIdx == subIdx)) {
+        if(_topics[i].topic == tp && (!field || _topics[i].tag == tag)) {
           rez = _topics[i];
           break;
         }
       }
       if(rez == null) {
-        if(subIdx == null) {
-          var siv = tp.GetField("MQTT-SN.subIdx");
-          if(siv.ValueType != NiL.JS.Core.JSValueType.String || (subIdx = siv.Value as string) == null) {
+        if(tag == null) {
+          var siv = tp.GetField("MQTT-SN.tag");
+          if(siv.ValueType != NiL.JS.Core.JSValueType.String || (tag = siv.Value as string) == null) {
             if(tp != owner) {
-              subIdx = (tp.path.StartsWith(owner.path)) ? tp.path.Substring(owner.path.Length + 1) : tp.path;
+              tag = (tp.path.StartsWith(owner.path)) ? tp.path.Substring(owner.path.Length + 1) : tp.path;
             } else {
               return null;
             }
@@ -670,21 +670,21 @@ namespace X13.Periphery {
         }
         rez = new TopicInfo();
         rez.topic = tp;
-        rez.subIdx = subIdx;
-        var pt = PredefinedTopics.FirstOrDefault(z => z.Item2 == subIdx);
+        rez.tag = tag;
+        var pt = PredefinedTopics.FirstOrDefault(z => z.Item2 == tag);
         if(pt != null) {
           rez.TopicId = pt.Item1;
           rez.dType = pt.Item3;
           rez.it = TopicIdType.PreDefined;
           rez.registred = true;
         } else {
-          var nt = _NTTable.FirstOrDefault(z => subIdx.StartsWith(z.Item1));
+          var nt = _NTTable.FirstOrDefault(z => tag.StartsWith(z.Item1));
           if(nt != null) {
             rez.TopicId = CalculateTopicId(rez.topic.path);
             rez.dType = nt.Item2;
             rez.it = TopicIdType.Normal;
           } else {
-            Log.Warning(owner.path + ".register(" + subIdx + ") - unknown type");
+            Log.Warning(owner.path + ".register(" + tag + ") - unknown type");
             return null;
           }
           _topics.Add(rez);
@@ -693,41 +693,41 @@ namespace X13.Periphery {
       }
       if(!rez.registred) {
         if(sendRegister) {
-          Send(new MsRegister(rez.TopicId, rez.subIdx));
+          Send(new MsRegister(rez.TopicId, rez.tag));
         } else {
           rez.registred = true;
         }
       }
       return rez;
     }
-    private TopicInfo GetTopicInfo(string subIdx, bool sendRegister = true) {
-      if(string.IsNullOrEmpty(subIdx)) {
+    private TopicInfo GetTopicInfo(string tag, bool sendRegister = true) {
+      if(string.IsNullOrEmpty(tag)) {
         return null;
       }
       TopicInfo ti;
       Topic cur = null;
-      int idx = subIdx.LastIndexOf('/');
-      string cName = subIdx.Substring(idx + 1);
-      if(subIdx[0] == '.') {
+      int idx = tag.LastIndexOf('/');
+      string cName = tag.Substring(idx + 1);
+      if(tag[0] == '.') {
         cur = owner;
       } else {
         cur = owner.all.FirstOrDefault(z => {
-          var nf = z.GetField("MQTT-SN.subIdx");
-          return nf.ValueType == NiL.JS.Core.JSValueType.String && (nf.Value as string) == subIdx;
+          var nf = z.GetField("MQTT-SN.tag");
+          return nf.ValueType == NiL.JS.Core.JSValueType.String && (nf.Value as string) == tag;
         });
         if(cur == null) {
-          if(subIdx[0] == '/' && !subIdx.StartsWith(owner.path)) {
-            cur = owner.Get(subIdx, false, owner);
+          if(tag[0] == '/' && !tag.StartsWith(owner.path)) {
+            cur = owner.Get(tag, false, owner);
             if(cur == null) {
               return null;
             }
           } else {
-            cur = owner.Get(subIdx, true, owner);
+            cur = owner.Get(tag, true, owner);
           }
-          cur.SetField("MQTT-SN.subIdx", subIdx, owner);
+          cur.SetField("MQTT-SN.tag", tag, owner);
         }
       }
-      ti = GetTopicInfo(cur, sendRegister, subIdx);
+      ti = GetTopicInfo(cur, sendRegister, tag);
       return ti;
     }
     private TopicInfo GetTopicInfo(ushort topicId, TopicIdType topicIdType, bool sendRegister = true) {
@@ -749,7 +749,7 @@ namespace X13.Periphery {
     }
 
     private void PublishTopic(Perform p, SubRec sb) {
-      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner) {
+      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner || p.src == owner) {
         return;
       }
       if(p.art == Perform.Art.create) {
@@ -773,7 +773,7 @@ namespace X13.Periphery {
         Send(new MsPublish(ti));
       } else if(p.art == Perform.Art.remove) {          // Remove by device
         if(ti.it == TopicIdType.Normal) {
-          Send(new MsRegister(0xFFFF, ti.subIdx));
+          Send(new MsRegister(0xFFFF, ti.tag));
         }
         _topics.Remove(ti);
       }
@@ -863,13 +863,13 @@ namespace X13.Periphery {
         default:
           return;
         }
-        if(ti.subIdx[0] == '.') {
-          if(ti.subIdx == ".MQTT-SN.declarer" && val.ValueType == JSC.JSValueType.String) {
+        if(ti.tag[0] == '.') {
+          if(ti.tag == ".MQTT-SN.tag" && val.ValueType == JSC.JSValueType.String) {
             var v = val.Value as string;
             var type = "MQTT-SN/" + v.Substring(0, v.IndexOf('.'));
             ti.topic.SetField("type", type, owner);
           }
-          ti.topic.SetField(ti.subIdx.Substring(1), val, owner);
+          ti.topic.SetField(ti.tag.Substring(1), val, owner);
         } else {
           if(retained) {
             if(!ti.topic.CheckAttribute(Topic.Attribute.Saved, Topic.Attribute.DB)) {
@@ -1065,7 +1065,7 @@ namespace X13.Periphery {
       public ushort TopicId;
       public TopicIdType it;
       public bool registred;
-      public string subIdx;
+      public string tag;
       public DType dType;
     }
     internal enum DType {
@@ -1126,7 +1126,7 @@ namespace X13.Periphery {
       new Tuple<ushort, string, DType>(0xFF23, ".MQTT-SN.IPRouter",       DType.ByteArray),
       new Tuple<ushort, string, DType>(0xFF24, ".MQTT-SN.IPBroker",       DType.ByteArray),
 
-      new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.declarer",       DType.String),
+      new Tuple<ushort, string, DType>(0xFFC0, ".MQTT-SN.tag",            DType.String),
       new Tuple<ushort, string, DType>(0xFFC1, ".MQTT-SN.phy1_addr",      DType.ByteArray),
       new Tuple<ushort, string, DType>(0xFFC2, ".MQTT-SN.phy2_addr",      DType.ByteArray),
       new Tuple<ushort, string, DType>(0xFFC3, ".MQTT-SN.phy3_addr",      DType.ByteArray),

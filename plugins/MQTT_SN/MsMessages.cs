@@ -467,7 +467,7 @@ namespace X13.Periphery {
     public byte[] Data { get { if(_payload==null) _payload=MsDevice.Serialize(_ti); return _payload; } set { _payload=value; } }
 
     public override string ToString() {
-      return string.Format("MsPublish [{0:X4}.{1:X4}] {2}={3}", TopicId, MessageId, _ti != null ? _ti.subIdx : "msg"
+      return string.Format("MsPublish [{0:X4}.{1:X4}] {2}={3}", TopicId, MessageId, _ti != null ? _ti.tag : "msg"
         , Data==null?"null":(BitConverter.ToString(Data)+"["+ Encoding.ASCII.GetString(Data.Select(z => (z<0x20 || z>0x7E)?(byte)'.':z).ToArray())+"]"));
     }
   }

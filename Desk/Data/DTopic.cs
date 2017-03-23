@@ -42,8 +42,8 @@ namespace X13.Data {
     public JSC.JSValue type { get { return _manifest; } }  // TODO: rename
     public ReadOnlyCollection<DTopic> children { get { return _children == null ? null : _children.AsReadOnly(); } }
 
-    public Task<DTopic> CreateAsync(string name, string manifestStr) {
-      var req = new TopicReq(this, this == Connection.root ? ("/" + name) : (this.path + "/" + name), manifestStr);
+    public Task<DTopic> CreateAsync(string name, JSC.JSValue st, JSC.JSValue manifest) {
+      var req = new TopicReq(this, this == Connection.root ? ("/" + name) : (this.path + "/" + name), st, manifest);
       App.PostMsg(req);
       return req.Task;
     }
@@ -221,7 +221,8 @@ namespace X13.Data {
       private DTopic _cur;
       private string _path;
       private bool _create;
-      private string _manifestStr;
+      private JSC.JSValue _state;
+      private JSC.JSValue _manifest;
       private TaskCompletionSource<DTopic> _tcs;
       private List<TopicReq> _reqs;
 
@@ -231,11 +232,12 @@ namespace X13.Data {
         this._create = false;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
-      public TopicReq(DTopic cur, string path, string manifestStr) {
+      public TopicReq(DTopic cur, string path, JSC.JSValue st, JSC.JSValue manifest) {
         this._cur = cur;
         this._path = path;
         this._create = true;
-        _manifestStr = manifestStr;
+        this._state = st;
+        this._manifest = manifest;
         this._tcs = new TaskCompletionSource<DTopic>();
       }
       public Task<DTopic> Task { get { return _tcs.Task; } }
@@ -308,8 +310,8 @@ namespace X13.Data {
         if(next == null) {
           if(_create) {
             _create = false;
-            if(_path.Length <= idx2 && !string.IsNullOrEmpty(_manifestStr)) {
-              _cur.Connection.SendReq(8, this, _path.Substring(0, idx2), _manifestStr);
+            if(_path.Length <= idx2 && _state!=null) {
+              _cur.Connection.SendReq(8, this, _path.Substring(0, idx2), _state, _manifest);
             } else {
               _cur.Connection.SendReq(8, this, _path.Substring(0, idx2));
             }
@@ -488,5 +490,6 @@ namespace X13.Data {
       addChild,
       RemoveChild,
     }
+
   }
 }
