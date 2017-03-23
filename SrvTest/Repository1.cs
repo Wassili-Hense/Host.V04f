@@ -412,7 +412,7 @@ namespace SrvTest {
       var b = obj["B"];
       Assert.IsTrue(b.Defined);
       var l = obj.ToArray();
-
+      Assert.AreEqual(1, l.Length);
     }
   }
 }

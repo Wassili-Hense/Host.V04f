@@ -41,6 +41,7 @@ namespace X13.Repository {
     public Topic prim { get; internal set; }
     public readonly int layer;
     public Art art { get; internal set; }
+    public string FieldPath { get { return this.art == Art.changedField ? (o as string) : null; } }
 
     private Perform(Art art, Topic src, Topic prim) {
       this.src = src;

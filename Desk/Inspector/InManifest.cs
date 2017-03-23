@@ -33,9 +33,7 @@ namespace X13.UI {
       base.IsGroupHeader = true;
       base.levelPadding = 1;
       base._items = new List<InBase>();
-      this._value = _data.type;
-      UpdateType(_tManifest != null ? _tManifest.value : null);
-      UpdateData(_data.type);
+      UpdateType(_tManifest != null ? _tManifest.value : null, _data.type);
       base._isExpanded = this.HasChildren;
       _data.changed += _data_PropertyChanged;
       _data.GetAsync("/$YS/TYPES/Core/Manifest").ContinueWith(ManifestLoaded, TaskScheduler.FromCurrentSynchronizationContext());
@@ -60,8 +58,7 @@ namespace X13.UI {
       base.IsGroupHeader = false;
       levelPadding = _parent.levelPadding + 8;
       this._value = value;
-      UpdateType(type);
-      UpdateData(value);
+      UpdateType(type, value);
     }
     private InManifest(JSC.JSValue manifest, InManifest parent) {
       _signature = System.Threading.Interlocked.Increment(ref SIGNATURE_CNT);
@@ -74,32 +71,71 @@ namespace X13.UI {
       base._items = new List<InBase>();
       base.IsEdited = true;
     }
-
-    private void UpdateData(JSC.JSValue val) {
+    
+    private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
+      if(art == DTopic.Art.type) {
+        _value = _data.type;
+        UpdateType(_tManifest != null ? _tManifest.value : null, _data.type);
+      }
+    }
+    private void Manifest_changed(DTopic.Art art, DTopic src) {
+      if(art == DTopic.Art.value) {
+        UpdateType(_tManifest != null ? _tManifest.value : null, _value);
+      }
+    }
+    private void SetFieldResp(Task<JSC.JSValue> r) {
+      if(r.IsCompleted) {
+        if(r.IsFaulted) {
+          UpdateType(_tManifest != null ? _tManifest.value : null, value);
+          Log.Warning("{0}.{1} - {2}", _data.fullPath, _path, r.Exception.InnerException);
+        }
+      }
+    }
+    private void UpdateType(JSC.JSValue type, JSC.JSValue val) {
+      {
+        StringBuilder sb = new StringBuilder();
+        sb.Append(this.ToString());
+        sb.Append(" $UpdateType( m{");
+        if(type == null) {
+          sb.Append("null");
+        } else {
+          foreach(var kv in type) {
+            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+          }
+          sb.Append("}");
+          if(type.__proto__.ValueType == JSC.JSValueType.Object && type.__proto__.Any()) {
+            sb.Append(" mp{");
+            foreach(var kv in type.__proto__) {
+              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+            }
+            sb.Append("}");
+          }
+        }
+        if(val!=null && val.ValueType == JSC.JSValueType.Object) {
+          sb.Append(", s{");
+          foreach(var kv in val) {
+            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+          }
+          sb.Append("}");
+          if(val.__proto__.ValueType == JSC.JSValueType.Object && val.__proto__.Any()) {
+            sb.Append(" proto{");
+            foreach(var kv in val.__proto__) {
+              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
+            }
+            sb.Append("}");
+          }
+        } else {
+          sb.Append(", s=" + JSL.JSON.stringify(_value, null, null));
+        }
+        sb.Append(")");
+        Log.Debug("{0}", sb.ToString());
+      }
       _value = val;
+      base.UpdateType(type);
       if(_value.ValueType == JSC.JSValueType.Object) {
         InManifest vc;
         int i;
         JSC.JSValue cs, cs_mi, cs_p;
-        /*{
-          StringBuilder sb = new StringBuilder();
-          sb.Append(this.ToString());
-          sb.Append(".UpdateData( val{");
-          foreach(var kv in _value) {
-            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
-          }
-          sb.Append("}");
-          if(_value.__proto__.ValueType == JSC.JSValueType.Object && _value.__proto__.Any()) {
-            sb.Append(" proto{");
-            foreach(var kv in _value.__proto__) {
-              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
-            }
-            sb.Append("}");
-
-          }
-          sb.Append(")");
-          Log.Debug("{0}", sb.ToString());
-        }*/
         foreach(var kv in _value.OrderBy(z => z.Key)) {
           if(_manifest == null || _manifest.ValueType != JSC.JSValueType.Object || _manifest.Value == null || (cs_mi = _manifest["mi"]).ValueType != JSC.JSValueType.Object || cs_mi.Value == null || (cs = cs_mi[kv.Key]).ValueType != JSC.JSValueType.Object || cs.Value == null) {
             cs = JSC.JSObject.CreateObject();
@@ -114,8 +150,7 @@ namespace X13.UI {
           }
           vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
           if(vc != null) {
-            vc.UpdateType(cs);
-            vc.UpdateData(kv.Value);
+            vc.UpdateType(cs, kv.Value);
           } else {
             var ni = new InManifest(this, kv.Key, kv.Value, cs);
             for(i = _items.Count - 1; i >= 0; i--) {
@@ -139,33 +174,6 @@ namespace X13.UI {
           }
         }
       }
-      if(editor == null) {
-        editor = InspectorForm.GetEditor(_editorName, this, _manifest);
-        PropertyChangedReise("editor");
-      } else {
-        editor.ValueChanged(_value);
-      }
-    }
-    private void _data_PropertyChanged(DTopic.Art art, DTopic child) {
-      if(art == DTopic.Art.type) {
-        _value = _data.type;
-        UpdateType(_tManifest != null ? _tManifest.value : null);
-        UpdateData(_data.type);
-      }
-    }
-    private void Manifest_changed(DTopic.Art art, DTopic src) {
-      if(art == DTopic.Art.value) {
-        UpdateType(_tManifest != null ? _tManifest.value : null);
-        UpdateData(_value);
-      }
-    }
-    private void SetFieldResp(Task<JSC.JSValue> r) {
-      if(r.IsCompleted) {
-        if(r.IsFaulted) {
-          UpdateData(value);
-          Log.Warning("{0}.{1} - {2}", _data.fullPath, _path, r.Exception.InnerException);
-        }
-      }
     }
 
     #region InBase Members
@@ -181,46 +189,6 @@ namespace X13.UI {
         IsEdited = false;
         PropertyChangedReise("IsEdited");
         throw new NotImplementedException("InValue.Move");
-      }
-    }
-    protected override void UpdateType(JSC.JSValue type) {
-      /*{
-        StringBuilder sb = new StringBuilder();
-        sb.Append(this.ToString());
-        sb.Append(".UpdateType( val{");
-        if(type == null) {
-          sb.Append("null");
-        } else {
-          foreach(var kv in type) {
-            sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
-          }
-          sb.Append("}");
-          if(type.__proto__.ValueType == JSC.JSValueType.Object && type.__proto__.Any()) {
-            sb.Append(" proto{");
-            foreach(var kv in type.__proto__) {
-              sb.AppendFormat("{0}:{1},", kv.Key, kv.Value.ValueType == JSC.JSValueType.Object ? "Object" : kv.Value.ToString());
-            }
-            sb.Append("}");
-
-          }
-        }
-        sb.Append(")");
-        Log.Debug("{0}", sb.ToString());
-      }*/
-
-      base.UpdateType(type);
-      if(_manifest != null && _manifest.ValueType == JSC.JSValueType.Object && _manifest.Value != null) {
-        var pr = _manifest["mi"] as JSC.JSValue;
-        if(pr != null) {
-          InManifest vc;
-          foreach(var kv in pr) {
-            vc = _items.OfType<InManifest>().FirstOrDefault(z => z.name == kv.Key);
-            if(vc != null) {
-              vc.UpdateType(kv.Value);
-              vc.UpdateData(vc._value);
-            }
-          }
-        }
       }
     }
     public override bool HasChildren { get { return _items.Any(); } }
@@ -350,7 +318,7 @@ namespace X13.UI {
     #endregion IDisposable Member
 
     public override string ToString() {
-      return /*"/" + _signature.ToString("X4") + "/ " + */(_data != null ? _data.fullPath : "<new>") + "." + _path;
+      return "/" + _signature.ToString("X4") + "/ " + (_data != null ? _data.fullPath : "<new>") + "." + _path;
     }
   }
 }

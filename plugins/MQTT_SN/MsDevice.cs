@@ -25,8 +25,12 @@ namespace X13.Periphery {
 
     public static byte[] Serialize(TopicInfo _ti) {
       var val = _ti.topic.GetState();
+      var dType = _ti.dType;
       //TODO: convert
-      switch(_ti.dType) {
+      return Serialize(val, dType);
+    }
+    private static byte[] Serialize(JSC.JSValue val, DType dType) {
+      switch(dType) {
       case DType.Boolean:
         return ((bool)val) ? _baTrue : _baFalse;
       case DType.Integer: {
@@ -56,7 +60,6 @@ namespace X13.Periphery {
         break;
       }
       return _baEmty;
-      ;
     }
 
     static MsDevice() {
@@ -64,6 +67,7 @@ namespace X13.Periphery {
     }
 
     private List<SubRec> _subsscriptions;
+    private SubRec _srOwner;
     private Queue<MsMessage> _sendQueue; 
     private List<TopicInfo> _topics;     
     private MQTT_SNPl _pl;
@@ -92,6 +96,29 @@ namespace X13.Periphery {
       _topics = new List<TopicInfo>(16);
       _duration = 3000;
       _messageIdGen = 0;
+      _srOwner = this.owner.Subscribe(SubRec.SubMask.Once | SubRec.SubMask.Field, "MQTT-SN", OwnerChanged);
+    }
+
+    private void OwnerChanged(Perform p, SubRec sr) {
+      if(p.art == Perform.Art.remove) {
+        _pl._devs.Remove(this);
+        this.Stop();
+        return;
+      }
+      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner) {
+        return;
+      }
+      if(p.art == Perform.Art.changedField) {
+        var fp = "."+(p.FieldPath??string.Empty);
+        var pt = PredefinedTopics.FirstOrDefault(z => z.Item2 == fp);
+        if(pt == null || pt.Item1 >= 0xFFC0) {
+          return;
+        }
+        var val = owner.GetField(p.FieldPath);
+        if(!val.IsNull) {
+          Send(new MsPublish(pt.Item1, Serialize(val, pt.Item3)));
+        }
+      }
     }
 
     #region IMsGate Members
@@ -124,6 +151,10 @@ namespace X13.Periphery {
       //  Stat(true, MsMessageType.DISCONNECT, false);
       //}
       //state = State.Disconnected;
+      var sr = Interlocked.Exchange(ref _srOwner, null);
+      if(sr != null) {
+        sr.Dispose();
+      }
     }
     #endregion IMsGate Members
 
@@ -1073,7 +1104,7 @@ namespace X13.Periphery {
       new Tuple<ushort, string, DType>(0xFF08, ".MQTT-SN.ADCintegrate",   DType.Integer),
       new Tuple<ushort, string, DType>(0xFF09, ".MQTT-SN.SupressInputs",  DType.ByteArray),
 
-      new Tuple<ushort, string, DType>(0xFF10, ".MQTT-SN.DeviceAddr",     DType.Integer),  // ???
+      new Tuple<ushort, string, DType>(0xFF10, ".MQTT-SN.DeviceAddr",     DType.Integer),
       new Tuple<ushort, string, DType>(0xFF11, ".MQTT-SN.GroupID",        DType.Integer),
       new Tuple<ushort, string, DType>(0xFF12, ".MQTT-SN.Channel",        DType.Integer),
       new Tuple<ushort, string, DType>(0xFF14, ".MQTT-SN.GateId",         DType.Integer),

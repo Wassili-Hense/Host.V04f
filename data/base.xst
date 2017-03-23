@@ -16,7 +16,7 @@
         <i n='Connection' s='{"Children":{},"Fields":{"Address":{"attr":3},"Dns":{"attr":3},"Port":{"attr":3}},"icon":"DeskConnection"}' m='{"attr":5}' />
       </i>
       <i n='MQTT-SN'>
-        <i n='S4Sn10' s='{"editor":"Enum","mi":{"MQTT-SN":{"mi":{"ADCintegrate":{"default":0,"editor":"Integer"},"declarer":{"attr":3},"phy1_addr":{"attr":3}}}}}' m='{"attr":5}' ver='0.4.1703.7005' />
+        <i n='S4Sn10' s='{"editor":"Enum","mi":{"MQTT-SN":{"mi":{"ADCintegrate":{"default":0,"editor":"Integer"},"declarer":{"attr":3},"phy1_addr":{"attr":3}}}}}' m='{"attr":4}' ver='0.4.1703.7005' />
       </i>
     </i>
   </i>
