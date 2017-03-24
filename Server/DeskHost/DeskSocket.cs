@@ -115,7 +115,11 @@ namespace X13.DeskHost {
                   } else {
                     _rcvState = 0;
                     if(_rcvLength >= _rcvMsgBuf.Length) {
-                      _rcvMsgBuf = new byte[_rcvMsgBuf.Length * 2];
+                      int l = _rcvMsgBuf.Length;
+                      while(l < _rcvLength) {
+                        l = l * 2;
+                      }
+                      _rcvMsgBuf = new byte[l];
                     }
                   }
                 }
