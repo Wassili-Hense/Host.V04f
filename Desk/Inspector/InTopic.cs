@@ -238,41 +238,41 @@ namespace X13.UI {
         l.Add(new Separator());
       }
       MenuItem ma = new MenuItem() { Header = "Add" };
+      KeyValuePair<string, JSC.JSValue>[] _acts;
       if(_manifest != null && (v1 = _manifest["Children"]).ValueType == JSC.JSValueType.Object) {
-        foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
-          if(_items!=null && _items.Any(z => (v2 = kv.Value["name"]).ValueType == JSC.JSValueType.String && z.name == v2.Value as string)) {
-            continue;
-          }
+        _acts = v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object && z.Value["default"].Defined).ToArray();
+      } else if(_owner.Connection.TypeManifest != null) {
+        _acts = _owner.Connection.TypeManifest.parent.children.Where(z => z.value.ValueType == JSC.JSValueType.Object && z.value.Value != null && z.value["default"].Defined)
+          .Select(z => new KeyValuePair<string, JSC.JSValue>(z.name, z.value)).ToArray();
+      } else {
+        _acts = null;
+      }
+      if(_acts != null && _acts.Length>0) {
+        foreach(var kv in _acts) {
           // TODO: check resources
           mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
           if((v2 = kv.Value["icon"]).ValueType == JSC.JSValueType.String) {
-            mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
+            mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string), Height = 16, Width = 16 };
           } else {
-            mi.Icon = new Image() { Source = App.GetIcon(kv.Key) };
+            mi.Icon = new Image() { Source = App.GetIcon(kv.Key), Height = 16, Width = 16 };
+          }
+          if((v2 = kv.Value["info"]).ValueType == JSC.JSValueType.String) {
+            mi.ToolTip = v2.Value;
           }
           mi.Click += miAdd_Click;
-          ma.Items.Add(mi);
-        }
-      } else {
-        if(_owner.Connection.TypeManifest != null) {
-          foreach(var t in _owner.Connection.TypeManifest.parent.children) {
-            if(t.name == "Manifest" || (v1 = t.value).ValueType != JSC.JSValueType.Object || v1.Value == null) {
-              continue;
-            }
-            mi = new MenuItem() { Header = t.name, Tag = v1 };
-            if((v2 = v1["icon"]).ValueType == JSC.JSValueType.String) {
-              mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string) };
-            } else {
-              mi.Icon = new Image() { Source = App.GetIcon(t.name) };
-            }
-            mi.Click += miAdd_Click;
+          if((v2 = kv.Value["menu"]).ValueType == JSC.JSValueType.String && kv.Value.Value != null) {
+            AddSubMenu(ma, v2.Value as string, mi);
+          } else {
             ma.Items.Add(mi);
-
           }
         }
       }
       if(ma.HasItems) {
-        l.Add(ma);
+        if(ma.Items.Count < 5) {
+          l.AddRange(ma.Items.SourceCollection.OfType<System.Windows.Controls.Control>());
+        } else {
+          l.Add(ma);
+        }
         l.Add(new Separator());
       }
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
@@ -285,6 +285,21 @@ namespace X13.UI {
         l.Add(mi);
       }
       return l;
+    }
+
+    private void AddSubMenu(MenuItem ma, string prefix, MenuItem mi) {
+      MenuItem mm = ma, mn;
+      string[] lvls = prefix.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+      for(int j = 0; j < lvls.Length; j++) {
+        mn = mm.Items.OfType<MenuItem>().FirstOrDefault(z=>z.Header as string == lvls[j]);
+        if(mn == null) {
+          mn = new MenuItem();
+          mn.Header = lvls[j];
+          mm.Items.Add(mn);
+        }
+        mm = mn;
+      }
+      mm.Items.Add(mi);
     }
 
     private void miAdd_Click(object sender, System.Windows.RoutedEventArgs e) {

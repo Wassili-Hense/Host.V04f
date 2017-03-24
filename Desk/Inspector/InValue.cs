@@ -207,7 +207,7 @@ namespace X13.UI {
       if(!base.IsReadonly && _value.ValueType == JSC.JSValueType.Object) {
         MenuItem ma = new MenuItem() { Header = "Add" };
         if(_manifest != null && (v1 = _manifest["Fields"]).ValueType == JSC.JSValueType.Object) {
-          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object)) {
+          foreach(var kv in v1.Where(z => z.Value != null && z.Value.ValueType == JSC.JSValueType.Object && z.Value["default"].Defined)) {
             if(_items.Any(z => z.name == kv.Key)) {
               continue;
             }
