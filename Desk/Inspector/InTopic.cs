@@ -247,9 +247,54 @@ namespace X13.UI {
       } else {
         _acts = null;
       }
-      if(_acts != null && _acts.Length>0) {
+      if(_acts != null && _acts.Length > 0) {
+        List<RcUse> resource = new List<RcUse>();
+        string rName;
+        JSC.JSValue tmp1;
+        KeyValuePair<string, JSC.JSValue> rca;
+        string rcs;
+        // fill used resources
+        if(_owner.children != null) {
+          foreach(var ch in _owner.children) {
+            if((tmp1 = JsLib.GetField(ch.type, "MQTT-SN.tag")).ValueType != JSC.JSValueType.String || string.IsNullOrEmpty(rName = tmp1.Value as string)) {
+              rName = ch.name;
+            }
+            rca = _acts.FirstOrDefault(z => z.Key == rName);
+            if(rca.Value == null || (tmp1 = rca.Value["rc"]).ValueType != JSC.JSValueType.String || string.IsNullOrEmpty(rcs = tmp1.Value as string)) {
+              continue;
+            }
+            foreach(string curRC in rcs.Split(',').Where(z => !string.IsNullOrWhiteSpace(z) && z.Length > 1)) {
+              int pos;
+              if(!int.TryParse(curRC.Substring(1), out pos)) {
+                continue;
+              }
+              for(int i = pos - resource.Count; i >= 0; i--) {
+                resource.Add(RcUse.None);
+              }
+              if(curRC[0] != (char)RcUse.None && (curRC[0] != (char)RcUse.Shared || resource[pos] != RcUse.None)) {
+                resource[pos] = (RcUse)curRC[0];
+              }
+            }
+          }
+        }
+        // Add menuitems
         foreach(var kv in _acts) {
-          // TODO: check resources
+          bool busy = false;
+          if((tmp1 = kv.Value["rc"]).ValueType == JSC.JSValueType.String && !string.IsNullOrEmpty(rcs = tmp1.Value as string)) { // check used resources
+            foreach(string curRC in rcs.Split(',').Where(z => !string.IsNullOrWhiteSpace(z) && z.Length > 1)) {
+              int pos;
+              if(!int.TryParse(curRC.Substring(1), out pos)) {
+                continue;
+              }
+              if(pos < resource.Count && ((curRC[0] == (char)RcUse.Exclusive && resource[pos] != RcUse.None) || (curRC[0] == (char)RcUse.Shared && resource[pos] != RcUse.None && resource[pos] != RcUse.Shared))) {
+                busy = true;
+                break;
+              }
+            }
+          }
+          if(busy) {
+            continue;
+          }
           mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
           if((v2 = kv.Value["icon"]).ValueType == JSC.JSValueType.String) {
             mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string), Height = 16, Width = 16 };
@@ -291,7 +336,7 @@ namespace X13.UI {
       MenuItem mm = ma, mn;
       string[] lvls = prefix.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
       for(int j = 0; j < lvls.Length; j++) {
-        mn = mm.Items.OfType<MenuItem>().FirstOrDefault(z=>z.Header as string == lvls[j]);
+        mn = mm.Items.OfType<MenuItem>().FirstOrDefault(z => z.Header as string == lvls[j]);
         if(mn == null) {
           mn = new MenuItem();
           mn.Header = lvls[j];
@@ -351,6 +396,13 @@ namespace X13.UI {
         //img.Source = App.GetIcon(td.Result.GetField<string>("icon"));
       }
     }
+    private enum RcUse : ushort {
+      None = '0',
+      Baned = 'B',
+      Shared = 'S',
+      Exclusive = 'X',
+    }
+
     #endregion ContextMenu
 
     #region IComparable<InBase> Members

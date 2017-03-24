@@ -64,6 +64,24 @@ namespace X13 {
         p[ps[ps.Length - 1]] = val;
       }
     }
+    public static JSC.JSValue GetField(JSC.JSValue obj, string path) {
+      if(obj == null) {
+        return JSC.JSValue.NotExists;
+      }
+      if(string.IsNullOrEmpty(path)) {
+        return obj;
+      }
+      var ps = path.Split(SPLITTER_OBJ, StringSplitOptions.RemoveEmptyEntries);
+      JSC.JSValue p = obj, c=null;
+      for(int i = 0; i < ps.Length - 1; i++) {
+        if(obj.ValueType != JSC.JSValueType.Object || obj.Value == null) {
+          return JSC.JSValue.NotExists;
+        }
+        c = p.GetProperty(ps[i]);
+        p = c;
+      }
+      return c;
+    }
     public static JSC.JSValue Clone(JSC.JSValue org) {
       if(org==null || !org.Defined) {
         return org;
