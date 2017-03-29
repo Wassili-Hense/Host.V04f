@@ -193,6 +193,9 @@ namespace X13.UI {
         }
       }
     }
+    public override DTopic Root {
+      get { return _data.Connection.root; }
+    }
     public override int CompareTo(InBase other) {
       var o = other as InValue;
       return o == null ? -1 : this._path.CompareTo(o._path);

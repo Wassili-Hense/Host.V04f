@@ -30,6 +30,7 @@ namespace X13.UI {
       _editors["ByteArray"] = veByteArray.Create;
       _editors["Double"] = veDouble.Create;
       _editors["Editor"] = veEditor.Create;
+      _editors["Enum"] = veEnum.Create;
       _editors["Integer"] = veInteger.Create;
       _editors["Hexadecimal"] = veHexadecimal.Create;
       _editors["String"] = veString.Create;

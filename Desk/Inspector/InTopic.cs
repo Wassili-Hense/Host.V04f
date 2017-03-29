@@ -73,6 +73,9 @@ namespace X13.UI {
       }
     }
     public override JSC.JSValue value { get { return _owner != null ? _owner.value : JSC.JSValue.NotExists; } set { if(_owner != null) { _owner.SetValue(value); } } }
+    public override DTopic Root {
+      get { return _owner.Connection.root; }
+    }
     public override void FinishNameEdit(string name) {
       if(_owner == null) {
         _parent._items.Remove(this);
@@ -295,7 +298,7 @@ namespace X13.UI {
           if(busy) {
             continue;
           }
-          mi = new MenuItem() { Header = kv.Key, Tag = kv.Value };
+          mi = new MenuItem() { Header = kv.Key.Replace("_", "__"), Tag = kv.Value };
           if((v2 = kv.Value["icon"]).ValueType == JSC.JSValueType.String) {
             mi.Icon = new Image() { Source = App.GetIcon(v2.Value as string), Height = 16, Width = 16 };
           } else {
@@ -372,7 +375,7 @@ namespace X13.UI {
           _items.Insert(0, ni);
           _collFunc(ni, true);
         } else {
-          _owner.CreateAsync(mi.Header as string, tag["default"], tag["manifest"]);
+          _owner.CreateAsync((mi.Header as string).Replace("__", "_"), tag["default"], tag["manifest"]);
         }
       }
       if(pc_items) {

@@ -22,7 +22,6 @@ namespace X13.UI {
     protected List<InBase> _items;
     protected Action<InBase, bool> _collFunc;
 
-
     public double levelPadding { get; protected set; }
     public virtual bool IsExpanded {
       get {
@@ -42,6 +41,7 @@ namespace X13.UI {
     }
 
     public abstract bool HasChildren { get; }
+    public abstract DTopic Root { get; }
     public bool IsVisible {
       get { return _isVisible; }
       set {

@@ -203,6 +203,9 @@ namespace X13.UI {
         _data.SetField(_path, value).ContinueWith(SetFieldResp, TaskScheduler.FromCurrentSynchronizationContext());
       }
     }
+    public override DTopic Root {
+      get { return _data.Connection.root; }
+    }
     public override int CompareTo(InBase other) {
       var o = other as InManifest;
       if(o == null) {

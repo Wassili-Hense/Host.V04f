@@ -518,9 +518,7 @@ namespace X13.Periphery {
               var cm = fm.msg as MsConnect;
               MsDevice dev = _pl._devs.FirstOrDefault(z => z.owner != null && z.owner.name == cm.ClientId);
               if(dev == null) {
-                var td = Topic.root.Get("/vacant/" + cm.ClientId, true, owner);
-                td.SetAttribute(Topic.Attribute.DB);
-                dev = new MsDevice(_pl, td);
+                dev = new MsDevice(_pl, Topic.root.Get("/vacant/" + cm.ClientId, true, owner));
                 _pl._devs.Add(dev);
               }
               dev._gate = this;
@@ -749,7 +747,7 @@ namespace X13.Periphery {
     }
 
     private void PublishTopic(Perform p, SubRec sb) {
-      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || p.prim == owner || p.src == owner) {
+      if(!(state == State.Connected || state == State.ASleep || state == State.AWake) || (p.prim == owner && p.art!=Perform.Art.subscribe) || p.src == owner) {
         return;
       }
       if(p.art == Perform.Art.create) {
@@ -763,13 +761,13 @@ namespace X13.Periphery {
           break;
         }
       }
-      if(ti == null && p.art == Perform.Art.changedState) {
+      if(ti == null && (p.art == Perform.Art.changedState || p.art==Perform.Art.subscribe)) {
         ti = GetTopicInfo(p.src, true);
       }
       if(ti == null || ti.TopicId >= 0xFFC0 || !ti.registred) {
         return;
       }
-      if(p.art == Perform.Art.changedState) {
+      if((p.art == Perform.Art.changedState || p.art == Perform.Art.subscribe)) {
         Send(new MsPublish(ti));
       } else if(p.art == Perform.Art.remove) {          // Remove by device
         if(ti.it == TopicIdType.Normal) {

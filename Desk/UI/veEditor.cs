@@ -24,7 +24,6 @@ namespace X13.UI {
       base.Padding = new System.Windows.Thickness(10, 0, 10, 0);
       base.MinWidth = 90;
       base.GotFocus += ve_GotFocus;
-      base.LostFocus += ve_LostFocus;
       ValueChanged(_owner.value);
       TypeChanged(manifest);
       base.SelectionChanged += ve_SelectionChanged;
@@ -37,9 +36,6 @@ namespace X13.UI {
     }
     private void ve_GotFocus(object sender, System.Windows.RoutedEventArgs e) {
       _owner.GotFocus(sender, e);
-    }
-    private void ve_LostFocus(object sender, System.Windows.RoutedEventArgs e) {
-      Publish();
     }
     private void Publish() {
       string ov = _owner.value.Value as string;

@@ -121,6 +121,7 @@
       <DependentUpon>LogView.xaml</DependentUpon>
     </Compile>
     <Compile Include="UI\veByteArray.cs" />
+    <Compile Include="UI\veEnum.cs" />
     <Compile Include="UI\veHexadecimal.cs" />
     <Compile Include="UI\veEditor.cs" />
     <Compile Include="UI\veVersion.cs" />
