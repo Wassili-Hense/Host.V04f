@@ -20,6 +20,7 @@ namespace X13.Periphery {
     private int _scanBusy;
     private Topic _verbose;
     private Random _rand;
+    private SubRec _subMs;
 
     internal AutoResetEvent _startScan;
     internal List<IMsGate> _gates;
@@ -55,7 +56,7 @@ namespace X13.Periphery {
       //  man.SetState(manJ);
       //  _owner.SetField("version", "¤VR" + verC.ToString());
       //}
-      Topic.root.Subscribe(SubRec.SubMask.Field | SubRec.SubMask.All, "MQTT-SN.phy1_addr", SubFunc);
+      _subMs = Topic.root.Subscribe(SubRec.SubMask.Field | SubRec.SubMask.All, "MQTT-SN.phy1_addr", SubFunc);
     }
 
     public void Tick() {
@@ -65,6 +66,10 @@ namespace X13.Periphery {
     }
 
     public void Stop() {
+      var sr = Interlocked.Exchange(ref _subMs, null);
+      if(sr != null) {
+        sr.Dispose();
+      }
     }
 
     public bool enabled {

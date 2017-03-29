@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B8C22288-5608-46DA-939D-000D9D52492C}</ProjectGuid>
+    <ProjectGuid>{3A15F115-682E-474F-B682-F4A9E8B7DB9D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>X13.Periphery</RootNamespace>
-    <AssemblyName>MQTT_SN</AssemblyName>
+    <RootNamespace>MQTT</RootNamespace>
+    <AssemblyName>MQTT</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,7 +20,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,11 +28,10 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="NiL.JS, Version=2.4.1027.0, Culture=neutral, PublicKeyToken=f1426dd7ad77fce3, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\NiL.JS.2.4.1027.0\lib\net40\NiL.JS.dll</HintPath>
+      <HintPath>..\packages\NiL.JS.2.4.1027.0\lib\net40\NiL.JS.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -50,33 +47,21 @@
     <Compile Include="..\..\Server\Properties\VersionInfo.cs">
       <Link>Properties\VersionInfo.cs</Link>
     </Compile>
-    <Compile Include="Crc16.cs" />
-    <Compile Include="IMsGate.cs" />
-    <Compile Include="MQTT_SNPl.cs" />
-    <Compile Include="MsDevice.cs" />
-    <Compile Include="MsGSerial.cs" />
-    <Compile Include="MsMessages.cs" />
+    <Compile Include="MqClient.cs" />
+    <Compile Include="MqMessages.cs" />
+    <Compile Include="MqSite.cs" />
+    <Compile Include="MqStreamer.cs" />
+    <Compile Include="MQTTPl.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Server\Server.csproj">
       <Project>{b405def9-326f-4b01-b5fa-584ce7b5a513}</Project>
       <Name>Server</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
