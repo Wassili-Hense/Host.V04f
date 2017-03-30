@@ -415,6 +415,10 @@ namespace X13.MQTT {
     //  DataSource=topic;
     //  this.Retained=DataSource.saved;
     //}
+    public MqPublish(string path, string payload):base(MessageType.PUBLISH) {
+      _path = path;
+      _payload = payload;
+    }
     public MqPublish(byte header, uint len, Stream str)
       : base(header, len, str) {
       uint payloadLen = base.variableHeaderLength;
@@ -469,7 +473,7 @@ namespace X13.MQTT {
       //}
     }
     public override string ToString() {
-      return string.Format("{0} - {1}{2}[{3}] {4},{5:X4}", MessageType.PUBLISH, this.Retained?"*":".", Path, Payload, this.QualityOfService, this.MessageID);
+      return string.Format("{0} {1} {2}[{3}] {4},{5:X4}", MessageType.PUBLISH, this.Retained?"+":"-", Path, Payload, this.QualityOfService, this.MessageID);
     }
   }
 

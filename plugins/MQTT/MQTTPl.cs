@@ -45,11 +45,8 @@ namespace X13.MQTT {
         sr.Dispose();
       }
       int i;
-      for(i = _sites.Count - 1; i >= 0; i--) {
-        _sites[i].Disconnect();
-      }
       for(i = _clients.Count - 1; i >= 0; i--) {
-        _clients[i].Close();
+        _clients[i].Dispose();
       }
     }
     public bool enabled {
@@ -83,7 +80,7 @@ namespace X13.MQTT {
       MqClient client, oc;
       if(ms != null) {
         oc = ms.Client;
-        ms.Disconnect();
+        ms.Dispose();
         _sites.Remove(ms);
       } else {
         oc=null;
@@ -116,11 +113,10 @@ namespace X13.MQTT {
           client = new MqClient(this, uUri.DnsSafeHost, uUri.IsDefaultPort?1883:uUri.Port, uName, uPass);
           _clients.Add(client);
         }
-        ms = new MqSite(this, client, p.src, uUri);
-        _sites.Add(ms);
+        _sites.Add( new MqSite(this, client, p.src, uUri));
       }
       if(oc != null && oc.Sites.Count == 0) {
-        oc.Close();
+        oc.Dispose();
         _clients.Remove(oc);
       }
     }

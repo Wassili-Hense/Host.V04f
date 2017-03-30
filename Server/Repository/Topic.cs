@@ -146,7 +146,7 @@ namespace X13.Repository {
     }
 
     public JSValue GetState() {
-      return _state;
+      return _state??JSValue.Null;
     }
     public void SetState(JSValue val, Topic prim = null) {
       var c = Perform.Create(this, val, prim);
@@ -163,7 +163,7 @@ namespace X13.Repository {
       var ps = fPath.Split(Bill.delmiterObj, StringSplitOptions.RemoveEmptyEntries);
       JSValue val = _manifest;
       for(int i = 0; i < ps.Length; i++) {
-        if(val.ValueType != JSValueType.Object) {
+        if(val.ValueType != JSValueType.Object || val.Value == null) {
           return JSValue.Undefined;
         }
         val = val.GetProperty(ps[i]);
