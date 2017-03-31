@@ -245,15 +245,20 @@ namespace X13.Periphery {
       this.Dispose();
     }
     private void Dispose() {
-      try {
-        if(_port != null && _port.IsOpen) {
-          _port.Close();
+      var p = Interlocked.Exchange(ref _port, null);
+      if(p != null) {
+        try {
+          if(p.IsOpen) {
+            p.Close();
+          }
+        }
+
+        catch(Exception) {
         }
       }
-      catch(Exception) {
+      lock(_pl._gates) {
+        _pl._gates.Remove(this);
       }
-      _port = null;
-      _pl._gates.Remove(this);
     }
   }
 }

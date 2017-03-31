@@ -25,8 +25,6 @@ namespace X13.DeskHost {
       this._subCBt = new Action<Perform, SubRec>(TopicChanged);
       this._subCBc = new Action<Perform, SubRec>(ChildChanged);
       this._subscriptions = new List<Tuple<SubRec, DeskMessage>>();
-      base.verbose = true;
-
       // Hello
       var arr = new JSL.Array(2);
       arr[0] = 1;
@@ -45,12 +43,14 @@ namespace X13.DeskHost {
         v["Port"] = EndPoint.Port;
         v["Dns"] = h.HostName;
         _owner.SetState(v, _owner);
+        Log.Info("{0} connected from {1}[{2}]:{3}", _owner.path, h.HostName, EndPoint.Address.ToString(), EndPoint.Port);
       }
       catch(SocketException) {
         var v = JSC.JSObject.CreateObject();
         v["Address"] = EndPoint.Address.ToString();
         v["Port"] = EndPoint.Port;
         _owner.SetState(v, _owner);
+        Log.Info("{0} connected from {1}:{2}", _owner.path, EndPoint.Address.ToString(), EndPoint.Port);
       }
     }
     private void RcvMsg(DeskMessage msg) {
@@ -97,7 +97,16 @@ namespace X13.DeskHost {
         }
       }
       catch(Exception ex) {
-        Log.Warning("{0} - {1}", msg, ex);
+        if(_basePl.verbose) {
+          Log.Warning("{0} - {1}", msg, ex);
+        }
+      }
+    }
+    public override bool verbose {
+      get {
+        return _basePl.verbose;
+      }
+      set {
       }
     }
 
@@ -108,7 +117,9 @@ namespace X13.DeskHost {
     /// </param>
     private void Subscribe(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || !msg[3].IsNumber) {
-        Log.Warning("Syntax error: {0}", msg);
+        if(_basePl.verbose) {
+          Log.Warning("Syntax error: {0}", msg);
+        }
         return;
       }
       Topic parent = Topic.root.Get(msg[2].Value as string, false, _owner);
@@ -130,7 +141,9 @@ namespace X13.DeskHost {
     /// </param> 
     private void SetState(DeskMessage msg) {
       if(msg.Count != 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
-        Log.Warning("Syntax error: {0}", msg);
+        if(_basePl.verbose) {
+          Log.Warning("Syntax error: {0}", msg);
+        }
         return;
       }
       string path = msg[2].Value as string;
@@ -150,7 +163,9 @@ namespace X13.DeskHost {
     /// </param> 
     private void SetField(DeskMessage msg) {
       if(msg.Count != 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String) {
-        Log.Warning("Syntax error: {0}", msg);
+        if(_basePl.verbose) {
+          Log.Warning("Syntax error: {0}", msg);
+        }
         return;
       }
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
@@ -170,7 +185,9 @@ namespace X13.DeskHost {
     /// </param>
     private void Create(DeskMessage msg) {
       if(msg.Count < 4 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
-        Log.Warning("Syntax error: {0}", msg);
+        if(_basePl.verbose) {
+          Log.Warning("Syntax error: {0}", msg);
+        }
         return;
       }
       var s = msg[3];
@@ -188,7 +205,9 @@ namespace X13.DeskHost {
     private void Move(DeskMessage msg) {
       if(msg.Count < 5 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String || msg[3].ValueType != JSC.JSValueType.String
         || (msg.Count > 5 && msg[4].ValueType != JSC.JSValueType.String)) {
-        Log.Warning("Syntax error: {0}", msg);
+          if(_basePl.verbose) {
+            Log.Warning("Syntax error: {0}", msg);
+          }
         return;
       }
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
@@ -204,7 +223,9 @@ namespace X13.DeskHost {
     /// </param>
     private void Remove(DeskMessage msg) {
       if(msg.Count != 3 || !msg[1].IsNumber || msg[2].ValueType != JSC.JSValueType.String) {
-        Log.Warning("Syntax error: {0}", msg);
+        if(_basePl.verbose) {
+          Log.Warning("Syntax error: {0}", msg);
+        }
         return;
       }
       Topic t = Topic.root.Get(msg[2].Value as string, false, _owner);
@@ -252,9 +273,6 @@ namespace X13.DeskHost {
           _subscriptions.RemoveAll(z => z.Item1.setTopic == p.src);
         }
         break;
-      default:
-        Log.Debug("Desk.Sub = {0}", p);
-        break;
       }
     }
     private void TopicChanged(Perform p, SubRec sb) {
@@ -291,9 +309,6 @@ namespace X13.DeskHost {
       case Perform.Art.subAck:
       case Perform.Art.move:
       case Perform.Art.remove:
-        break;
-      default:
-        Log.Debug("Desk.Sub = {0}", p);
         break;
       }
     }

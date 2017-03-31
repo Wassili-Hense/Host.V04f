@@ -43,7 +43,11 @@ namespace X13.Periphery {
       _verbose = _owner.Get("verbose");
       if(_verbose.GetState().ValueType != JSC.JSValueType.Boolean) {
         _verbose.SetAttribute(Topic.Attribute.Required | Topic.Attribute.DB);
+#if DEBUG
         _verbose.SetState(true);
+#else
+        _verbose.SetState(false);
+#endif
       }
       //var verV = _owner.GetField("ver");
       //string verS;
@@ -69,6 +73,13 @@ namespace X13.Periphery {
       var sr = Interlocked.Exchange(ref _subMs, null);
       if(sr != null) {
         sr.Dispose();
+      }
+      foreach(var g in _gates.ToArray()) {
+        try {
+          g.Stop();
+        }
+        catch(Exception) {
+        }
       }
     }
 
@@ -105,6 +116,7 @@ namespace X13.Periphery {
           }
         }
       } else if(p.art == Perform.Art.subAck) {
+        _gates.Add(new MsGUdp(this));
         ThreadPool.RegisterWaitForSingleObject(_startScan, ScanPorts, null, 45000, false);
         _scanBusy = 1;
         _startScan.Set();

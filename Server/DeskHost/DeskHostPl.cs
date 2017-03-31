@@ -18,6 +18,8 @@ namespace X13.DeskHost {
     private TcpListener _tcp;
     private System.Collections.Concurrent.ConcurrentBag<DeskConnection> _connections;
     private System.Collections.Concurrent.ConcurrentBag<DeskMessage> _msgs;
+    private Topic _owner;
+    private Topic _verbose;
 
     private void Connect(IAsyncResult ar) {
       try {
@@ -34,23 +36,38 @@ namespace X13.DeskHost {
       }
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
-
     internal void AddRMsg(DeskMessage msg) {
       _msgs.Add(msg);
     }
-
     #endregion internal Members
+
     public DeskHostPl() {
       _connections = new System.Collections.Concurrent.ConcurrentBag<DeskConnection>();
       _msgs = new System.Collections.Concurrent.ConcurrentBag<DeskMessage>();
     }
 
+    public bool verbose {
+      get {
+        return _verbose != null && (bool)_verbose.GetState();
+      }
+    }
     #region IPlugModul Members
     public void Init() {
       _tcp = new TcpListener(IPAddress.Any, 10013);
       _tcp.Start();
     }
     public void Start() {
+      _owner = Topic.root.Get("/$YS/Desk");
+      _verbose = _owner.Get("verbose");
+      if(_verbose.GetState().ValueType != JSC.JSValueType.Boolean) {
+        _verbose.SetAttribute(Topic.Attribute.Required | Topic.Attribute.DB);
+#if DEBUG
+        _verbose.SetState(true);
+#else
+        _verbose.SetState(false);
+#endif
+      }
+
       _tcp.BeginAcceptTcpClient(new AsyncCallback(Connect), null);
     }
     public void Tick() {
@@ -66,7 +83,9 @@ namespace X13.DeskHost {
           }
         }
         catch(Exception ex) {
-          Log.Warning("{0} - {1}", msg, ex);
+          if(verbose) {
+            Log.Warning("{0} - {1}", msg, ex);
+          }
         }
       }
     }

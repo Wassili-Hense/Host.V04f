@@ -64,7 +64,7 @@ namespace X13.MQTT {
     }
 
     private void Changed(Perform p, SubRec sr) {
-      if(p.art == Perform.Art.subscribe || (p.art == Perform.Art.changedState && p.prim != Owner)) {
+      if(p.art == Perform.Art.subscribe || ((p.art == Perform.Art.changedState || p.art==Perform.Art.create) && p.prim != Owner)) {
         var rp = remotePrefix + p.src.path.Substring(Owner.path.Length);
         var payload = JSL.JSON.stringify(p.src.GetState() ?? JSC.JSValue.Null, null, null);
         if(!string.IsNullOrEmpty(rp) && payload != null) {

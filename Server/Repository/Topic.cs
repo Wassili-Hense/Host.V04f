@@ -171,7 +171,7 @@ namespace X13.Repository {
       return val;
     }
     public bool TrySetField(string fPath, JSValue value, Topic prim) {
-      if(string.IsNullOrEmpty(fPath) || fPath == "_id" || fPath == "p" || fPath == "$PS.ver") {
+      if(string.IsNullOrEmpty(fPath)) {
         return false;
       }
       var c = Perform.Create(this, fPath, value, prim);
@@ -180,7 +180,7 @@ namespace X13.Repository {
     }
     public void SetField(string fPath, JSValue value, Topic prim = null) {
       if(!TrySetField(fPath, value, prim)) {
-        throw new FieldAccessException(fPath);
+        throw new ArgumentNullException("fPath");
       }
     }
 

@@ -42,7 +42,11 @@ namespace X13.Data {
         var tcp = new TcpClient();
         tcp.Connect(server, port);
         _socket = new DeskHost.DeskSocket(tcp, onRecv);
+#if DEBUG
         _socket.verbose = true;
+#else
+        _socket.verbose = false;
+#endif
       }
       catch(Exception ex) {
         Log.Warning("{0}.Connect - {1}", this.ToString(), ex.Message);

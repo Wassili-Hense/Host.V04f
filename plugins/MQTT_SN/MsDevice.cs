@@ -1104,6 +1104,7 @@ namespace X13.Periphery {
       //new Tuple<string, DType>("pa", typeof(DevicePLC)),    // Program
       //new Tuple<string, DType>("sa", typeof(SmartTwi)),    // Smart TWI
       new Tuple<string, DType>("pa", DType.ByteArray),    // Program
+      new Tuple<string, DType>("Ta", DType.ByteArray),    // Twi
 
     };
     private static Tuple<ushort, string, DType>[] PredefinedTopics = new Tuple<ushort, string, DType>[]{

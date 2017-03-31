@@ -56,7 +56,9 @@ namespace X13.DeskHost {
       }
       buf[buf.Length - 1] = 0xFF;
       this._stream.Write(buf, 0, buf.Length);
-      Log.Debug("{0}.Send({1})", this.ToString(), ms);
+      if(verbose) {
+        Log.Debug("{0}.Send({1})", this.ToString(), ms);
+      }
     }
     private void Dispose(bool info) {
       if(Interlocked.Exchange(ref _connected, 0) != 0) {
@@ -77,7 +79,7 @@ namespace X13.DeskHost {
       var rep=(IPEndPoint)_socket.Client.RemoteEndPoint;
       return Convert.ToBase64String(rep.Address.GetAddressBytes().Union(BitConverter.GetBytes((ushort)rep.Port)).ToArray()).TrimEnd('=').Replace('/', '*');
     }
-    public bool verbose;
+    public virtual bool verbose { get; set; }
     private void RcvProcess(IAsyncResult ar) {
       bool first = true;
       int len;
