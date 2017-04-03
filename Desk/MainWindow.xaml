@@ -80,10 +80,10 @@
         </Grid.ColumnDefinitions>
         <Image x:Name="AppIcon" Grid.Column="0" 
                    HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo64.ico" />
-        <Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+        <!--Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click">
           <Image Source="/Desk;component/Images/newDoc.png" Width="24" Height="22" />
-        </Button>
+        </Button-->
         <TextBlock x:Name="Caption" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Desk" />
         <Button Name="buConfig" Grid.Column="3" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left" Click="buConfig_Click">
