@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>X13</RootNamespace>
-    <AssemblyName>Server</AssemblyName>
+    <AssemblyName>server</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -75,10 +75,10 @@
     <Compile Include="Repository\Repo.cs" />
     <Compile Include="Repository\SubRec.cs" />
     <Compile Include="Repository\Topic.cs" />
-    <Compile Include="Svc\HAServer.cs">
+    <Compile Include="HAServer.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Svc\HAServer.Designer.cs">
+    <Compile Include="HAServer.Designer.cs">
       <DependentUpon>HAServer.cs</DependentUpon>
     </Compile>
     <Compile Include="Log.cs" />
@@ -100,7 +100,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Svc\HAServer.resx">
+    <EmbeddedResource Include="HAServer.resx">
       <DependentUpon>HAServer.cs</DependentUpon>
       <SubType>Designer</SubType>
     </EmbeddedResource>

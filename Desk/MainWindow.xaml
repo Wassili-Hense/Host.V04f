@@ -9,7 +9,7 @@
 		xmlns:at="clr-namespace:Xceed.Wpf.AvalonDock.Themes;assembly=Xceed.Wpf.AvalonDock.Themes.Aero"
 		TextOptions.TextRenderingMode="ClearType" TextOptions.TextFormattingMode="Display" FontFamily="Arial" FontSize="14"
         Background="{DynamicResource {x:Static at:AeroColors.BaseColor15Key}}"
-        Title="X13.Desk" Icon="logo64.ico" Closed="Window_Closed" Loaded="Window_Loaded">
+        Title="X13.Desk" Icon="logo32.ico" Closed="Window_Closed" Loaded="Window_Loaded">
   <Window.Style>
     <Style TargetType="Window">
       <Setter Property="WindowChrome.WindowChrome">
@@ -79,7 +79,7 @@
           <ColumnDefinition Width="38"/>
         </Grid.ColumnDefinitions>
         <Image x:Name="AppIcon" Grid.Column="0" 
-                   HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo64.ico" />
+                   HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo32.ico" />
         <!--Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click">
           <Image Source="/Desk;component/Images/newDoc.png" Width="24" Height="22" />
@@ -149,7 +149,7 @@
         </xcad:DockingManager.Theme>
         <xcad:DockingManager.DocumentHeaderTemplate>
           <DataTemplate>
-            <Grid MaxWidth="140">
+            <Grid MaxWidth="180">
               <TextBlock Text="{Binding Title}" FontFamily="Consolas" FontSize="12" />
             </Grid>
           </DataTemplate>

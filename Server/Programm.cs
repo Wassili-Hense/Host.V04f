@@ -37,6 +37,7 @@ namespace X13 {
         }
       }
       Directory.SetCurrentDirectory(path);
+      Log.Debug("{0} {1} f={2}, i={3}", name, string.Join(" ,", args), flag, Environment.UserInteractive);
       if(flag != 1) {
         if(!CSWindowsServiceRecoveryProperty.Win32.AttachConsole(-1))  // Attach to a parent process console
           CSWindowsServiceRecoveryProperty.Win32.AllocConsole(); // Alloc a new console if none available
@@ -133,7 +134,7 @@ namespace X13 {
       Log.Finish();
     }
     private void PrThread() {
-      {
+      if(!IsLinux) {
         int cpuCnt = System.Environment.ProcessorCount;
         if(cpuCnt > 1) {
           int r = CSWindowsServiceRecoveryProperty.Win32.SetThreadAffinityMask(CSWindowsServiceRecoveryProperty.Win32.GetCurrentThread(), 1 << (cpuCnt - 1));

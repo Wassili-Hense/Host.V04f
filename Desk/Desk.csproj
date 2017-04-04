@@ -49,7 +49,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>logo64.ico</ApplicationIcon>
+    <ApplicationIcon>logo32.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
@@ -230,9 +230,6 @@
     <Resource Include="Images\config.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="logo64.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Images\trash.png" />
   </ItemGroup>
   <ItemGroup>
@@ -274,6 +271,9 @@
   </ItemGroup>
   <ItemGroup>
     <SplashScreen Include="Images\logo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="logo32.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
