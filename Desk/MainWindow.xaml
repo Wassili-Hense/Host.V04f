@@ -70,22 +70,15 @@
           </Style>
         </Grid.Resources>
         <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="36"/>
-          <ColumnDefinition Width="34"/>
+          <ColumnDefinition Width="32"/>
+          <ColumnDefinition Width="32"/>
+          <ColumnDefinition Width="32"/>
           <ColumnDefinition />
-          <ColumnDefinition Width="50"/>
-          <ColumnDefinition Width="34"/>
-          <ColumnDefinition Width="34"/>
-          <ColumnDefinition Width="38"/>
+          <ColumnDefinition Width="32"/>
+          <ColumnDefinition Width="32"/>
+          <ColumnDefinition Width="32"/>
         </Grid.ColumnDefinitions>
-        <Image x:Name="AppIcon" Grid.Column="0" 
-                   HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo32.ico" />
-        <!--Button Name="buNewDocument" Grid.Column="1" VerticalAlignment="Top" Width="38" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
-                     WindowChrome.IsHitTestVisibleInChrome="True" Click="buNewDocument_Click">
-          <Image Source="/Desk;component/Images/newDoc.png" Width="24" Height="22" />
-        </Button-->
-        <TextBlock x:Name="Caption" Grid.Column="2" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Desk" />
-        <Button Name="buConfig" Grid.Column="3" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+        <Button Name="buConfig" Grid.Column="0" VerticalAlignment="Top" Width="32" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                      WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left" Click="buConfig_Click">
           <Button.ContextMenu>
             <ContextMenu>
@@ -121,21 +114,31 @@
               </MenuItem>
             </ContextMenu>
           </Button.ContextMenu>
-          <Image Source="/Desk;component/Images/config.png" Width="24" Height="23" />
+          <Image x:Name="AppIcon" Grid.Column="0" 
+                   HorizontalAlignment="Right" Width="32" Height="32" WindowChrome.IsHitTestVisibleInChrome="True" Source="logo32.ico" />
         </Button>
-        <Button x:Name="MinButton" Grid.Column="4" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+        <Button Name="buEditUndo" Grid.Column="1" VerticalAlignment="Top" Width="32" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                     WindowChrome.IsHitTestVisibleInChrome="True" IsEnabled="False">
+          <Image Source="Images/Edit_Undo.png" Width="24" Height="24" />
+        </Button>
+        <Button Name="buEditRedo" Grid.Column="2" VerticalAlignment="Top" Width="32" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+                     WindowChrome.IsHitTestVisibleInChrome="True" IsEnabled="False">
+          <Image Source="Images/Edit_Redo.png" Width="24" Height="24" />
+        </Button>
+        <TextBlock x:Name="Caption" Grid.Column="3" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="5,0,0,0" Opacity="0.66" Text="X13 Desk" />
+        <Button x:Name="MinButton" Grid.Column="4" VerticalAlignment="Top" Width="32" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                     Click="MinButtonClick" WindowChrome.IsHitTestVisibleInChrome="True">
           <Path Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
                           StrokeThickness="1" Stretch="None" RenderOptions.EdgeMode="Aliased" Data="M0,8 H8 M0,7 H8 M0,6 H8" 
 						  VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="9" />
         </Button>
-        <Button x:Name="MaxButton" Grid.Column="5" VerticalAlignment="Top" Width="34" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
+        <Button x:Name="MaxButton" Grid.Column="5" VerticalAlignment="Top" Width="32" Height="32" Style="{StaticResource AeroStyleTitleBarButton}"
                     Click="MaxButtonClick" WindowChrome.IsHitTestVisibleInChrome="True">
           <Path x:Name="PART_MaxButton_Path" Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
                           StrokeThickness="1" Stretch="None" RenderOptions.EdgeMode="Aliased" Data="M0,0 H8 V8 H0 V0 M0,1 H8 M0,2 H8" 
 						  VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="8" />
         </Button>
-        <Button x:Name="CloseButton" Grid.Column="6" VerticalAlignment="Center" Width="34" Height="26" Style="{StaticResource AeroStyleTitleBarButton}"
+        <Button x:Name="CloseButton" Grid.Column="6" VerticalAlignment="Center" Width="32" Height="26" Style="{StaticResource AeroStyleTitleBarButton}"
                     Click="CloseButtonClick" WindowChrome.IsHitTestVisibleInChrome="True" HorizontalAlignment="Left" >
           <Path Stroke="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}" StrokeThickness="1.5" Stretch="None" Data="M0,0 L8,8 M0,8 L8,0" 
 						   VerticalAlignment="Center" Width="9" HorizontalAlignment="Center" Height="9" />

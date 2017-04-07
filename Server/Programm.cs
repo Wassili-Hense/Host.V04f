@@ -37,11 +37,11 @@ namespace X13 {
         }
       }
       Directory.SetCurrentDirectory(path);
-      Log.Debug("{0} {1} f={2}, i={3}", name, string.Join(" ,", args), flag, Environment.UserInteractive);
       if(flag != 1) {
         if(!CSWindowsServiceRecoveryProperty.Win32.AttachConsole(-1))  // Attach to a parent process console
           CSWindowsServiceRecoveryProperty.Win32.AllocConsole(); // Alloc a new console if none available
       }
+      Log.Debug("{0} {1} f={2}, i={3}", name, string.Join(" ,", args), flag, Environment.UserInteractive);
       if(flag == 0) {
         var srv = new Programm(cfgPath);
         if(srv.Start()) {

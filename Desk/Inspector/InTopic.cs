@@ -323,6 +323,19 @@ namespace X13.UI {
         }
         l.Add(new Separator());
       }
+      Uri uri;
+      if(System.Windows.Clipboard.ContainsText(System.Windows.TextDataFormat.Text)
+        && Uri.TryCreate(System.Windows.Clipboard.GetText(System.Windows.TextDataFormat.Text), UriKind.Absolute, out uri)
+        && _owner.Connection.server == uri.DnsSafeHost) {
+        mi = new MenuItem() { Header = "Paste", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Paste.png"), Width = 16, Height = 16 } };
+        mi.Click += miPaste_Click;
+        l.Add(mi);
+
+      }
+      mi = new MenuItem() { Header = "Cut", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Cut.png"), Width = 16, Height = 16 } };
+      mi.IsEnabled = !IsGroupHeader && !IsRequired;
+      mi.Click += miCut_Click;
+      l.Add(mi);
       mi = new MenuItem() { Header = "Delete", Icon = new Image() { Source = App.GetIcon("component/Images/Edit_Delete.png"), Width = 16, Height = 16 } };
       mi.IsEnabled = !IsGroupHeader && !IsRequired;
       mi.Click += miDelete_Click;
@@ -385,6 +398,23 @@ namespace X13.UI {
     private void miOpen_Click(object sender, System.Windows.RoutedEventArgs e) {
       App.Workspace.Open(_owner.fullPath);
     }
+    private void miCut_Click(object sender, System.Windows.RoutedEventArgs e) {
+      System.Windows.Clipboard.SetText(_owner.fullPath, System.Windows.TextDataFormat.Text);
+    }
+    private void miPaste_Click(object sender, System.Windows.RoutedEventArgs e) {
+      Uri uri;
+      if(System.Windows.Clipboard.ContainsText(System.Windows.TextDataFormat.Text)
+        && Uri.TryCreate(System.Windows.Clipboard.GetText(System.Windows.TextDataFormat.Text), UriKind.Absolute, out uri)
+        && _owner.Connection.server==uri.DnsSafeHost) {
+          System.Windows.Clipboard.Clear();
+          App.Workspace.GetAsync(uri).ContinueWith(td => {
+            if(td.IsCompleted && !td.IsFaulted && td.Result != null) {
+              td.Result.Move(_owner, td.Result.name);
+            }
+          }, TaskScheduler.FromCurrentSynchronizationContext());
+      }
+    }
+
     private void miDelete_Click(object sender, System.Windows.RoutedEventArgs e) {
       _owner.Delete();
     }

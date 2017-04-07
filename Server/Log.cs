@@ -17,6 +17,7 @@ namespace X13 {
     private static string _lfPath;
     private static DateTime _firstDT;
     private static string _lfMask;
+    private static int _busy;
 
     static Log() {
       _useDiagnostic = System.Diagnostics.Debugger.IsAttached;
@@ -29,6 +30,7 @@ namespace X13 {
       _lfMask = "../log/{0}_" + Path.GetFileNameWithoutExtension(System.Reflection.Assembly.GetCallingAssembly().Location) + ".log";
       _records = new System.Collections.Concurrent.ConcurrentQueue<LogRecord>();
       _kickEv = new AutoResetEvent(false);
+      _busy = 1;
       _wh = ThreadPool.RegisterWaitForSingleObject(_kickEv, Process, null, -1, false);
     }
     public static void Debug(string format, params object[] arg) {
@@ -56,6 +58,9 @@ namespace X13 {
     }
 
     private static void Process(object o, bool to) {
+      if(Interlocked.CompareExchange(ref _busy, 2, 1) != 1) {
+        return;
+      }
       LogRecord r;
       string msg;
       while(_records.TryDequeue(out r)) {
@@ -129,6 +134,7 @@ namespace X13 {
 
         }
       }
+      _busy = 1;
     }
     private class LogRecord {
       public LogLevel ll;

@@ -224,12 +224,6 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\newDoc.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Images\config.png" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Images\trash.png" />
   </ItemGroup>
   <ItemGroup>
@@ -243,7 +237,6 @@
     <Resource Include="Images\ty_str.png" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Images\Edit_Delete.png" />
     <Resource Include="Images\Edit_Rename.png" />
   </ItemGroup>
   <ItemGroup>
@@ -274,6 +267,13 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="logo32.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Edit_Cut.png" />
+    <Resource Include="Images\Edit_Delete.png" />
+    <Resource Include="Images\Edit_Paste.png" />
+    <Resource Include="Images\Edit_Redo.png" />
+    <Resource Include="Images\Edit_Undo.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
