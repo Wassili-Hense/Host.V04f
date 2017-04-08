@@ -3,7 +3,7 @@ using System.Reflection;
 
 
 [assembly: AssemblyCompany("X13")]
-[assembly: AssemblyProduct("X13.Home")]
+[assembly: AssemblyProduct("Enviriot")]
 [assembly: AssemblyTrademark("")]
 
 // Version information for an assembly consists of the following four values:
@@ -17,5 +17,5 @@ using System.Reflection;
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
 
-[assembly: AssemblyVersion("0.4.1704.7007")]
-[assembly: AssemblyFileVersion("0.4.1704.7007")]
+[assembly: AssemblyVersion("0.4.1704.8002")]
+[assembly: AssemblyFileVersion("0.4.1704.8002")]

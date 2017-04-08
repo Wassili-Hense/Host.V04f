@@ -49,7 +49,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>logo32.ico</ApplicationIcon>
+    <ApplicationIcon>..\Server\logo32.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
@@ -263,17 +263,16 @@
     <Resource Include="Images\ty_byteArray.png" />
   </ItemGroup>
   <ItemGroup>
-    <SplashScreen Include="Images\logo.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="logo32.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="Images\Edit_Cut.png" />
     <Resource Include="Images\Edit_Delete.png" />
     <Resource Include="Images\Edit_Paste.png" />
     <Resource Include="Images\Edit_Redo.png" />
     <Resource Include="Images\Edit_Undo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\Server\logo32.ico">
+      <Link>logo32.ico</Link>
+    </Resource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

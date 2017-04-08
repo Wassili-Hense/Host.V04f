@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("MQTT_SN")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("MQTT-SN plugin for Enviriot")]
 [assembly: AssemblyConfiguration("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 

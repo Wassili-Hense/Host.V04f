@@ -6,8 +6,8 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("X13.Home")]
-[assembly: AssemblyDescription("X13 home automation server")]
+[assembly: AssemblyTitle("Enviriot server")]
+[assembly: AssemblyDescription("Enviriot server")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCulture("")]
 
